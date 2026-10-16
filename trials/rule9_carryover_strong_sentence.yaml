@@ -1,0 +1,6 @@
+# Rule 9, stronger: 25% (at most 60 ms).
+sentence:
+  tone:
+    carryover_trim:
+      frac: 0.25
+      max_ms: 60

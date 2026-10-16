@@ -1,0 +1,4 @@
+# Rule 8, strongest: less than 180 ms.
+sentence:
+  confidence:
+    practice_min_window_ms: 180

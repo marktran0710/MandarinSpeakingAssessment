@@ -936,6 +936,10 @@ def _t4_fall_by_duration(f, tone_config):
     return rule["min_fall_long_st"]
 
 
+# Tone settings that change verdicts only; the boundary search must not see them (it would move boundaries to suit them).
+VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim")
+
+
 def tone_scores(f, allow_half_t3, config):
     """Soft 0..1 fit of a contour to each of T1-T4 (T3 = max of full and, if the context allows, half)."""
     t = config["tone"]
@@ -1004,6 +1008,26 @@ def _empty_result(context, char, config, speaker, status="insufficient_evidence"
     }
     result["feedback"] = student_feedback(status, context["target_tone"], config)
     return result
+
+
+def scoring_window(config, context, seg_start, seg_end):
+    """The part of the analysis segment the tone is judged on (verdict only; quality and gates use the whole segment).
+
+    `tone.final_tail_guard`: at the end of a clause the pitch is pulled down (final lowering), so the last `trim_frac` of
+    a clause-final tone 1/2/3 is left out. `tone.carryover_trim`: the first part of a syllable still carries the pitch
+    of the syllable before it, so up to `max_ms` (and `frac` of the segment) is left out when there is a neighbour on
+    the left. Both are off unless configured."""
+    tone = config["tone"]
+    span = seg_end - seg_start
+    start, end = seg_start, seg_end
+    guard = tone.get("final_tail_guard")
+    if guard and context.get("is_clause_final") and context["target_tone"] in guard["tones"]:
+        end -= guard["trim_frac"] * span
+    carry = tone.get("carryover_trim")
+    if carry and context.get("adjacent_previous_tone") is not None and (
+            not carry.get("tones") or context["target_tone"] in carry["tones"]):
+        start += min(carry["frac"] * span, carry["max_ms"] / 1000.0)
+    return start, end
 
 
 def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True):
@@ -1082,7 +1106,18 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
 
     expected = context["target_tone"]
     accepted = [expected, *context.get("also_accept_tones", ())]        # sentence practice may accept a sandhi alternative
-    scores = tone_scores(feats, allows_half_third(context, config), config)
+    score_start, score_end = scoring_window(config, context, seg_start, seg_end)
+    score_times, score_st, score_feats = times, st, feats
+    if (score_start, score_end) != (seg_start, seg_end):
+        keep = (times >= score_start) & (times < score_end)
+        trimmed_feats = syllable_features(times[keep], st[keep], score_start, score_end, syllable_ms=syllable_sec * 1000.0,
+                                          followed_by_t4=followed_by_t4)
+        if score_end > score_start and trimmed_feats["voiced_frames"] >= align["min_voiced_frames"]:
+            score_times, score_st, score_feats = times[keep], st[keep], trimmed_feats
+            result["scoring_window_ms"] = [round(score_start * 1000), round(score_end * 1000)]
+        else:
+            score_start, score_end = seg_start, seg_end                  # too little would be left: judge the whole syllable
+    scores = tone_scores(score_feats, allows_half_third(context, config), config)
     match = max(scores[tone] for tone in accepted)
     others = {tone: scores[tone] for tone in (1, 2, 3, 4) if tone not in accepted}
     status = decide(quality, match, config)
@@ -1091,7 +1126,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     if short_window:
         status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
-        times, st, seg_start, seg_end, expected, allows_half_third(context, config), status, quality, config,
+        score_times, score_st, score_start, score_end, expected, allows_half_third(context, config), status, quality, config,
         also_accept=accepted[1:], syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
     result.update({
         "tone_scores": {str(k): round(scores[k], 3) for k in (1, 2, 3, 4)},
@@ -1297,8 +1332,8 @@ def search_boundaries(syllables, contexts, clean, config):
     cfg = config["boundary_search"]
     # Verdict-only rules never move boundaries: a looser tone-4 rule would pull a boundary into the neighbouring syllable
     # (taking the rising tail off a tone 2 beside it) and make the neighbour look wrong. Like the half-third flag below,
-    # `t4_by_duration` and `t4_before_t4` therefore apply to verdicts only; boundaries are placed as without them.
-    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k not in ("t4_by_duration", "t4_before_t4")}}
+    # The rules in VERDICT_ONLY_TONE_RULES therefore apply to verdicts only; boundaries are placed as without them.
+    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k not in VERDICT_ONLY_TONE_RULES}}
     count = len(syllables)
     info = {"enabled": bool(cfg["enabled"]), "applied": False, "shifts_ms": [0] * max(count - 1, 0),
             "mean_match_before": None, "mean_match_after": None}

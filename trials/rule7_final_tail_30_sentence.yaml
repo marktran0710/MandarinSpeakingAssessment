@@ -1,0 +1,6 @@
+# Rule 7, stronger: the last 30%.
+sentence:
+  tone:
+    final_tail_guard:
+      trim_frac: 0.3
+      tones: [1, 2, 3]

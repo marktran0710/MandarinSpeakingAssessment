@@ -1,0 +1,4 @@
+# Rule 8: a syllable analysed on less than 130 ms of voicing cannot be 'Needs practice' (sentence practice; today 100).
+sentence:
+  confidence:
+    practice_min_window_ms: 130

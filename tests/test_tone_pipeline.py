@@ -1145,6 +1145,92 @@ class FirstToneFourBeforeToneFourTests(unittest.TestCase):
         self.assertFalse(any(seen))
 
 
+class ScoringWindowRulesTests(unittest.TestCase):
+    """tone.final_tail_guard / tone.carryover_trim: judge a syllable without its tail / its carried-over start."""
+    TAIL = {"trim_frac": 0.2, "tones": [1, 2, 3]}
+    CARRY = {"frac": 0.2, "max_ms": 60}
+
+    def config(self, **rules):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        config["tone"].update(rules)
+        return config
+
+    @staticmethod
+    def status(context, st, config):
+        extraction, clean = make_track(st)
+        syllable = {"char": "媽", "start": 0.0, "end": len(st) * STEP, "phones": [], "nucleus": (0.0, len(st) * STEP)}
+        return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True)
+
+    def level_with_final_lowering(self):
+        return np.r_[np.zeros(48), np.linspace(0, -12, 12)]                    # a level tone 1 whose last 60 ms drop 12 st
+
+    def test_a_clause_final_tone_is_not_failed_for_its_final_lowering(self):
+        final = capt_core.expected_tone_contexts(["媽"])[0]
+        self.assertTrue(final["is_clause_final"])
+        plain = self.status(final, self.level_with_final_lowering(), CONFIG)
+        guarded = self.status(final, self.level_with_final_lowering(), self.config(final_tail_guard=self.TAIL))
+        self.assertNotEqual(plain["status"], "likely_correct")
+        self.assertEqual(guarded["status"], "likely_correct")
+        self.assertEqual(guarded["scoring_window_ms"], [0, 240])                # the last 20% of 300 ms was left out
+
+    def test_the_tail_guard_only_touches_clause_final_syllables_and_the_listed_tones(self):
+        inside = capt_core.expected_tone_contexts(["媽媽"])[0]
+        self.assertFalse(inside["is_clause_final"])
+        guarded = self.status(inside, self.level_with_final_lowering(), self.config(final_tail_guard=self.TAIL))
+        self.assertNotIn("scoring_window_ms", guarded)
+        t4_final = capt_core.expected_tone_contexts(["罵"])[0]
+        self.assertEqual(tp.scoring_window(self.config(final_tail_guard=self.TAIL), t4_final, 0.0, 0.3), (0.0, 0.3))
+
+    def test_a_carried_over_start_is_not_held_against_a_syllable_with_a_left_neighbour(self):
+        st = np.r_[np.linspace(10, 0, 12), np.zeros(48)]                       # the previous high tone is still audible in the first 60 ms
+        alone = capt_core.expected_tone_contexts(["媽"])[0]
+        neighbour = {**alone, "adjacent_previous_tone": 4}
+        config = self.config(carryover_trim=self.CARRY)
+        self.assertNotEqual(self.status(neighbour, st, CONFIG)["status"], "likely_correct")             # today
+        self.assertEqual(self.status(neighbour, st, config)["status"], "likely_correct")                 # with the rule
+        self.assertNotEqual(self.status(alone, st, config)["status"], "likely_correct")                  # nothing to carry over: judged as is
+
+    def test_the_window_arithmetic(self):
+        context = {**capt_core.expected_tone_contexts(["媽"])[0], "adjacent_previous_tone": 4}
+        config = self.config(final_tail_guard=self.TAIL, carryover_trim=self.CARRY)
+        start, end = tp.scoring_window(config, context, 1.0, 1.3)
+        self.assertAlmostEqual(start, 1.06)                                       # min(20% of 300 ms, 60 ms)
+        self.assertAlmostEqual(end, 1.24)                                         # 20% off the end
+        self.assertEqual(tp.scoring_window(CONFIG, context, 1.0, 1.3), (1.0, 1.3))
+
+    def test_if_too_little_would_be_left_the_whole_syllable_is_judged(self):
+        short = np.zeros(8)                                                       # 40 ms, 8 frames: trimming 20% would leave < 6
+        context = {**capt_core.expected_tone_contexts(["媽"])[0], "adjacent_previous_tone": 4}
+        result = self.status(context, short, self.config(final_tail_guard=self.TAIL, carryover_trim={"frac": 0.5, "max_ms": 500}))
+        self.assertNotIn("scoring_window_ms", result)
+
+    def test_production_configs_have_neither_rule_and_the_boundary_search_never_sees_them(self):
+        import tone_assessment as ta
+        for profile in (None, "sentence"):
+            for rule in tp.VERDICT_ONLY_TONE_RULES:
+                self.assertNotIn(rule, ta.get_config(profile)["tone"], rule)
+        self.assertEqual(set(tp.VERDICT_ONLY_TONE_RULES), {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim"})
+        tones = capt_core.expected_tone_contexts(["媽罵"])
+        extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)])
+        late = 42 * STEP
+        syllables = [{"char": "媽", "start": 0.0, "end": late, "phones": [], "nucleus": (0.0, late)},
+                     {"char": "罵", "start": late, "end": 90 * STEP, "phones": [], "nucleus": (late, 90 * STEP)}]
+        seen = []
+        original = tp.tone_scores
+
+        def spy(feats, allow_half, config):
+            seen.append(any(rule in config["tone"] for rule in tp.VERDICT_ONLY_TONE_RULES))
+            return original(feats, allow_half, config)
+
+        every_rule = self.config(final_tail_guard=self.TAIL, carryover_trim=self.CARRY, t4_before_t4={"min_fall_st": 2.0},
+                                 t4_by_duration=ToneFourByDurationTests.RULE)
+        with mock.patch.object(tp, "tone_scores", spy):
+            tp.search_boundaries(syllables, tones, clean, every_rule)
+        self.assertTrue(seen)
+        self.assertFalse(any(seen))
+
+
 class DurationRuleAndBoundariesTests(unittest.TestCase):
     """A verdict-only rule must change verdicts, never where the boundary search puts the syllable borders."""
 

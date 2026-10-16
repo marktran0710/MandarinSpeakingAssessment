@@ -35,7 +35,10 @@ class TrialConfigTests(unittest.TestCase):
         import yaml
         root = Path(__file__).resolve().parents[1] / "trials"
         for name in ("user_config_a.yaml", "t4_by_duration_sentence.yaml", "t4_by_duration_proxy.yaml", "half_t3_only.yaml",
-                     "t4_before_t4_sentence.yaml", "t4_before_t4_1_5_sentence.yaml", "t4_both_rules_sentence.yaml"):
+                     "t4_before_t4_sentence.yaml", "t4_before_t4_1_5_sentence.yaml", "t4_both_rules_sentence.yaml",
+                     "rule7_final_tail_sentence.yaml", "rule7_final_tail_30_sentence.yaml", "rule9_carryover_sentence.yaml",
+                     "rule9_carryover_strong_sentence.yaml", "rule8_short_130_sentence.yaml", "rule8_short_180_sentence.yaml",
+                     "rules_combined_sentence.yaml"):
             self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
 
 
