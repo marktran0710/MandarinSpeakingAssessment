@@ -1,0 +1,6830 @@
+{
+"service_53": {
+"C5-5-1-I1-W001#0": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"C5-5-1-I1-W001#1": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"C5-5-1-I10-W012#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"C5-5-1-I10-W012#1": [
+"likely_correct",
+1.0,
+0.95,
+""
+],
+"C5-5-1-I10-W012#2": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C5-5-1-I11-W013#0": [
+"likely_correct",
+1.0,
+0.932,
+""
+],
+"C5-5-1-I11-W013#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I11-W013#2": [
+"likely_correct",
+1.0,
+0.904,
+""
+],
+"C5-5-1-I12-W014#0": [
+"likely_correct",
+1.0,
+0.974,
+""
+],
+"C5-5-1-I13-W015#0": [
+"likely_correct",
+null,
+0.956,
+""
+],
+"C5-5-1-I14-W006#0": [
+"likely_correct",
+1.0,
+0.935,
+""
+],
+"C5-5-1-I14-W006#1": [
+"likely_correct",
+1.0,
+0.913,
+""
+],
+"C5-5-1-I14-W217#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I14-W217#1": [
+"likely_correct",
+1.0,
+0.955,
+""
+],
+"C5-5-1-I14-W217#2": [
+"likely_correct",
+1.0,
+0.909,
+""
+],
+"C5-5-1-I2-W002#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"C5-5-1-I3-W003#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C5-5-1-I3-W003#1": [
+"insufficient_evidence",
+null,
+0.699,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C5-5-1-I4-W004#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C5-5-1-I5-W005#0": [
+"likely_correct",
+1.0,
+0.728,
+"unstable_pitch_track"
+],
+"C5-5-1-I5-W005#1": [
+"insufficient_evidence",
+null,
+0.677,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C5-5-1-I6-W007#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I6-W007#1": [
+"likely_correct",
+1.0,
+0.931,
+""
+],
+"C5-5-1-I6-W007#2": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C5-5-1-I7-W008#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C5-5-1-I7-W008#1": [
+"insufficient_evidence",
+1.0,
+0.428,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"C5-5-1-I8-W009#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I8-W009#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I8-W009#2": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"C5-5-1-I9-W010#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I9-W010#1": [
+"likely_correct",
+1.0,
+0.936,
+""
+],
+"C5-5-1-I9-W011#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-I9-W011#1": [
+"likely_correct",
+1.0,
+0.916,
+""
+],
+"C5-5-2-I1-W016#0": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"C5-5-2-I10-W033#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I10-W033#1": [
+"likely_correct",
+1.0,
+0.984,
+""
+],
+"C5-5-2-I11-W034#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I11-W034#1": [
+"likely_correct",
+1.0,
+0.939,
+""
+],
+"C5-5-2-I12-W035#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C5-5-2-I12-W035#1": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"C5-5-2-I12-W036#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I12-W036#1": [
+"likely_correct",
+1.0,
+0.968,
+""
+],
+"C5-5-2-I12-W037#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I12-W037#1": [
+"likely_correct",
+1.0,
+0.946,
+""
+],
+"C5-5-2-I13-W038#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C5-5-2-I14-W039#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I15-W040#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C5-5-2-I15-W040#1": [
+"likely_correct",
+1.0,
+0.987,
+""
+],
+"C5-5-2-I16-W041#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C5-5-2-I2-W017#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I2-W017#1": [
+"likely_correct",
+1.0,
+0.927,
+""
+],
+"C5-5-2-I3-W018#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I3-W018#1": [
+"likely_correct",
+1.0,
+0.984,
+""
+],
+"C5-5-2-I3-W019#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"C5-5-2-I3-W019#1": [
+"likely_correct",
+null,
+0.916,
+""
+],
+"C5-5-2-I3-W020#0": [
+"likely_correct",
+1.0,
+0.954,
+""
+],
+"C5-5-2-I4-W021#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I4-W021#1": [
+"likely_correct",
+1.0,
+0.986,
+""
+],
+"C5-5-2-I4-W022#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"C5-5-2-I5-W023#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C5-5-2-I5-W023#1": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C5-5-2-I6-W024#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I6-W024#1": [
+"likely_correct",
+null,
+0.822,
+""
+],
+"C5-5-2-I6-W025#0": [
+"likely_correct",
+1.0,
+0.972,
+""
+],
+"C5-5-2-I6-W025#1": [
+"likely_correct",
+null,
+0.941,
+""
+],
+"C5-5-2-I6-W026#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C5-5-2-I7-W027#0": [
+"likely_correct",
+1.0,
+0.977,
+""
+],
+"C5-5-2-I8-W028#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"C5-5-2-I9-W029#0": [
+"likely_correct",
+0.992,
+1.0,
+""
+],
+"C5-5-2-I9-W029#1": [
+"likely_correct",
+null,
+0.754,
+""
+],
+"C5-5-2-I9-W030#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C5-5-2-I9-W030#1": [
+"insufficient_evidence",
+null,
+0.689,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C5-5-2-I9-W031#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I9-W031#1": [
+"likely_correct",
+null,
+0.879,
+""
+],
+"C5-5-2-I9-W032#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-2-I9-W032#1": [
+"likely_correct",
+null,
+0.921,
+""
+],
+"C5-5-3-I1-W042#0": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"C5-5-3-I1-W043#0": [
+"likely_correct",
+1.0,
+0.962,
+""
+],
+"C5-5-3-I1-W043#1": [
+"likely_correct",
+1.0,
+0.929,
+""
+],
+"C5-5-3-I2-W044#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-3-I2-W044#1": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C5-5-3-I2-W044#2": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"C5-5-3-I3-W045#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-3-I3-W045#1": [
+"likely_correct",
+1.0,
+0.923,
+""
+],
+"C5-5-3-I3-W046#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"C5-5-3-I4-W047#0": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"C5-5-3-I4-W048#0": [
+"likely_correct",
+1.0,
+0.979,
+""
+],
+"C5-5-3-I4-W049#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"C5-5-3-I4-W050#0": [
+"likely_correct",
+1.0,
+0.986,
+""
+],
+"C5-5-3-I6-W210#0": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"C5-5-3-I6-W210#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-3-I6-W210#2": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C5-5-3-I6-W211#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-3-I6-W211#1": [
+"likely_correct",
+1.0,
+0.992,
+""
+]
+},
+"synthetic_520": {
+"01_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__direction_reversed.wav#1": [
+"likely_correct",
+1.0,
+0.949,
+""
+],
+"01_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.957,
+""
+],
+"01_female__irregular_wavy.wav#1": [
+"practice",
+0.0,
+0.867,
+""
+],
+"01_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__nearly_flat.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"01_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__pitch_high_4st.wav#1": [
+"likely_correct",
+1.0,
+0.956,
+""
+],
+"01_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+0.941,
+""
+],
+"01_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__range_narrow_35pct.wav#1": [
+"likely_correct",
+1.0,
+0.956,
+""
+],
+"01_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"01_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female_chaotic.wav#1": [
+"likely_correct",
+1.0,
+0.963,
+""
+],
+"01_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female_clear.wav#1": [
+"likely_correct",
+1.0,
+0.963,
+""
+],
+"01_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_female_subtle.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"01_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.948,
+""
+],
+"01_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+0.675,
+0.917,
+"ambiguous_contour"
+],
+"01_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.84,
+"bad_alignment"
+],
+"01_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.832,
+"bad_alignment"
+],
+"01_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"01_male__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"01_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.84,
+"bad_alignment"
+],
+"01_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.993,
+""
+],
+"01_male__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"01_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"01_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"02_female__direction_reversed.wav#0": [
+"practice",
+0.191,
+0.977,
+""
+],
+"02_female__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.833,
+""
+],
+"02_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.375,
+"unstable_pitch_track|bad_alignment|syllable_too_short|too_few_voiced_frames"
+],
+"02_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.978,
+""
+],
+"02_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.977,
+""
+],
+"02_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.985,
+""
+],
+"02_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.978,
+""
+],
+"02_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.985,
+""
+],
+"02_female_clear.wav#0": [
+"practice",
+0.0,
+0.95,
+""
+],
+"02_female_subtle.wav#0": [
+"practice",
+0.0,
+0.978,
+""
+],
+"02_male__direction_reversed.wav#0": [
+"practice",
+0.168,
+0.993,
+""
+],
+"02_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.659,
+"unstable_pitch_track|ambiguous_contour"
+],
+"02_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.981,
+""
+],
+"02_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.986,
+""
+],
+"02_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.993,
+""
+],
+"02_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.974,
+""
+],
+"02_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.993,
+""
+],
+"02_male_chaotic.wav#0": [
+"practice",
+0.0,
+0.979,
+""
+],
+"02_male_clear.wav#0": [
+"practice",
+0.0,
+0.991,
+""
+],
+"02_male_subtle.wav#0": [
+"practice",
+0.0,
+0.974,
+""
+],
+"03_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.899,
+""
+],
+"03_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"03_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.895,
+""
+],
+"03_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.905,
+""
+],
+"03_female__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+0.291,
+1.0,
+"ambiguous_contour"
+],
+"03_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.889,
+""
+],
+"03_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.899,
+""
+],
+"03_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.981,
+""
+],
+"03_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.416,
+0.989,
+"ambiguous_contour"
+],
+"03_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.889,
+""
+],
+"03_female_chaotic.wav#0": [
+"likely_correct",
+0.857,
+1.0,
+""
+],
+"03_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.898,
+""
+],
+"03_female_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"03_female_clear.wav#1": [
+"practice",
+0.0,
+0.872,
+""
+],
+"03_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_female_subtle.wav#1": [
+"practice",
+0.0,
+0.98,
+""
+],
+"03_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.458,
+0.974,
+"ambiguous_contour"
+],
+"03_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.944,
+""
+],
+"03_male__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.899,
+""
+],
+"03_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.961,
+""
+],
+"03_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"03_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"03_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+1.0,
+1.0,
+"edge_pitch_step"
+],
+"03_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.958,
+""
+],
+"03_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male_chaotic.wav#0": [
+"insufficient_evidence",
+0.605,
+1.0,
+"ambiguous_contour"
+],
+"03_male_chaotic.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"03_male_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"03_male_subtle.wav#0": [
+"insufficient_evidence",
+0.291,
+1.0,
+"ambiguous_contour"
+],
+"03_male_subtle.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"04_female__direction_reversed.wav#0": [
+"likely_correct",
+0.922,
+0.992,
+""
+],
+"04_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"04_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+0.0,
+0.655,
+"unstable_pitch_track|ambiguous_contour"
+],
+"04_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"04_female__pitch_low_4st.wav#0": [
+"likely_correct",
+0.918,
+0.996,
+""
+],
+"04_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.824,
+""
+],
+"04_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"04_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.984,
+""
+],
+"04_female_clear.wav#0": [
+"practice",
+0.0,
+0.984,
+""
+],
+"04_female_subtle.wav#0": [
+"likely_correct",
+0.996,
+0.996,
+""
+],
+"04_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"04_male__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.682,
+"unstable_pitch_track"
+],
+"04_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.997,
+""
+],
+"04_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"04_male__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"04_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.997,
+""
+],
+"04_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.987,
+""
+],
+"04_male_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"04_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"04_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.997,
+""
+],
+"05_female__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.681,
+"unstable_pitch_track"
+],
+"05_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.689,
+"unstable_pitch_track|ambiguous_contour"
+],
+"05_female__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.681,
+"unstable_pitch_track"
+],
+"05_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.984,
+""
+],
+"05_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"05_female__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+1.0,
+0.633,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"05_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.672,
+0.995,
+"ambiguous_contour"
+],
+"05_female_chaotic.wav#0": [
+"insufficient_evidence",
+0.371,
+0.987,
+"ambiguous_contour"
+],
+"05_female_clear.wav#0": [
+"insufficient_evidence",
+0.371,
+0.987,
+"ambiguous_contour"
+],
+"05_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"05_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"05_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.927,
+""
+],
+"05_male__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"05_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"05_male__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"05_male__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"05_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.684,
+0.995,
+"ambiguous_contour"
+],
+"05_male_chaotic.wav#0": [
+"insufficient_evidence",
+0.217,
+0.984,
+"ambiguous_contour"
+],
+"05_male_clear.wav#0": [
+"insufficient_evidence",
+0.217,
+0.984,
+"ambiguous_contour"
+],
+"05_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"06_female__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.979,
+""
+],
+"06_female__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.971,
+""
+],
+"06_female__irregular_wavy.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_female__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.977,
+""
+],
+"06_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"06_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"06_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"06_female__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.979,
+""
+],
+"06_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female_chaotic.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_female_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_female_subtle.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"06_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"06_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.966,
+""
+],
+"06_male__irregular_wavy.wav#1": [
+"practice",
+0.0,
+0.887,
+""
+],
+"06_male__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.979,
+""
+],
+"06_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"06_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"06_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"06_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"06_male__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"06_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"06_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.952,
+""
+],
+"06_male_chaotic.wav#0": [
+"likely_correct",
+0.825,
+1.0,
+""
+],
+"06_male_chaotic.wav#1": [
+"practice",
+0.0,
+0.995,
+""
+],
+"06_male_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"06_male_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"06_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.996,
+""
+],
+"06_male_subtle.wav#1": [
+"practice",
+0.0,
+0.955,
+""
+],
+"07_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+0.962,
+""
+],
+"07_female__direction_reversed.wav#1": [
+"likely_correct",
+0.807,
+1.0,
+""
+],
+"07_female__direction_reversed.wav#2": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.887,
+""
+],
+"07_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female__irregular_wavy.wav#2": [
+"likely_correct",
+1.0,
+0.917,
+""
+],
+"07_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female__nearly_flat.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.988,
+""
+],
+"07_female__pitch_high_4st.wav#2": [
+"likely_correct",
+0.886,
+0.973,
+""
+],
+"07_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.962,
+""
+],
+"07_female__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female__pitch_low_4st.wav#2": [
+"likely_correct",
+0.9,
+0.98,
+""
+],
+"07_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.995,
+""
+],
+"07_female__range_narrow_35pct.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.571,
+0.988,
+"ambiguous_contour"
+],
+"07_female__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female__range_wide_180pct.wav#2": [
+"likely_correct",
+1.0,
+0.936,
+""
+],
+"07_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.985,
+""
+],
+"07_female_chaotic.wav#1": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"07_female_chaotic.wav#2": [
+"likely_correct",
+1.0,
+0.879,
+""
+],
+"07_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"07_female_clear.wav#1": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"07_female_clear.wav#2": [
+"likely_correct",
+1.0,
+0.885,
+""
+],
+"07_female_subtle.wav#0": [
+"practice",
+0.0,
+0.962,
+""
+],
+"07_female_subtle.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"07_female_subtle.wav#2": [
+"likely_correct",
+0.99,
+0.986,
+""
+],
+"07_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__direction_reversed.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.775,
+"bad_alignment"
+],
+"07_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__irregular_wavy.wav#2": [
+"insufficient_evidence",
+null,
+0.762,
+"bad_alignment"
+],
+"07_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__nearly_flat.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__pitch_high_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.821,
+"bad_alignment"
+],
+"07_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__pitch_low_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male__range_narrow_35pct.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.806,
+"bad_alignment"
+],
+"07_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment|syllable_too_short"
+],
+"07_male__range_wide_180pct.wav#2": [
+"insufficient_evidence",
+null,
+0.834,
+"bad_alignment"
+],
+"07_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|too_few_voiced_frames"
+],
+"07_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.743,
+"bad_alignment|syllable_too_short|too_few_voiced_frames"
+],
+"07_male_chaotic.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|too_few_voiced_frames"
+],
+"07_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.83,
+"bad_alignment"
+],
+"07_male_clear.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"07_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"07_male_subtle.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.738,
+"bad_alignment"
+],
+"08_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.733,
+"bad_alignment"
+],
+"08_female__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.698,
+"bad_alignment"
+],
+"08_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.756,
+"bad_alignment"
+],
+"08_female__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.734,
+"bad_alignment"
+],
+"08_female__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.73,
+"bad_alignment"
+],
+"08_female__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.751,
+"bad_alignment"
+],
+"08_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.763,
+"bad_alignment"
+],
+"08_female_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.587,
+"bad_alignment"
+],
+"08_female_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.587,
+"bad_alignment"
+],
+"08_female_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_female_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.768,
+"bad_alignment"
+],
+"08_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.772,
+"bad_alignment"
+],
+"08_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.762,
+"bad_alignment"
+],
+"08_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short|too_few_voiced_frames"
+],
+"08_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.8,
+"bad_alignment"
+],
+"08_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|too_few_voiced_frames"
+],
+"08_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|too_few_voiced_frames"
+],
+"08_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"08_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_female__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"09_female__direction_reversed.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female__direction_reversed.wav#2": [
+"likely_correct",
+1.0,
+0.956,
+""
+],
+"09_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.256,
+0.912,
+"ambiguous_contour"
+],
+"09_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female__irregular_wavy.wav#2": [
+"practice",
+0.0,
+0.917,
+""
+],
+"09_female__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"09_female__nearly_flat.wav#1": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"09_female__nearly_flat.wav#2": [
+"insufficient_evidence",
+1.0,
+0.448,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"09_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female__pitch_high_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female__pitch_high_4st.wav#2": [
+"likely_correct",
+1.0,
+0.968,
+""
+],
+"09_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"09_female__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"09_female__pitch_low_4st.wav#2": [
+"likely_correct",
+1.0,
+0.923,
+""
+],
+"09_female__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"09_female__range_narrow_35pct.wav#1": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"09_female__range_narrow_35pct.wav#2": [
+"insufficient_evidence",
+1.0,
+0.487,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"09_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+0.968,
+""
+],
+"09_female__range_wide_180pct.wav#2": [
+"insufficient_evidence",
+0.658,
+0.929,
+"ambiguous_contour"
+],
+"09_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"09_female_chaotic.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female_chaotic.wav#2": [
+"likely_correct",
+1.0,
+0.927,
+""
+],
+"09_female_clear.wav#0": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"09_female_clear.wav#1": [
+"likely_correct",
+0.89,
+0.885,
+""
+],
+"09_female_clear.wav#2": [
+"likely_correct",
+0.735,
+0.896,
+""
+],
+"09_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female_subtle.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"09_female_subtle.wav#2": [
+"likely_correct",
+1.0,
+0.927,
+""
+],
+"09_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__direction_reversed.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.5,
+"bad_alignment"
+],
+"09_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__irregular_wavy.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.25,
+"bad_alignment|too_few_voiced_frames"
+],
+"09_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__nearly_flat.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.84,
+"bad_alignment"
+],
+"09_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__pitch_high_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"09_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"09_male__pitch_low_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"09_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__range_narrow_35pct.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male__range_wide_180pct.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male_chaotic.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male_clear.wav#0": [
+"likely_correct",
+0.914,
+1.0,
+""
+],
+"09_male_clear.wav#1": [
+"likely_correct",
+0.975,
+0.912,
+""
+],
+"09_male_clear.wav#2": [
+"likely_correct",
+1.0,
+0.932,
+""
+],
+"09_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.25,
+"bad_alignment|too_few_voiced_frames"
+],
+"09_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"09_male_subtle.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"10_female__direction_reversed.wav#0": [
+"practice",
+0.172,
+1.0,
+""
+],
+"10_female__direction_reversed.wav#1": [
+"likely_correct",
+0.881,
+0.929,
+""
+],
+"10_female__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.985,
+""
+],
+"10_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.824,
+""
+],
+"10_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.907,
+""
+],
+"10_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"10_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.925,
+""
+],
+"10_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"10_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.909,
+""
+],
+"10_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.909,
+""
+],
+"10_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"10_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.982,
+""
+],
+"10_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.889,
+""
+],
+"10_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_female_clear.wav#1": [
+"practice",
+0.0,
+0.889,
+""
+],
+"10_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"10_female_subtle.wav#1": [
+"practice",
+0.0,
+0.972,
+""
+],
+"10_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"10_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male__irregular_wavy.wav#0": [
+"likely_correct",
+0.994,
+0.921,
+""
+],
+"10_male__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.938,
+""
+],
+"10_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"10_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male__pitch_high_4st.wav#0": [
+"likely_correct",
+0.845,
+1.0,
+""
+],
+"10_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"10_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"10_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.975,
+""
+],
+"10_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.93,
+""
+],
+"10_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male_chaotic.wav#0": [
+"practice",
+0.0,
+0.981,
+""
+],
+"10_male_chaotic.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"10_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"10_male_subtle.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"11_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+0.992,
+""
+],
+"11_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"11_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+0.0,
+0.655,
+"unstable_pitch_track|ambiguous_contour"
+],
+"11_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"11_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.996,
+""
+],
+"11_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.824,
+""
+],
+"11_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.996,
+""
+],
+"11_female_chaotic.wav#0": [
+"insufficient_evidence",
+0.473,
+0.996,
+"ambiguous_contour"
+],
+"11_female_clear.wav#0": [
+"practice",
+0.0,
+0.992,
+""
+],
+"11_female_subtle.wav#0": [
+"practice",
+0.0,
+0.996,
+""
+],
+"11_male__direction_reversed.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"11_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.682,
+"unstable_pitch_track|ambiguous_contour"
+],
+"11_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.997,
+""
+],
+"11_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.993,
+""
+],
+"11_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.993,
+""
+],
+"11_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.997,
+""
+],
+"11_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.987,
+""
+],
+"11_male_chaotic.wav#0": [
+"insufficient_evidence",
+0.542,
+0.99,
+"ambiguous_contour"
+],
+"11_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"11_male_subtle.wav#0": [
+"practice",
+0.0,
+0.997,
+""
+],
+"12_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_female__direction_reversed.wav#1": [
+"likely_correct",
+1.0,
+0.941,
+""
+],
+"12_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"12_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.871,
+""
+],
+"12_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.978,
+""
+],
+"12_female__pitch_high_4st.wav#0": [
+"likely_correct",
+0.988,
+1.0,
+""
+],
+"12_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.901,
+""
+],
+"12_female__pitch_low_4st.wav#0": [
+"likely_correct",
+0.994,
+1.0,
+""
+],
+"12_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.905,
+""
+],
+"12_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.985,
+""
+],
+"12_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"12_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.932,
+""
+],
+"12_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.902,
+""
+],
+"12_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_female_clear.wav#1": [
+"practice",
+0.0,
+0.893,
+""
+],
+"12_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"12_female_subtle.wav#1": [
+"practice",
+0.0,
+0.978,
+""
+],
+"12_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.314,
+1.0,
+"ambiguous_contour"
+],
+"12_male__direction_reversed.wav#1": [
+"practice",
+0.07,
+1.0,
+""
+],
+"12_male__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.949,
+""
+],
+"12_male__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.928,
+""
+],
+"12_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"12_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"12_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"12_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"12_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"12_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"12_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male_chaotic.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"12_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"12_male_subtle.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"13_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.499,
+"unstable_pitch_track|syllable_too_short"
+],
+"13_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.644,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"13_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.375,
+"unstable_pitch_track|bad_alignment|syllable_too_short|too_few_voiced_frames"
+],
+"13_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"13_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.982,
+""
+],
+"13_female__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.499,
+"unstable_pitch_track|syllable_too_short"
+],
+"13_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.971,
+""
+],
+"13_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"13_female_clear.wav#0": [
+"practice",
+0.0,
+0.981,
+""
+],
+"13_female_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.442,
+"unstable_pitch_track|syllable_too_short"
+],
+"13_male__direction_reversed.wav#0": [
+"practice",
+0.142,
+0.988,
+""
+],
+"13_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.68,
+"unstable_pitch_track|ambiguous_contour"
+],
+"13_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"13_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"13_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"13_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"13_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"13_male_chaotic.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"13_male_clear.wav#0": [
+"practice",
+0.0,
+0.986,
+""
+],
+"13_male_subtle.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"14_female__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"14_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.979,
+""
+],
+"14_female__direction_reversed.wav#2": [
+"likely_correct",
+1.0,
+0.938,
+""
+],
+"14_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_female__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"14_female__irregular_wavy.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_female__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"14_female__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.244,
+"unstable_pitch_track|too_few_voiced_frames"
+],
+"14_female__nearly_flat.wav#2": [
+"insufficient_evidence",
+0.0,
+0.451,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"14_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"14_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"14_female__pitch_high_4st.wav#2": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"14_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"14_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"14_female__pitch_low_4st.wav#2": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"14_female__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"14_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"14_female__range_narrow_35pct.wav#2": [
+"insufficient_evidence",
+0.252,
+0.933,
+"ambiguous_contour"
+],
+"14_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"14_female__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+0.687,
+1.0,
+"ambiguous_contour"
+],
+"14_female__range_wide_180pct.wav#2": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"14_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"14_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.989,
+""
+],
+"14_female_chaotic.wav#2": [
+"practice",
+0.0,
+0.989,
+""
+],
+"14_female_clear.wav#0": [
+"likely_correct",
+0.852,
+1.0,
+""
+],
+"14_female_clear.wav#1": [
+"likely_correct",
+1.0,
+0.92,
+""
+],
+"14_female_clear.wav#2": [
+"practice",
+0.0,
+0.994,
+""
+],
+"14_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"14_female_subtle.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"14_female_subtle.wav#2": [
+"likely_correct",
+1.0,
+0.932,
+""
+],
+"14_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__direction_reversed.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.829,
+"bad_alignment"
+],
+"14_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__irregular_wavy.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__nearly_flat.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__pitch_high_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"14_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"14_male__pitch_low_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"14_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__range_narrow_35pct.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male__range_wide_180pct.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_chaotic.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_clear.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"14_male_subtle.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"15_female__direction_reversed.wav#0": [
+"likely_correct",
+0.791,
+1.0,
+""
+],
+"15_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.982,
+""
+],
+"15_female__direction_reversed.wav#2": [
+"practice",
+0.0,
+0.905,
+""
+],
+"15_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_female__irregular_wavy.wav#1": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"15_female__irregular_wavy.wav#2": [
+"practice",
+0.0,
+0.847,
+""
+],
+"15_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_female__nearly_flat.wav#2": [
+"practice",
+0.0,
+0.901,
+""
+],
+"15_female__pitch_high_4st.wav#0": [
+"practice",
+0.028,
+1.0,
+""
+],
+"15_female__pitch_high_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_female__pitch_high_4st.wav#2": [
+"practice",
+0.0,
+0.909,
+""
+],
+"15_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_female__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_female__pitch_low_4st.wav#2": [
+"practice",
+0.0,
+0.901,
+""
+],
+"15_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.967,
+""
+],
+"15_female__range_narrow_35pct.wav#1": [
+"practice",
+0.141,
+0.928,
+""
+],
+"15_female__range_narrow_35pct.wav#2": [
+"practice",
+0.0,
+0.894,
+""
+],
+"15_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.564,
+1.0,
+"ambiguous_contour"
+],
+"15_female__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_female__range_wide_180pct.wav#2": [
+"practice",
+0.0,
+0.901,
+""
+],
+"15_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_female_chaotic.wav#1": [
+"likely_correct",
+0.801,
+0.974,
+""
+],
+"15_female_chaotic.wav#2": [
+"practice",
+0.0,
+0.889,
+""
+],
+"15_female_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_female_clear.wav#1": [
+"practice",
+0.185,
+0.987,
+""
+],
+"15_female_clear.wav#2": [
+"practice",
+0.0,
+0.859,
+""
+],
+"15_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_female_subtle.wav#1": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"15_female_subtle.wav#2": [
+"practice",
+0.0,
+0.909,
+""
+],
+"15_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.486,
+1.0,
+"ambiguous_contour"
+],
+"15_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.892,
+""
+],
+"15_male__direction_reversed.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__irregular_wavy.wav#2": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__nearly_flat.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__pitch_high_4st.wav#0": [
+"practice",
+0.179,
+1.0,
+""
+],
+"15_male__pitch_high_4st.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_male__pitch_high_4st.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__pitch_low_4st.wav#2": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"15_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__range_narrow_35pct.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"15_male__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+0.975,
+""
+],
+"15_male__range_wide_180pct.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"15_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment|syllable_too_short"
+],
+"15_male_chaotic.wav#2": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"15_male_clear.wav#0": [
+"insufficient_evidence",
+0.489,
+0.984,
+"ambiguous_contour"
+],
+"15_male_clear.wav#1": [
+"likely_correct",
+1.0,
+0.906,
+""
+],
+"15_male_clear.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"15_male_subtle.wav#0": [
+"insufficient_evidence",
+0.431,
+1.0,
+"ambiguous_contour"
+],
+"15_male_subtle.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"15_male_subtle.wav#2": [
+"practice",
+0.0,
+1.0,
+""
+],
+"16_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.217,
+0.989,
+"ambiguous_contour"
+],
+"16_female__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.922,
+""
+],
+"16_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+0.0,
+0.706,
+"unstable_pitch_track|ambiguous_contour"
+],
+"16_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"16_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"16_female__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+0.0,
+0.705,
+"unstable_pitch_track|ambiguous_contour"
+],
+"16_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"16_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"16_female_clear.wav#0": [
+"practice",
+0.0,
+0.986,
+""
+],
+"16_female_subtle.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"16_male__direction_reversed.wav#0": [
+"practice",
+0.162,
+0.989,
+""
+],
+"16_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.676,
+"unstable_pitch_track|ambiguous_contour"
+],
+"16_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.971,
+""
+],
+"16_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.984,
+""
+],
+"16_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.995,
+""
+],
+"16_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.995,
+""
+],
+"16_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"16_male_chaotic.wav#0": [
+"practice",
+0.0,
+0.995,
+""
+],
+"16_male_clear.wav#0": [
+"practice",
+0.0,
+0.987,
+""
+],
+"16_male_subtle.wav#0": [
+"practice",
+0.0,
+0.995,
+""
+],
+"17_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.636,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"17_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.576,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"17_female__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.435,
+"unstable_pitch_track|syllable_too_short"
+],
+"17_female__pitch_high_4st.wav#0": [
+"likely_correct",
+null,
+0.967,
+""
+],
+"17_female__pitch_low_4st.wav#0": [
+"likely_correct",
+null,
+0.954,
+""
+],
+"17_female__range_narrow_35pct.wav#0": [
+"likely_correct",
+null,
+0.973,
+""
+],
+"17_female__range_wide_180pct.wav#0": [
+"likely_correct",
+null,
+0.967,
+""
+],
+"17_female_chaotic.wav#0": [
+"likely_correct",
+null,
+0.958,
+""
+],
+"17_female_clear.wav#0": [
+"likely_correct",
+null,
+0.907,
+""
+],
+"17_female_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.375,
+"unstable_pitch_track|bad_alignment|syllable_too_short|too_few_voiced_frames"
+],
+"17_male__direction_reversed.wav#0": [
+"likely_correct",
+null,
+0.975,
+""
+],
+"17_male__irregular_wavy.wav#0": [
+"likely_correct",
+null,
+0.917,
+""
+],
+"17_male__nearly_flat.wav#0": [
+"likely_correct",
+null,
+0.983,
+""
+],
+"17_male__pitch_high_4st.wav#0": [
+"likely_correct",
+null,
+0.976,
+""
+],
+"17_male__pitch_low_4st.wav#0": [
+"likely_correct",
+null,
+0.982,
+""
+],
+"17_male__range_narrow_35pct.wav#0": [
+"likely_correct",
+null,
+0.983,
+""
+],
+"17_male__range_wide_180pct.wav#0": [
+"likely_correct",
+null,
+0.983,
+""
+],
+"17_male_chaotic.wav#0": [
+"likely_correct",
+null,
+0.98,
+""
+],
+"17_male_clear.wav#0": [
+"likely_correct",
+null,
+0.967,
+""
+],
+"17_male_subtle.wav#0": [
+"likely_correct",
+null,
+0.975,
+""
+],
+"18_female__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"18_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.683,
+"unstable_pitch_track|ambiguous_contour"
+],
+"18_female__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_female__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+0.704,
+"unstable_pitch_track"
+],
+"18_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.611,
+0.994,
+"ambiguous_contour"
+],
+"18_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"18_female_clear.wav#0": [
+"insufficient_evidence",
+0.305,
+0.978,
+"ambiguous_contour"
+],
+"18_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"18_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.887,
+""
+],
+"18_male__nearly_flat.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"18_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|no_voicing"
+],
+"18_male__range_narrow_35pct.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.689,
+0.994,
+"ambiguous_contour"
+],
+"18_male_chaotic.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"18_male_clear.wav#0": [
+"insufficient_evidence",
+0.269,
+0.993,
+"ambiguous_contour"
+],
+"18_male_subtle.wav#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"19_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.243,
+0.988,
+"ambiguous_contour"
+],
+"19_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.98,
+""
+],
+"19_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_female__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"19_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.976,
+""
+],
+"19_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.95,
+""
+],
+"19_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.981,
+""
+],
+"19_female__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+0.292,
+0.988,
+"ambiguous_contour"
+],
+"19_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.981,
+""
+],
+"19_female__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+0.0,
+0.73,
+"unstable_pitch_track|ambiguous_contour"
+],
+"19_female__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+0.0,
+0.322,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"19_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"19_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.983,
+""
+],
+"19_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"19_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.964,
+""
+],
+"19_female_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"19_female_clear.wav#1": [
+"practice",
+0.0,
+0.848,
+""
+],
+"19_female_subtle.wav#0": [
+"insufficient_evidence",
+0.347,
+0.973,
+"ambiguous_contour"
+],
+"19_female_subtle.wav#1": [
+"practice",
+0.0,
+0.928,
+""
+],
+"19_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.319,
+1.0,
+"ambiguous_contour"
+],
+"19_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.933,
+""
+],
+"19_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"19_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.992,
+""
+],
+"19_male__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+0.99,
+""
+],
+"19_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.992,
+""
+],
+"19_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"19_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"19_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.993,
+""
+],
+"19_male__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.979,
+""
+],
+"19_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.992,
+""
+],
+"19_male_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"19_male_chaotic.wav#1": [
+"practice",
+0.0,
+0.991,
+""
+],
+"19_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"19_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"19_male_subtle.wav#0": [
+"insufficient_evidence",
+0.522,
+1.0,
+"ambiguous_contour"
+],
+"19_male_subtle.wav#1": [
+"practice",
+0.0,
+0.984,
+""
+],
+"20_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__direction_reversed.wav#1": [
+"likely_correct",
+1.0,
+0.951,
+""
+],
+"20_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.932,
+""
+],
+"20_female__irregular_wavy.wav#1": [
+"practice",
+0.0,
+0.952,
+""
+],
+"20_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__nearly_flat.wav#1": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"20_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__pitch_high_4st.wav#1": [
+"likely_correct",
+1.0,
+0.96,
+""
+],
+"20_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__pitch_low_4st.wav#1": [
+"likely_correct",
+1.0,
+0.959,
+""
+],
+"20_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__range_narrow_35pct.wav#1": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"20_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female__range_wide_180pct.wav#1": [
+"likely_correct",
+1.0,
+0.942,
+""
+],
+"20_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female_chaotic.wav#1": [
+"likely_correct",
+1.0,
+0.921,
+""
+],
+"20_female_clear.wav#0": [
+"practice",
+0.0,
+0.954,
+""
+],
+"20_female_clear.wav#1": [
+"insufficient_evidence",
+0.575,
+0.903,
+"ambiguous_contour"
+],
+"20_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_female_subtle.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"20_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+0.956,
+""
+],
+"20_male__irregular_wavy.wav#1": [
+"practice",
+0.0,
+0.909,
+""
+],
+"20_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.843,
+"bad_alignment"
+],
+"20_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.839,
+"bad_alignment"
+],
+"20_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.828,
+"bad_alignment"
+],
+"20_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"20_male_clear.wav#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"20_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"20_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"21_female__direction_reversed.wav#1": [
+"likely_correct",
+null,
+0.972,
+""
+],
+"21_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"21_female__irregular_wavy.wav#1": [
+"likely_correct",
+null,
+0.972,
+""
+],
+"21_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"21_female__nearly_flat.wav#1": [
+"likely_correct",
+null,
+0.897,
+""
+],
+"21_female__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+0.614,
+1.0,
+"ambiguous_contour"
+],
+"21_female__pitch_high_4st.wav#1": [
+"likely_correct",
+null,
+0.967,
+""
+],
+"21_female__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+0.587,
+1.0,
+"ambiguous_contour"
+],
+"21_female__pitch_low_4st.wav#1": [
+"likely_correct",
+null,
+0.976,
+""
+],
+"21_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"21_female__range_narrow_35pct.wav#1": [
+"likely_correct",
+null,
+0.887,
+""
+],
+"21_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"21_female__range_wide_180pct.wav#1": [
+"likely_correct",
+null,
+0.884,
+""
+],
+"21_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"21_female_chaotic.wav#1": [
+"likely_correct",
+null,
+0.887,
+""
+],
+"21_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"21_female_clear.wav#1": [
+"likely_correct",
+null,
+0.879,
+""
+],
+"21_female_subtle.wav#0": [
+"insufficient_evidence",
+0.698,
+1.0,
+"ambiguous_contour"
+],
+"21_female_subtle.wav#1": [
+"likely_correct",
+null,
+0.887,
+""
+],
+"21_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment"
+],
+"21_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.787,
+"bad_alignment"
+],
+"21_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.745,
+"bad_alignment"
+],
+"21_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment"
+],
+"21_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment"
+],
+"21_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment"
+],
+"21_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"21_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.792,
+"bad_alignment"
+],
+"22_female__direction_reversed.wav#0": [
+"practice",
+0.19,
+0.989,
+""
+],
+"22_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.0,
+0.628,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"22_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"22_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"22_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.983,
+""
+],
+"22_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.991,
+""
+],
+"22_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"22_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.986,
+""
+],
+"22_female_clear.wav#0": [
+"practice",
+0.0,
+0.986,
+""
+],
+"22_female_subtle.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"22_male__direction_reversed.wav#0": [
+"practice",
+0.197,
+0.979,
+""
+],
+"22_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.918,
+""
+],
+"22_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"22_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+0.99,
+""
+],
+"22_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|no_voicing"
+],
+"22_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.984,
+""
+],
+"22_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.989,
+""
+],
+"22_male_chaotic.wav#0": [
+"practice",
+0.0,
+0.982,
+""
+],
+"22_male_clear.wav#0": [
+"practice",
+0.0,
+0.982,
+""
+],
+"22_male_subtle.wav#0": [
+"practice",
+0.0,
+0.985,
+""
+],
+"23_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"23_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+0.534,
+0.692,
+"unstable_pitch_track|ambiguous_contour"
+],
+"23_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"23_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.983,
+""
+],
+"23_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.988,
+""
+],
+"23_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"23_female_chaotic.wav#0": [
+"practice",
+0.0,
+0.975,
+""
+],
+"23_female_clear.wav#0": [
+"insufficient_evidence",
+0.4,
+0.965,
+"ambiguous_contour"
+],
+"23_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male__direction_reversed.wav#0": [
+"practice",
+0.0,
+0.981,
+""
+],
+"23_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"23_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"23_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"23_male_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_female__direction_reversed.wav#0": [
+"likely_correct",
+0.759,
+1.0,
+""
+],
+"24_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.965,
+""
+],
+"24_female__irregular_wavy.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"24_female__irregular_wavy.wav#1": [
+"practice",
+0.0,
+0.939,
+""
+],
+"24_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.965,
+""
+],
+"24_female__pitch_high_4st.wav#0": [
+"practice",
+0.019,
+1.0,
+""
+],
+"24_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.981,
+""
+],
+"24_female__pitch_low_4st.wav#0": [
+"practice",
+0.058,
+1.0,
+""
+],
+"24_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.981,
+""
+],
+"24_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.932,
+""
+],
+"24_female__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+0.549,
+1.0,
+"ambiguous_contour"
+],
+"24_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.973,
+""
+],
+"24_female_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"24_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.909,
+""
+],
+"24_female_clear.wav#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"24_female_clear.wav#1": [
+"practice",
+0.0,
+0.951,
+""
+],
+"24_female_subtle.wav#0": [
+"practice",
+0.05,
+1.0,
+""
+],
+"24_female_subtle.wav#1": [
+"practice",
+0.0,
+0.965,
+""
+],
+"24_male__direction_reversed.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"24_male__direction_reversed.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.96,
+""
+],
+"24_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+0.567,
+0.897,
+"ambiguous_contour"
+],
+"24_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__nearly_flat.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"24_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"24_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male_chaotic.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"24_male_chaotic.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male_clear.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"24_male_clear.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"24_male_subtle.wav#0": [
+"insufficient_evidence",
+0.46,
+1.0,
+"ambiguous_contour"
+],
+"24_male_subtle.wav#1": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.617,
+0.994,
+"ambiguous_contour"
+],
+"25_female__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.868,
+""
+],
+"25_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"25_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_female_clear.wav#0": [
+"practice",
+0.0,
+0.962,
+""
+],
+"25_female_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+0.538,
+1.0,
+"ambiguous_contour"
+],
+"25_male__irregular_wavy.wav#0": [
+"practice",
+0.0,
+0.937,
+""
+],
+"25_male__nearly_flat.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"25_male__pitch_high_4st.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_male__pitch_low_4st.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"25_male__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"25_male__range_wide_180pct.wav#0": [
+"practice",
+0.0,
+0.994,
+""
+],
+"25_male_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_male_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"25_male_subtle.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female__direction_reversed.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female__direction_reversed.wav#1": [
+"practice",
+0.0,
+0.932,
+""
+],
+"26_female__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_female__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.793,
+"bad_alignment"
+],
+"26_female__nearly_flat.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female__nearly_flat.wav#1": [
+"practice",
+0.0,
+0.942,
+""
+],
+"26_female__pitch_high_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"26_female__pitch_high_4st.wav#1": [
+"practice",
+0.0,
+0.962,
+""
+],
+"26_female__pitch_low_4st.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"26_female__pitch_low_4st.wav#1": [
+"practice",
+0.0,
+0.973,
+""
+],
+"26_female__range_narrow_35pct.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female__range_narrow_35pct.wav#1": [
+"practice",
+0.0,
+0.938,
+""
+],
+"26_female__range_wide_180pct.wav#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"26_female__range_wide_180pct.wav#1": [
+"practice",
+0.0,
+0.978,
+""
+],
+"26_female_chaotic.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female_chaotic.wav#1": [
+"practice",
+0.0,
+0.995,
+""
+],
+"26_female_clear.wav#0": [
+"practice",
+0.0,
+1.0,
+""
+],
+"26_female_clear.wav#1": [
+"practice",
+0.0,
+0.894,
+""
+],
+"26_female_subtle.wav#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"26_female_subtle.wav#1": [
+"practice",
+0.0,
+0.953,
+""
+],
+"26_male__direction_reversed.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__direction_reversed.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__irregular_wavy.wav#0": [
+"insufficient_evidence",
+null,
+0.772,
+"bad_alignment"
+],
+"26_male__irregular_wavy.wav#1": [
+"insufficient_evidence",
+null,
+0.77,
+"bad_alignment"
+],
+"26_male__nearly_flat.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__nearly_flat.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__pitch_high_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__pitch_high_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__pitch_low_4st.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__pitch_low_4st.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__range_narrow_35pct.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__range_narrow_35pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male__range_wide_180pct.wav#0": [
+"insufficient_evidence",
+null,
+0.715,
+"bad_alignment"
+],
+"26_male__range_wide_180pct.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_chaotic.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_chaotic.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_clear.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_clear.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_subtle.wav#0": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+],
+"26_male_subtle.wav#1": [
+"insufficient_evidence",
+null,
+0.85,
+"bad_alignment"
+]
+},
+"true_86": {
+"C5-5-1-W001#0": [
+"likely_correct",
+1.0,
+0.976,
+""
+],
+"C5-5-1-W001#1": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C5-5-1-W002#0": [
+"likely_correct",
+1.0,
+0.966,
+""
+],
+"C5-5-1-W003#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W003#1": [
+"likely_correct",
+0.832,
+0.907,
+""
+],
+"C5-5-1-W004#0": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"C5-5-1-W005#0": [
+"likely_correct",
+1.0,
+0.965,
+""
+],
+"C5-5-1-W005#1": [
+"likely_correct",
+1.0,
+0.745,
+""
+],
+"C5-5-1-W006#0": [
+"likely_correct",
+1.0,
+0.979,
+""
+],
+"C5-5-1-W006#1": [
+"likely_correct",
+1.0,
+0.93,
+""
+],
+"C5-5-1-W007#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W007#1": [
+"likely_correct",
+1.0,
+0.938,
+""
+],
+"C5-5-1-W007#2": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C5-5-1-W008#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W008#1": [
+"likely_correct",
+1.0,
+0.83,
+""
+],
+"C5-5-1-W009#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W009#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W009#2": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"C5-5-1-W010#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C5-5-1-W010#1": [
+"likely_correct",
+1.0,
+0.952,
+""
+],
+"C5-5-1-W011#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W011#1": [
+"likely_correct",
+1.0,
+0.975,
+""
+],
+"C5-5-1-W012#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"C5-5-1-W012#1": [
+"likely_correct",
+1.0,
+0.975,
+""
+],
+"C5-5-1-W012#2": [
+"likely_correct",
+1.0,
+0.976,
+""
+],
+"C5-5-1-W013#0": [
+"likely_correct",
+1.0,
+0.952,
+""
+],
+"C5-5-1-W013#1": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W013#2": [
+"likely_correct",
+1.0,
+0.875,
+""
+],
+"C5-5-1-W014#0": [
+"likely_correct",
+1.0,
+0.908,
+""
+],
+"C5-5-1-W015#0": [
+"likely_correct",
+null,
+0.92,
+""
+],
+"C5-5-1-W217#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C5-5-1-W217#1": [
+"likely_correct",
+1.0,
+0.984,
+""
+],
+"C5-5-1-W217#2": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C6-6-1-W051#0": [
+"insufficient_evidence",
+null,
+0.671,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C6-6-1-W052#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C6-6-1-W052#1": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C6-6-1-W053#0": [
+"likely_correct",
+1.0,
+0.959,
+""
+],
+"C6-6-1-W054#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C6-6-1-W054#1": [
+"insufficient_evidence",
+null,
+0.723,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C6-6-1-W055#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"C6-6-1-W055#1": [
+"likely_correct",
+1.0,
+0.963,
+""
+],
+"C6-6-1-W056#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C6-6-1-W056#1": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"C6-6-1-W057#0": [
+"likely_correct",
+1.0,
+0.984,
+""
+],
+"C6-6-1-W058#0": [
+"likely_correct",
+1.0,
+0.89,
+""
+],
+"C6-6-1-W058#1": [
+"likely_correct",
+1.0,
+0.977,
+""
+],
+"C6-6-1-W059#0": [
+"insufficient_evidence",
+0.409,
+0.901,
+"ambiguous_contour"
+],
+"C6-6-1-W060#0": [
+"insufficient_evidence",
+null,
+0.828,
+"bad_alignment"
+],
+"C6-6-1-W061#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C6-6-1-W061#1": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C6-6-1-W062#0": [
+"likely_correct",
+1.0,
+0.734,
+"unstable_pitch_track"
+],
+"C6-6-1-W062#1": [
+"insufficient_evidence",
+null,
+0.702,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C6-6-1-W063#0": [
+"insufficient_evidence",
+0.0,
+0.642,
+"unstable_pitch_track|low_acoustic_quality"
+],
+"C6-6-1-W064#0": [
+"likely_correct",
+1.0,
+0.91,
+""
+],
+"C6-6-1-W065#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C6-6-1-W065#1": [
+"likely_correct",
+0.948,
+0.883,
+""
+],
+"C6-6-1-W066#0": [
+"likely_correct",
+1.0,
+0.979,
+""
+],
+"C6-6-1-W067#0": [
+"likely_correct",
+1.0,
+0.92,
+""
+],
+"C6-6-1-W068#0": [
+"likely_correct",
+1.0,
+0.93,
+""
+],
+"C6-6-1-W069#0": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C6-6-1-W070#0": [
+"likely_correct",
+1.0,
+0.988,
+""
+],
+"C6-6-1-W070#1": [
+"likely_correct",
+1.0,
+0.861,
+""
+],
+"C7-7-1-W106#0": [
+"likely_correct",
+1.0,
+0.981,
+""
+],
+"C7-7-1-W106#1": [
+"likely_correct",
+null,
+1.0,
+""
+],
+"C7-7-1-W107#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"C7-7-1-W108#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C7-7-1-W108#1": [
+"likely_correct",
+1.0,
+0.848,
+""
+],
+"C7-7-1-W109#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C7-7-1-W109#1": [
+"likely_correct",
+0.702,
+0.97,
+""
+],
+"C7-7-1-W110#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C7-7-1-W111#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C7-7-1-W111#1": [
+"likely_correct",
+1.0,
+0.931,
+""
+],
+"C7-7-1-W112#0": [
+"likely_correct",
+1.0,
+0.908,
+""
+],
+"C7-7-1-W113#0": [
+"likely_correct",
+1.0,
+0.997,
+""
+],
+"C7-7-1-W114#0": [
+"likely_correct",
+1.0,
+0.895,
+""
+],
+"C7-7-1-W115#0": [
+"likely_correct",
+1.0,
+0.969,
+""
+],
+"C7-7-1-W115#1": [
+"likely_correct",
+1.0,
+0.977,
+""
+],
+"C7-7-1-W116#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C7-7-1-W116#1": [
+"likely_correct",
+1.0,
+0.978,
+""
+],
+"C7-7-1-W117#0": [
+"likely_correct",
+0.946,
+0.942,
+""
+],
+"C7-7-1-W118#0": [
+"likely_correct",
+1.0,
+0.908,
+""
+],
+"C7-7-1-W118#1": [
+"likely_correct",
+1.0,
+0.962,
+""
+],
+"C7-7-1-W118#2": [
+"likely_correct",
+0.842,
+0.971,
+""
+],
+"C7-7-1-W119#0": [
+"likely_correct",
+1.0,
+0.967,
+""
+],
+"C7-7-1-W119#1": [
+"likely_correct",
+1.0,
+0.965,
+""
+],
+"C7-7-1-W120#0": [
+"likely_correct",
+1.0,
+0.987,
+""
+],
+"C7-7-1-W120#1": [
+"insufficient_evidence",
+0.0,
+0.954,
+"edge_pitch_step"
+],
+"C7-7-1-W121#0": [
+"likely_correct",
+1.0,
+0.916,
+""
+],
+"C7-7-1-W121#1": [
+"likely_correct",
+0.796,
+0.951,
+""
+],
+"C7-7-1-W122#0": [
+"likely_correct",
+1.0,
+0.974,
+""
+],
+"C7-7-1-W123#0": [
+"likely_correct",
+1.0,
+0.922,
+""
+],
+"C7-7-1-W124#0": [
+"likely_correct",
+1.0,
+0.985,
+""
+],
+"C7-7-1-W125#0": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"C7-7-1-W126#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C7-7-1-W126#1": [
+"likely_correct",
+1.0,
+0.876,
+""
+],
+"C7-7-1-W127#0": [
+"likely_correct",
+1.0,
+0.966,
+""
+],
+"C7-7-1-W128#0": [
+"likely_correct",
+1.0,
+0.983,
+""
+],
+"C7-7-1-W129#0": [
+"likely_correct",
+1.0,
+0.992,
+""
+],
+"C7-7-1-W129#1": [
+"likely_correct",
+1.0,
+0.924,
+""
+],
+"C7-7-1-W130#0": [
+"insufficient_evidence",
+null,
+0.0,
+"audio_quality_failed|noisy"
+],
+"C7-7-1-W218#0": [
+"likely_correct",
+null,
+0.983,
+""
+],
+"C8-8-1-W159#0": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"C8-8-1-W159#1": [
+"likely_correct",
+null,
+0.936,
+""
+],
+"C8-8-1-W160#0": [
+"likely_correct",
+1.0,
+0.982,
+""
+],
+"C8-8-1-W160#1": [
+"likely_correct",
+1.0,
+0.97,
+""
+],
+"C8-8-1-W161#0": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"C8-8-1-W162#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W162#1": [
+"likely_correct",
+1.0,
+0.989,
+""
+],
+"C8-8-1-W163#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W163#1": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"C8-8-1-W164#0": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C8-8-1-W164#1": [
+"likely_correct",
+null,
+0.903,
+""
+],
+"C8-8-1-W165#0": [
+"likely_correct",
+1.0,
+0.955,
+""
+],
+"C8-8-1-W165#1": [
+"likely_correct",
+1.0,
+0.921,
+""
+],
+"C8-8-1-W166#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W166#1": [
+"likely_correct",
+1.0,
+0.994,
+""
+],
+"C8-8-1-W167#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W167#1": [
+"likely_correct",
+null,
+0.798,
+""
+],
+"C8-8-1-W168#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W168#1": [
+"likely_correct",
+1.0,
+0.97,
+""
+],
+"C8-8-1-W169#0": [
+"likely_correct",
+1.0,
+0.978,
+""
+],
+"C8-8-1-W169#1": [
+"likely_correct",
+1.0,
+0.963,
+""
+],
+"C8-8-1-W169#2": [
+"likely_correct",
+null,
+0.848,
+""
+],
+"C8-8-1-W170#0": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C8-8-1-W170#1": [
+"likely_correct",
+1.0,
+0.75,
+"unstable_pitch_track"
+],
+"C8-8-1-W170#2": [
+"likely_correct",
+1.0,
+0.737,
+"unstable_pitch_track"
+],
+"C8-8-1-W170#3": [
+"insufficient_evidence",
+null,
+0.684,
+"unstable_pitch_track|octave_jump_in_segment"
+],
+"C8-8-1-W171#0": [
+"likely_correct",
+1.0,
+0.993,
+""
+],
+"C8-8-1-W172#0": [
+"likely_correct",
+1.0,
+1.0,
+""
+],
+"C8-8-1-W172#1": [
+"insufficient_evidence",
+0.0,
+0.76,
+"ambiguous_contour"
+],
+"C8-8-1-W173#0": [
+"likely_correct",
+1.0,
+0.972,
+""
+],
+"C8-8-1-W173#1": [
+"likely_correct",
+1.0,
+0.934,
+""
+],
+"C8-8-1-W174#0": [
+"likely_correct",
+1.0,
+0.865,
+""
+],
+"C8-8-1-W175#0": [
+"likely_correct",
+1.0,
+0.836,
+""
+],
+"C8-8-1-W176#0": [
+"likely_correct",
+1.0,
+0.986,
+""
+],
+"C8-8-1-W177#0": [
+"likely_correct",
+1.0,
+0.98,
+""
+],
+"C8-8-1-W178#0": [
+"likely_correct",
+1.0,
+0.995,
+""
+],
+"C8-8-1-W178#1": [
+"likely_correct",
+1.0,
+0.968,
+""
+],
+"C8-8-1-W179#0": [
+"likely_correct",
+1.0,
+0.978,
+""
+],
+"C8-8-1-W180#0": [
+"likely_correct",
+1.0,
+0.869,
+""
+],
+"C8-8-1-W181#0": [
+"likely_correct",
+1.0,
+0.991,
+""
+],
+"C8-8-1-W182#0": [
+"likely_correct",
+1.0,
+0.986,
+""
+],
+"C8-8-1-W182#1": [
+"likely_correct",
+1.0,
+0.976,
+""
+]
+}
+}
