@@ -249,6 +249,15 @@ class CalibrationDialogTests(unittest.TestCase):
         self.assertGreaterEqual(minimum, calibration["min_duration_sec"])     # "I'm done" never produces a too-short sample
         self.assertLessEqual(maximum, calibration["max_duration_sec"])        # the automatic stop never produces a too-long one
 
+    def test_the_voice_setup_that_opens_by_itself_always_has_a_visible_way_out(self):
+        # it covers the whole page for a new speaker; with only a hidden "skip" and Esc, Topics etc. could not be clicked
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertIn('id="voiceCalibrationCloseBtn"', source)
+        self.assertIn('onclick="deferVoiceCalibration()" aria-label="Close" data-i18n-aria-label="calClose"', source)
+        self.assertIn("if (outside) deferVoiceCalibration();", source)                       # a click on the dimmed area
+        self.assertIn('getElementById("voiceCalibrationCloseBtn").disabled = isVoiceCalibrationRecording', source)
+        self.assertIn("laterButton.hidden = !(calibrated || calibrationHadError);", source)  # "skip" itself is still not offered up front
+
     def test_the_practice_recorder_shows_a_clock_and_level_and_always_clears_them(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
         self.assertIn('id="recordingIndicator"', source)

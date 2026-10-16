@@ -783,7 +783,10 @@ async def read_index():
             #speakerFormError { color: #9b2c2c; min-height: 1.3em; margin: 10px 0 0; }
             #voiceCalibrationDialog { width: min(480px, calc(100vw - 24px)); box-sizing: border-box; border: 0; border-radius: 14px; padding: 20px; box-shadow: 0 18px 60px rgba(15, 35, 55, 0.28); }
             #voiceCalibrationDialog::backdrop { background: rgba(24, 39, 56, 0.55); }
-            #voiceCalibrationDialog h2 { margin: 0 0 6px; }
+            #voiceCalibrationDialog h2 { margin: 0 0 6px; padding-right: 36px; }
+            .cal-close { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; padding: 0; border-radius: 50%; background: transparent; color: #4a5568; font-size: 26px; line-height: 1; font-weight: 400; }
+            .cal-close:hover:not(:disabled) { background: #edf2f7; }
+            .cal-close:disabled { opacity: 0.35; cursor: default; }
             .cal-why { margin: 0 0 12px; color: #4a5568; line-height: 1.5; }
             .cal-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
             .cal-step { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #fff; }
@@ -1077,6 +1080,7 @@ async def read_index():
         </dialog>
 
         <dialog id="voiceCalibrationDialog" aria-labelledby="voiceCalibrationTitle" aria-describedby="voiceCalibrationInstruction" data-state="idle">
+            <button type="button" id="voiceCalibrationCloseBtn" class="cal-close" onclick="deferVoiceCalibration()" aria-label="Close" data-i18n-aria-label="calClose">&times;</button>
             <h2 id="voiceCalibrationTitle" data-i18n="voiceCalibrationTitle">Set up your voice</h2>
             <p id="voiceCalibrationInstruction" class="cal-why" data-i18n="voiceCalibrationPrompt">A 10-second sample lets us judge your tones against your own voice, so the feedback is fair.</p>
             <ol class="cal-steps">
@@ -2220,6 +2224,7 @@ async def read_index():
                 recordButton.disabled = isVoiceCalibrationProcessing || (isVoiceCalibrationRecording && !calibrationCanStop);
                 recordButton.classList.toggle("recording", isVoiceCalibrationRecording);
                 recordButton.hidden = calibrationOutcome === "success";
+                document.getElementById("voiceCalibrationCloseBtn").disabled = isVoiceCalibrationRecording || isVoiceCalibrationProcessing;
                 laterButton.disabled = isVoiceCalibrationRecording || isVoiceCalibrationProcessing;
                 laterButton.hidden = !(calibrated || calibrationHadError);      // never offered to skip up front
                 laterButton.textContent = t(calibrationOutcome === "success" ? "calibrationDone"
@@ -2874,6 +2879,14 @@ async def read_index():
             document.getElementById("voiceCalibrationDialog").addEventListener("cancel", event => {
                 event.preventDefault();
                 deferVoiceCalibration();
+            });
+
+            // The voice setup opens by itself for a new speaker and covers the page, so there must be an obvious way out:
+            // the corner button, Esc, or a click on the dimmed area around the dialog.
+            document.getElementById("voiceCalibrationDialog").addEventListener("click", event => {
+                const box = event.currentTarget.getBoundingClientRect();
+                const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+                if (outside) deferVoiceCalibration();
             });
 
             async function restoreStudentProfile() {
