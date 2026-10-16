@@ -38,7 +38,8 @@ class TrialConfigTests(unittest.TestCase):
                      "t4_before_t4_sentence.yaml", "t4_before_t4_1_5_sentence.yaml", "t4_both_rules_sentence.yaml",
                      "rule7_final_tail_sentence.yaml", "rule7_final_tail_30_sentence.yaml", "rule9_carryover_sentence.yaml",
                      "rule9_carryover_strong_sentence.yaml", "rule8_short_130_sentence.yaml", "rule8_short_180_sentence.yaml",
-                     "rules_combined_sentence.yaml", "rule10_reduplication_sentence.yaml"):
+                     "rules_combined_sentence.yaml", "rule10_reduplication_sentence.yaml",
+                     "rules_recommended_sentence.yaml"):
             self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
 
 
