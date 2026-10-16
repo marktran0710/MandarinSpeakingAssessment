@@ -3,6 +3,7 @@ import sys
 import unittest
 
 import numpy as np
+from pypinyin.contrib.tone_convert import to_tone3
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import capt_core as core
@@ -172,6 +173,65 @@ class TestCrossWordSandhi(unittest.TestCase):
     def test_without_word_ends_the_flag_changes_nothing(self):
         self.assertEqual(core.expected_tone_contexts(["我也好"], cross_word_sandhi=True),
                          core.expected_tone_contexts(["我也好"]))
+
+
+class TestDisplayPinyin(unittest.TestCase):
+    def test_music_is_yinyue_not_yinle(self):
+        self.assertEqual(core.display_pinyin("音樂"), ["yīn", "yuè"])
+        self.assertEqual(core.display_pinyin("我要在家看書、聽音樂。")[-3:], ["yīn", "yuè", "。"])
+        self.assertEqual(core.display_pinyin("樂器"), ["yuè", "qì"])
+        self.assertEqual(core.display_pinyin("快樂"), ["kuài", "lè"])             # the other reading is untouched
+
+    def test_the_tones_shown_are_the_tones_the_app_scores(self):
+        for text in ("音樂", "我覺得有一點累", "這個", "隻", "妳這個週末要做什麼", "女兒", "你好嗎"):
+            numbered = [to_tone3(p) for p in core.display_pinyin(text)]                 # yuè -> yue4, ma -> ma
+            digits = [int(p[-1]) if p[-1].isdigit() else 5 for p in numbered]
+            self.assertEqual(digits, core._base_tones(text), text)
+
+    def test_the_taiwan_and_catalog_readings_are_kept(self):
+        self.assertEqual(core.display_pinyin("這個"), ["zhè", "gè"])
+        self.assertEqual(core.display_pinyin("隻"), ["zhī"])
+        self.assertEqual(core.display_pinyin("你好嗎"), ["nǐ", "hǎo", "ma"])        # neutral tone has no mark
+        self.assertEqual(core.display_pinyin("女"), ["nǚ"])
+
+    def test_same_shape_as_lazy_pinyin_so_the_page_can_line_it_up_with_the_script(self):
+        from pypinyin import lazy_pinyin, Style
+        for text in ("友美，妳這個週末要做什麼？", "我要在家看書、聽音樂。", "媽，我跟友美要去喝下午茶。", "OK！好"):
+            self.assertEqual(len(core.display_pinyin(text)), len(lazy_pinyin(text, style=Style.TONE)), text)
+
+    def test_the_pages_use_it(self):
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "main.py"), encoding="utf-8") as handle:
+            source = handle.read()
+        self.assertIn('core.display_pinyin(sample["script"])', source)
+        self.assertIn('tone_assessment.chapter5_character_pinyin(item)', source)
+        self.assertNotIn("lazy_pinyin(sample", source)
+
+
+class TestDisplayPinyinOverridesAndFixes(unittest.TestCase):
+    def test_a_reading_can_be_supplied(self):
+        self.assertEqual(core.display_pinyin("沒有空", tones=[2, 3, 4]), ["méi", "yǒu", "kòng"])
+        self.assertEqual(core.display_pinyin("沒有空", tones=[2, 3]), core.display_pinyin("沒有空"))   # wrong length: ignored
+        self.assertEqual(core.display_pinyin("好，空", tones=[3, 4]), ["hǎo", "，", "kòng"])           # non-Han passes through
+
+    def test_sleep_is_shuijiao(self):
+        self.assertEqual(core._base_tones("睡覺"), [4, 4])
+        self.assertEqual(core.display_pinyin("睡覺"), ["shuì", "jiào"])
+        self.assertEqual(core.display_pinyin("我覺得"), ["wǒ", "jué", "de"])                            # 覺得 is unchanged
+
+
+class TestPinyinPerCharacter(unittest.TestCase):
+    def test_one_entry_per_character_so_the_page_can_line_it_up(self):
+        text = "我要，聽音樂。ok 好"
+        entries = core.pinyin_per_character(text)
+        self.assertEqual(len(entries), len(text))
+        self.assertEqual(entries[:2], ["wǒ", "yào"])
+        self.assertEqual(entries[3:6], ["tīng", "yīn", "yuè"])
+        self.assertEqual([entries[2], entries[6], entries[7], entries[8], entries[9]], ["", "", "", "", ""])
+        self.assertEqual(entries[-1], "hǎo")
+
+    def test_simplified_keeps_the_length(self):
+        self.assertEqual(core.simplified("音樂"), "音乐")
+        self.assertEqual(len(core.simplified("我們這個")), 4)
 
 
 if __name__ == "__main__":

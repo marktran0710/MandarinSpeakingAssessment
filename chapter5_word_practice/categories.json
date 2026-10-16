@@ -6,7 +6,9 @@
       "labels": {
         "en": "Locations & Directions",
         "zh": "位置與方向",
-        "vi": "Vị trí & phương hướng"
+        "vi": "Vị trí & phương hướng",
+        "id": "Lokasi & Arah",
+        "hi": "स्थान और दिशाएँ"
       },
       "subcategories": [
         {
@@ -14,7 +16,9 @@
           "labels": {
             "en": "Relative Positions",
             "zh": "相對位置",
-            "vi": "Vị trí tương đối"
+            "vi": "Vị trí tương đối",
+            "id": "Posisi Relatif",
+            "hi": "सापेक्ष स्थिति"
           }
         },
         {
@@ -22,7 +26,9 @@
           "labels": {
             "en": "Place & Existence",
             "zh": "地點與存在",
-            "vi": "Địa điểm & sự tồn tại"
+            "vi": "Địa điểm & sự tồn tại",
+            "id": "Tempat & Keberadaan",
+            "hi": "स्थान और अस्तित्व"
           }
         }
       ]
@@ -32,7 +38,9 @@
       "labels": {
         "en": "House & Living Spaces",
         "zh": "房屋與居家空間",
-        "vi": "Nhà cửa & không gian sống"
+        "vi": "Nhà cửa & không gian sống",
+        "id": "Rumah & Ruang Tinggal",
+        "hi": "घर और रहने की जगहें"
       },
       "subcategories": [
         {
@@ -40,7 +48,9 @@
           "labels": {
             "en": "Room Areas & Openings",
             "zh": "房間與門窗",
-            "vi": "Phòng ốc & cửa ra vào"
+            "vi": "Phòng ốc & cửa ra vào",
+            "id": "Bagian Ruangan & Pintu-Jendela",
+            "hi": "कमरे के हिस्से और दरवाज़े-खिड़कियाँ"
           }
         },
         {
@@ -48,7 +58,9 @@
           "labels": {
             "en": "Building & Units",
             "zh": "建築與量詞",
-            "vi": "Tòa nhà & lượng từ"
+            "vi": "Tòa nhà & lượng từ",
+            "id": "Bangunan & Satuan",
+            "hi": "इमारतें और इकाइयाँ"
           }
         }
       ]
@@ -58,7 +70,9 @@
       "labels": {
         "en": "Furniture & Objects",
         "zh": "?????",
-        "vi": "?? n?i th?t & v?t d?ng"
+        "vi": "?? n?i th?t & v?t d?ng",
+        "id": "Perabot & Benda",
+        "hi": "फ़र्नीचर और वस्तुएँ"
       },
       "subcategories": [
         {
@@ -66,7 +80,9 @@
           "labels": {
             "en": "Living Items",
             "zh": "居家用品",
-            "vi": "Đồ dùng trong nhà"
+            "vi": "Đồ dùng trong nhà",
+            "id": "Barang Sehari-hari",
+            "hi": "रोज़मर्रा की चीज़ें"
           }
         },
         {
@@ -74,7 +90,9 @@
           "labels": {
             "en": "Seating & Bedding",
             "zh": "座椅與寢具",
-            "vi": "Chỗ ngồi & giường ngủ"
+            "vi": "Chỗ ngồi & giường ngủ",
+            "id": "Tempat Duduk & Tempat Tidur",
+            "hi": "बैठने और सोने की चीज़ें"
           }
         }
       ]
@@ -84,7 +102,9 @@
       "labels": {
         "en": "Actions & Connectors",
         "zh": "動作與連接詞",
-        "vi": "Hành động & từ nối"
+        "vi": "Hành động & từ nối",
+        "id": "Tindakan & Kata Penghubung",
+        "hi": "क्रियाएँ और संयोजक"
       },
       "subcategories": [
         {
@@ -92,7 +112,9 @@
           "labels": {
             "en": "Grammar & Connectors",
             "zh": "文法與連接詞",
-            "vi": "Ngữ pháp & từ nối"
+            "vi": "Ngữ pháp & từ nối",
+            "id": "Tata Bahasa & Kata Penghubung",
+            "hi": "व्याकरण और संयोजक"
           }
         },
         {
@@ -100,7 +122,9 @@
           "labels": {
             "en": "Search & Help Actions",
             "zh": "尋找與求助",
-            "vi": "Tìm kiếm & giúp đỡ"
+            "vi": "Tìm kiếm & giúp đỡ",
+            "id": "Mencari & Membantu",
+            "hi": "खोजना और मदद करना"
           }
         }
       ]
@@ -110,7 +134,9 @@
       "labels": {
         "en": "Family & Pets",
         "zh": "家庭與寵物",
-        "vi": "Gia đình & thú cưng"
+        "vi": "Gia đình & thú cưng",
+        "id": "Keluarga & Hewan Peliharaan",
+        "hi": "परिवार और पालतू जानवर"
       },
       "subcategories": [
         {
@@ -118,7 +144,9 @@
           "labels": {
             "en": "Siblings",
             "zh": "兄弟姊妹",
-            "vi": "Anh chị em"
+            "vi": "Anh chị em",
+            "id": "Saudara Kandung",
+            "hi": "भाई-बहन"
           }
         },
         {
@@ -126,7 +154,9 @@
           "labels": {
             "en": "Pets & Outdoors",
             "zh": "寵物與戶外活動",
-            "vi": "Thú cưng & ngoài trời"
+            "vi": "Thú cưng & ngoài trời",
+            "id": "Hewan Peliharaan & Luar Ruangan",
+            "hi": "पालतू जानवर और बाहर"
           }
         }
       ]
@@ -136,7 +166,9 @@
       "labels": {
         "en": "Leisure & Social",
         "zh": "休閒與社交",
-        "vi": "Giải trí & giao tiếp"
+        "vi": "Giải trí & giao tiếp",
+        "id": "Waktu Luang & Sosial",
+        "hi": "फुर्सत और सामाजिक मेलजोल"
       },
       "subcategories": [
         {
@@ -144,7 +176,9 @@
           "labels": {
             "en": "Cafe & Afternoon Tea",
             "zh": "咖啡廳與下午茶",
-            "vi": "Quán cà phê & trà chiều"
+            "vi": "Quán cà phê & trà chiều",
+            "id": "Kafe & Teh Sore",
+            "hi": "कैफ़े और दोपहर की चाय"
           }
         },
         {
@@ -152,7 +186,9 @@
           "labels": {
             "en": "Desserts & Evaluation",
             "zh": "甜點與評價",
-            "vi": "Món tráng miệng & nhận xét"
+            "vi": "Món tráng miệng & nhận xét",
+            "id": "Makanan Penutup & Penilaian",
+            "hi": "मिठाइयाँ और राय"
           }
         }
       ]

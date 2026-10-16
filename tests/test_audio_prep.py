@@ -175,7 +175,9 @@ class RejectionFlowTests(unittest.TestCase):
             practice_mode="custom", sample_id="custom", target_script="媽", audio_quality=prepared.report())
         self.assertFalse(payload["audio_quality"]["passed"])
         self.assertIn("clipped", payload["audio_quality"]["reasons"])
-        self.assertEqual(payload["phrases"][0]["status"], "insufficient_evidence")
+        self.assertEqual(payload["phrases"][0]["status"], "not_heard")                 # nothing usable was heard
+        self.assertEqual(payload["phrases"][0]["strict_status"], "insufficient_evidence")
+        self.assertEqual(payload["phrases"][0]["feedback_items"], [])                  # explained once for the recording
         self.assertEqual(payload["feedback"], CONFIG["feedback"]["audio_quality"]["clipped"])
 
     def test_a_good_synthetic_utterance_passes_the_gate_and_is_analysed(self):

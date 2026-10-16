@@ -165,7 +165,7 @@ def flatten(sample, payload, groups, annotation_status):
     phrase_rows = []
     for label, start, end in groups:
         group = syllables[start:end]
-        status = tp.aggregate_status(group) if group else "insufficient_evidence"
+        status = ta.display_status(group, partial_credit=True) if group else "insufficient_evidence"
         phrase_rows.append({"sample_id": sample["id"], "lesson": sample["lesson"], "speaker": sample["speaker"],
                             "phrase": label, "syllables": end - start, "status": status})
     sentence = {
@@ -184,11 +184,11 @@ def _share(part, whole):
     return round(100.0 * part / whole, 1) if whole else None
 
 
-def status_counts(rows, key="status"):
+def status_counts(rows, key="status", statuses=tp.STATUSES):
     counts = Counter(r[key] for r in rows)
     total = len(rows)
-    return {"n": total, **{k: counts.get(k, 0) for k in tp.STATUSES},
-            **{f"{k}_pct": _share(counts.get(k, 0), total) for k in tp.STATUSES}}
+    return {"n": total, **{k: counts.get(k, 0) for k in statuses},
+            **{f"{k}_pct": _share(counts.get(k, 0), total) for k in statuses}}
 
 
 def breakdown(rows, field):
@@ -202,7 +202,7 @@ def summarize(syllables, phrases, sentences):
     flagged = [r for r in syllables if r["status"] == "practice"]
     return {
         "syllables": status_counts(syllables),
-        "phrases": status_counts(phrases),
+        "phrases": status_counts(phrases, statuses=(*tp.STATUSES, "uncertain", "not_heard")),
         "sentences": {**status_counts(sentences),
                       "with_any_practice": sum(1 for s in sentences if s["practice"]),
                       "with_any_practice_pct": _share(sum(1 for s in sentences if s["practice"]), len(sentences))},
@@ -218,10 +218,10 @@ def summarize(syllables, phrases, sentences):
 
 
 def render_markdown(report):
-    def table(title, data, cols=("n", "likely_correct_pct", "practice_pct", "insufficient_evidence_pct")):
+    def table(title, data, cols=("n", "likely_correct_pct", "practice_pct", "uncertain_pct", "insufficient_evidence_pct")):
         lines = [f"### {title}", "", "| group | " + " | ".join(cols) + " |", "|---|" + "---|" * len(cols)]
         for key, row in data.items():
-            lines.append(f"| {key} | " + " | ".join(str(row.get(c)) for c in cols) + " |")
+            lines.append(f"| {key} | " + " | ".join(str(row.get(c, "-")) for c in cols) + " |")
         return "\n".join(lines) + "\n"
 
     s = report["summary"]

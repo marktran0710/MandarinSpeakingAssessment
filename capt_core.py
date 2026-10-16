@@ -5,7 +5,11 @@ Han clauses and work out each syllable's expected (surface) tone. No audio model
 import re
 
 import numpy as np
+import opencc
 from pypinyin import lazy_pinyin, Style
+from pypinyin.contrib.tone_convert import to_tone
+
+_T2S = opencc.OpenCC("t2s")      # character for character; only used to look phrases up in pypinyin
 
 # ---------------------------------------------------------------- script ----
 
@@ -43,11 +47,52 @@ def prepare_target(script):
 
 # ----------------------------------------------------------------- tones ----
 
+def simplified(text):
+    """The Simplified form of `text` for dictionary look-ups (pypinyin, jieba); the text itself if the length would change."""
+    converted = _T2S.convert(text)
+    return converted if len(converted) == len(text) else text
+
+
+def pinyin_per_character(text):
+    """One entry per character of `text`, so a page can put it above the character: pinyin for Han, '' for the rest."""
+    out = []
+    for run in re.findall(r"[一-龥]+|[^一-龥]+", text):
+        out.extend(display_pinyin(run) if is_chinese_char(run[0]) else [""] * len(run))
+    return out
+
+
+def display_pinyin(text, tones=None):
+    """Pinyin with tone marks to show next to a script: one entry per character, like lazy_pinyin(text, style=TONE).
+
+    pypinyin's phrase dictionary is keyed by Simplified characters, so Traditional 音樂 comes out as yīn lè. The letters
+    are therefore read from the Simplified form (yīn yuè), while the tones are the ones this app expects and scores
+    (_base_tones: Taiwan readings, 個 gè, 隻 zhī), so what is shown matches the tone sequence the learner is checked on.
+    Anything that is not a Han character is passed through as before. `tones` (one per Han character, in order) replaces
+    the default tones, e.g. the catalog's own reading of 沒（有）空 (kòng); it is ignored if the count does not match."""
+    runs = re.findall(r"[一-龥]+|[^一-龥]+", text)
+    han = sum(len(run) for run in runs if is_chinese_char(run[0]))
+    if tones is not None and len(tones) != han:
+        tones = None
+    out, cursor = [], 0
+    for run in runs:
+        if not is_chinese_char(run[0]):
+            out.extend(lazy_pinyin(run, style=Style.TONE))
+            continue
+        simplified = _T2S.convert(run)
+        letters = lazy_pinyin(simplified if len(simplified) == len(run) else run, style=Style.NORMAL, v_to_u=True)
+        run_tones = list(tones[cursor:cursor + len(run)]) if tones is not None else _base_tones(run)
+        cursor += len(run)
+        for letter, tone in zip(letters, run_tones):
+            out.append(letter if tone == 5 else to_tone(f"{letter}{tone}"))
+    return out
+
+
 # Taiwan Mandarin readings differ from mainland Pinyin readings.
 TAIWAN_WORD_TONES = {
     "星期": [1, 2],
     "垃圾": [4, 4],
     "覺得": [2, 5],
+    "睡覺": [4, 4],             # shuìjiào; pypinyin reads Traditional 覺 as jué
     "衣服": [1, 5],
     # Reduplicated kinship terms: neutral second syllable (book Pinyin, MOE).
     "哥哥": [1, 5],

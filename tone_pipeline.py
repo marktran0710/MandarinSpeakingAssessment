@@ -12,6 +12,7 @@ wrong is `insufficient_evidence`. All thresholds live in tone_v1_config.yaml.
 """
 from __future__ import annotations
 
+import atexit
 import hashlib
 import json
 import math
@@ -32,6 +33,7 @@ from scipy.signal import medfilt, resample_poly
 
 import audio_prep
 import capt_core
+import mfa_warm
 
 CONFIG_PATH = Path(__file__).with_name("tone_v1_config.yaml")
 MFA_EXE = os.environ.get("MFA_EXE", r"D:\CodexData\mfa-runtime\env\Scripts\mfa.exe")
@@ -665,8 +667,45 @@ def _dictionary_argument(dictionary, workdir):
     return str(named)
 
 
+_WARM = {}
+_WARM_LOCK = threading.Lock()
+
+
+def warm_aligner(config=None):
+    """The pre-loaded aligner (see mfa_warm.py), or None when it is switched off (TONE_MFA_WARM=1 turns it on)."""
+    if not mfa_warm.enabled_by_environment():
+        return None
+    config = config or load_config()
+    align = config["alignment"]
+    python = Path(os.environ.get("MFA_PYTHON") or Path(MFA_EXE).parent.parent / "python.exe")
+    if not python.exists():
+        return None
+    key = (align["mfa_dictionary"], align["mfa_acoustic_model"])
+    with _WARM_LOCK:
+        if key not in _WARM:
+            if _WARM:                                          # one spare only: another model would double the memory
+                return None
+            aligner = mfa_warm.WarmAligner(
+                python, {**os.environ, "MFA_ROOT_DIR": MFA_ROOT_DIR, "PYTHONIOENCODING": "utf-8"},
+                align["mfa_acoustic_model"], lambda folder: _dictionary_argument(align["mfa_dictionary"], folder),
+                lambda: dictionary_fingerprint(config), align["mfa_timeout_sec"], load_lock=_MFA_LOCK)
+            atexit.register(aligner.close)
+            _WARM[key] = aligner
+        return _WARM[key]
+
+
+def prewarm_mfa(config=None):
+    """Start loading the spare now (called once when the server starts) so even the first learner is fast."""
+    aligner = warm_aligner(config)
+    if aligner is not None:
+        aligner.prewarm()
+    return aligner is not None
+
+
 def mfa_align(samples, sample_rate, chars, config=None):
-    """Run `mfa align_one` on the fixed script (no ASR, no tokenization) and return its tiers."""
+    """Align the fixed script (no ASR, no tokenization) and return the MFA tiers.
+
+    Uses the pre-loaded aligner when it is on and ready, otherwise runs `mfa align_one`; both give the same tiers."""
     config = config or load_config()
     align = config["alignment"]
     if not Path(MFA_EXE).exists():
@@ -676,6 +715,11 @@ def mfa_align(samples, sample_rate, chars, config=None):
         wav, txt, result_path = workdir / "utterance.wav", workdir / "utterance.txt", workdir / "result.json"
         _write_wav_16k_mono(samples, sample_rate, wav)
         txt.write_text(" ".join(chars), encoding="utf-8")
+        warm = warm_aligner(config)
+        if warm is not None:
+            tiers = warm.align(wav, txt)
+            if tiers is not None:
+                return tiers
         # align_one's last argument is the output *file*; a directory exits 0 and writes nothing.
         command = [
             MFA_EXE, "align_one", "--output_format", "json", "--no_tokenization",

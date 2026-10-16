@@ -22,10 +22,21 @@ import capt_core as core
 import tone_assessment
 import tone_pipeline
 from practice_store import practice_store
+from user_archive import UserArchive
+
+# A second copy of every attempt (audio + log), one folder per user. MANDARIN_USER_DATA_DIR="" switches it off.
+user_archive = UserArchive.from_env()
 
 # Initialize the FastAPI app
 app = FastAPI(title="Taiwan Mandarin CAPT API")
 ASSESSMENT_LOCK = Lock()
+
+
+@app.on_event("startup")
+def warm_up_alignment():
+    """With TONE_MFA_WARM=1 load the aligner now, so the first learner does not wait for `mfa align_one` to start."""
+    tone_pipeline.prewarm_mfa()
+
 ADMIN_PASSWORD = os.environ.get("MANDARIN_ADMIN_PASSWORD", "").strip()
 ADMIN_SESSION_COOKIE = "mandarin_admin_session"
 ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60
@@ -185,6 +196,20 @@ CHAPTER5_WORD_ITEMS = load_chapter5_word_items()
 
 converter = opencc.OpenCC('s2twp')   # Normalize scripts to Taiwan Traditional Chinese
 
+# Words used to split text the learner types (My own text) into phrases: the teacher's annotation + the vocabulary lists.
+SEGMENT_LEXICON = tone_assessment.build_lexicon(
+    [word for words in WORD_ANNOTATIONS.values() for word in words]
+    + [item["script"] for item in CHAPTER5_WORD_ITEMS.values()], converter.convert)
+
+
+@app.get("/api/pinyin")
+async def get_pinyin(text: str = ""):
+    """Pinyin for a text the learner is typing, one entry per character, for the page to show above it."""
+    text = text[:200]
+    converted = converter.convert(text)
+    return {"pinyin": core.pinyin_per_character(converted if len(converted) == len(text) else text)}
+
+
 
 @app.get("/api/sample-lessons")
 async def get_sample_lessons():
@@ -196,7 +221,7 @@ async def get_sample_lessons():
             "scene": sample["scene"],
             "character": sample["character"],
             "script": sample["script"],
-            "pinyin": lazy_pinyin(sample["script"], style=Style.TONE),
+            "pinyin": core.display_pinyin(sample["script"]),
             "audio_available": bool(sample.get("audio_available", Path(sample["audio_path"]).is_file())),
             "audio_url": (
                 f"/api/sample-lessons/{sample['id']}/audio"
@@ -232,7 +257,7 @@ async def get_chapter5_word_items():
             "script": item["script"],
             "traditional_chinese": item["traditional_chinese"],
             "pinyin": item["pinyin"],
-            "character_pinyin": lazy_pinyin(item["script"], style=Style.TONE),
+            "character_pinyin": tone_assessment.chapter5_character_pinyin(item),
             "category_id": category_assignments.get(str(item["word_id"]), {}).get("category_id"),
             "subcategory_id": category_assignments.get(str(item["word_id"]), {}).get("subcategory_id"),
             "pos": item["pos"],
@@ -538,7 +563,7 @@ async def admin_page(request: Request):
                     for (const item of attempt.phrases) {
                         const phrase = item.annotation || item.word || "Phrase";
                         const note = item.assessment_note ? ` | ${item.assessment_note}` : "";
-                        body.append(el("div", `${phrase} | Expected ${toneSequence(item.expected_tone_sequence)} | Detected ${toneSequence(item.observed_tone_sequence)} | ${statusNames[item.status] || item.status || "Not scored"}${note}`, "word"));
+                        body.append(el("div", `${phrase} | Expected ${toneSequence(item.expected_tone_sequence)} | ${statusNames[item.status] || item.status || "Not scored"}${note}`, "word"));
                     }
                 }
 
@@ -724,7 +749,7 @@ async def read_index():
         <link rel="icon" href="data:,">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 750px; margin: 30px auto; padding: 20px; background: #f4f6f9; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, 'Nirmala UI', 'Noto Sans Devanagari', 'Mangal', 'Kohinoor Devanagari', 'Devanagari Sangam MN', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', 'Noto Sans CJK TC', 'Heiti TC', sans-serif; max-width: 750px; margin: 30px auto; padding: 20px; background: #f4f6f9; }
             .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; }
             .student-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
             .student-heading h2 { margin: 0; }
@@ -817,8 +842,10 @@ async def read_index():
             .word-card-label { align-self: center; font-size: 17px; font-weight: 650; }
             .word-card-tone-sequence { color: #607386; font-size: 12px; letter-spacing: 0.02em; text-align: center; }
             .word-card-status { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+            .word-card-advice { display: block; margin-top: 4px; color: #4a5568; font-size: 12.5px; line-height: 1.45; text-align: left; }
+            .results-advice { margin: 0 0 12px; padding: 9px 12px; border-left: 3px solid #d69e2e; background: #fffaf0; color: #744210; font-size: 13px; line-height: 1.45; }
             .status-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
-            .json-output { margin-top: 16px; border-top: 1px solid #e2e8f0; }
+            .json-output { display: none; /* temporarily hidden: remove this line to show "View JSON response" again */ margin-top: 16px; border-top: 1px solid #e2e8f0; }
             .json-output > summary { padding: 10px 2px; color: #2b6cb0; font-size: 14px; font-weight: 600; cursor: pointer; }
             .json-output pre { max-height: 420px; overflow: auto; margin: 0; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f7fafc; color: #243447; font: 12px/1.5 Consolas, 'Courier New', monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
             .word-card.likely-correct .word-card-status { color: #147a42; }
@@ -880,6 +907,87 @@ async def read_index():
             .tone-likely-correct { background: #c6f6d5; color: #22543d; }
             .tone-likely-incorrect { background: #fed7d7; color: #742a2a; }
             .tone-uncertain { background: #feebc8; color: #744210; }
+            .word-card.not-heard { border-color: transparent; background: #eceff3; }
+            .word-card.not-heard .word-card-status { color: #4a5568; }
+
+            /* ---- compact layout, phones, and the temporarily hidden upload ---- */
+            body { margin: 18px auto; padding: 0 16px 32px; }
+            .card { padding: 18px 20px; margin-bottom: 14px; }
+            .student-heading { gap: 8px 16px; }
+            .student-heading h2 { font-size: 17px; }
+            .language-picker select { min-width: 0; padding: 6px 8px; }
+            #activeStudentPanel { margin-top: 8px; gap: 6px 10px; }
+            #activeStudentPanel .upload-hint { margin: 0; }
+            #changeProfileBtn { margin-top: 0; padding: 8px 12px; font-size: 14px; }
+            #calibrateVoiceBtn { margin-left: auto; }
+            h2[data-i18n="appTitle"] { font-size: 21px; margin: 0 0 6px; }
+            p[data-i18n="practiceInstructions"] { margin: 0 0 10px; font-size: 14px; color: #4a5568; }
+            #busyOverlay { border: 0; padding: 0; background: transparent; width: 100vw; height: 100vh; max-width: none; max-height: none; overflow: visible; }
+            #busyOverlay[open] { display: flex; align-items: center; justify-content: center; }
+            #busyOverlay::backdrop { background: rgba(24, 39, 56, 0.55); backdrop-filter: blur(2px); }
+            .busy-card { box-sizing: border-box; background: #fff; border-radius: 14px; padding: 26px 30px; text-align: center; max-width: min(320px, calc(100vw - 48px)); box-shadow: 0 18px 60px rgba(15, 35, 55, 0.3); }
+            .busy-spinner { width: 56px; height: 56px; box-sizing: border-box; margin: 0 auto 14px; border: 6px solid #dbe5f1; border-top-color: #2b6cb0; border-radius: 50%; animation: status-spin 0.9s linear infinite; }
+            #busyMessage { margin: 0 0 4px; font-weight: 700; color: #1a202c; line-height: 1.4; }
+            .busy-sub { margin: 0; color: #607386; font-size: 13px; }
+            @media (prefers-reduced-motion: reduce) { .busy-spinner { animation-duration: 1.8s; } }
+            /* Topics: one tidy card with the item, its meaning and where you are */
+            .chapter5-word-controls { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 10px; margin: 0 0 8px; padding: 8px 10px; }
+            .chapter5-word-controls[hidden] { display: none; }
+            .chapter5-word-controls button { min-width: 0; padding: 8px 12px; font-size: 14px; background: #edf2f7; color: #2d3748; }
+            .chapter5-word-controls button:disabled { opacity: 0.45; cursor: default; }
+            #previousChapter5WordBtn::before { content: "‹"; margin-right: 6px; font-size: 18px; line-height: 1; }
+            #nextChapter5WordBtn::after { content: "›"; margin-left: 6px; font-size: 18px; line-height: 1; }
+            .chapter5-word-info { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 1px 8px; min-width: 0; }
+            #chapter5WordType { grid-row: 1; grid-column: 1; }
+            #chapter5WordProgress { grid-row: 1; grid-column: 2; }
+            #chapter5WordMeaning { grid-row: 2; }
+            #chapter5WordCategory { grid-row: 3; }
+            #chapter5WordType { justify-self: start; padding: 1px 9px; border-radius: 999px; background: #e3eefb; color: #2b6cb0; font-size: 12px; font-weight: 600; }
+            #chapter5WordProgress { justify-self: end; margin: 0; color: #64748b; font-size: 12px; }
+            #chapter5WordMeaning { grid-column: 1 / -1; color: #1a202c; font-size: 17px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+            #chapter5WordCategory { grid-column: 1 / -1; margin: 0; color: #64748b; font-size: 12.5px; }
+            #chapter5ReferenceLabel { order: 3; flex: 1 1 100%; margin: 0; color: #64748b; font-size: 12px; }
+            /* My own text: a normal font (not monospace), grows with the text, no empty preview bar */
+            #scriptInput { font-family: inherit; font-size: 18px; line-height: 1.6; min-height: 3.4em; max-height: 40vh; resize: vertical; field-sizing: content; }
+            #transcriptDisplay:empty { display: none; }
+            #customTextHint { margin: 0 0 4px; font-size: 13px; }
+            button, input, select, textarea { font-family: inherit; }              /* form controls ignore the page font by default */
+            :lang(hi) body { line-height: 1.7; }                                    /* Devanagari needs more height than Latin */
+            :lang(hi) button, :lang(hi) select, :lang(hi) input { line-height: 1.5; }
+            .tight { margin-bottom: 10px; }
+            #bookSamplePicker label { font-size: 14px; }
+            #bookSamplePicker select { margin-top: 4px; padding: 9px 10px; }
+            .sample-audio-section { margin: 8px 0 10px; padding: 6px 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+            .sample-audio-section[hidden] { display: none; }
+            .sample-audio-section label { margin: 0; font-size: 13px; color: #4a5568; flex: 0 0 auto; }
+            .sample-audio-section audio { flex: 1 1 220px; width: auto; height: 36px; margin: 0; }
+            .sample-audio-section .upload-hint, .sample-audio-error { flex: 1 1 100%; margin: 0; }
+            #scriptBlock { position: relative; }
+            #scriptBlock > label { font-size: 13px; color: #4a5568; }
+            #scriptInput[readonly] { display: none; }          /* the same text is shown with pinyin right below */
+            #scriptInput { margin-top: 4px; }
+            #pinyinToggle { position: absolute; right: 0; top: 0; margin: 0; font-size: 13px; }
+            .transcript { min-height: 0; padding: 8px 10px; margin-top: 4px; }
+            .record-controls { margin-bottom: 10px; }
+            .upload-controls { display: none; /* temporarily hidden: remove this line to show "Upload your audio" again */ }
+            @media (max-width: 600px) {
+                body { margin: 8px auto; padding: 0 10px 24px; }
+                .card { padding: 14px; border-radius: 10px; margin-bottom: 10px; }
+                .student-heading { flex-wrap: nowrap; }
+                .language-picker > span { display: none; }
+                #activeStudentLabel, #voiceCalibrationLabel { flex: 1 1 100%; }
+                #activeStudentLabel { font-weight: 600; }
+                #activeStudentPanel > button { flex: 1 1 calc(50% - 6px); }
+                #calibrateVoiceBtn { margin-left: 0; }
+                h2[data-i18n="appTitle"] { font-size: 18px; }
+                button { padding: 10px 14px; font-size: 15px; }
+                input[type="text"], textarea, select { padding: 10px; }
+                #speakerDialog, #voiceCalibrationDialog { padding: 16px; }
+                #voiceCalibrationScript { font-size: 18px; padding: 10px; }
+                .chapter5-word-controls { padding: 8px; gap: 6px; }
+                .chapter5-word-controls button { font-size: 0; padding: 8px 12px; }
+                #previousChapter5WordBtn::before, #nextChapter5WordBtn::after { margin: 0; font-size: 26px; }
+            }
 
         </style>
     </head>
@@ -892,6 +1000,8 @@ async def read_index():
                         <option value="en">English</option>
                         <option value="zh-TW" data-i18n="languageZh">Traditional Chinese</option>
                         <option value="vi" data-i18n="languageVi">Vietnamese</option>
+                        <option value="id">Bahasa Indonesia</option>
+                        <option value="hi">हिन्दी</option>
                     </select>
                 </label>
             </div>
@@ -931,7 +1041,7 @@ async def read_index():
             <p data-i18n="voiceCalibrationPrompt">Record a short sample so tone feedback can use a pitch range suited to your voice.</p>
             <p id="voiceCalibrationInstruction" class="upload-hint" data-i18n="voiceCalibrationInstruction">Read the prompt twice, naturally, for about 5–10 seconds. Praat checks your pitch with two tracking methods. The calibration audio is processed and discarded; only pitch statistics are saved.</p>
             <div id="voiceCalibrationScript" lang="zh-Hant">
-                媽、麻、馬、罵、嗎；你好嗎？我今天想學中文。
+                媽、麻、馬、罵、嗎
                 <small>mā (T1) · má (T2) · mǎ (T3) · mà (T4) · ma (neutral)</small>
             </div>
             <div id="voiceCalibrationControls">
@@ -941,13 +1051,21 @@ async def read_index():
             <p id="voiceCalibrationStatus" role="status" aria-live="polite"></p>
         </dialog>
 
+        <dialog id="busyOverlay" aria-label="Working">
+            <div class="busy-card" role="status" aria-live="polite">
+                <div class="busy-spinner" aria-hidden="true"></div>
+                <p id="busyMessage"></p>
+                <p class="busy-sub" data-i18n="busyWait">This usually takes a few seconds.</p>
+            </div>
+        </dialog>
+
         <div class="card">
             <h2 data-i18n="appTitle">Taiwan Mandarin Pronunciation Practice</h2>
             <p data-i18n="practiceInstructions">Choose a human voice sample, listen to it, then record yourself or upload an audio file reading the matching script:</p>
             <fieldset id="practiceMode" class="practice-mode">
                 <legend data-i18n="practiceSource">Practice text</legend>
                 <label><input type="radio" name="practiceMode" value="book" checked onchange="changePracticeMode()"><span data-i18n="bookTextMode">Book sample</span></label>
-                <label><input type="radio" name="practiceMode" value="chapter5_word" onchange="changePracticeMode()"><span data-i18n="chapter5WordMode">Chapter 5 · one item at a time</span></label>
+                <label><input type="radio" name="practiceMode" value="chapter5_word" onchange="changePracticeMode()"><span data-i18n="chapter5WordMode">Topics</span></label>
                 <label><input type="radio" name="practiceMode" value="custom" onchange="changePracticeMode()"><span data-i18n="customTextMode">My own text</span></label>
             </fieldset>
 
@@ -969,7 +1087,7 @@ async def read_index():
                 <button id="nextChapter5WordBtn" type="button" onclick="moveChapter5Word(1)" data-i18n="nextWord">Next</button>
             </div>
 
-            <div id="bookSamplePicker" style="margin-bottom: 15px;">
+            <div id="bookSamplePicker" class="tight">
                 <label for="sampleSelect"><b data-i18n="sampleRecording">Sample recording (Lessons 5-8):</b></label>
                 <select id="sampleSelect" onchange="selectSample()" disabled>
                     <option data-i18n="loadingSamples">Loading sample recordings...</option>
@@ -983,10 +1101,10 @@ async def read_index():
                 <p id="sampleAudioError" class="sample-audio-error" role="status" data-i18n="sampleAudioLoadError" hidden>Sample audio could not be loaded. Try selecting the item again.</p>
             </div>
 
-            <div style="margin-bottom: 15px;">
+            <div id="scriptBlock" class="tight">
                 <label for="scriptInput"><b id="scriptLabel" data-i18n="matchingScript">Matching script:</b></label>
                 <p id="customTextHint" class="upload-hint" data-i18n="customTextHint" hidden>Enter any Mandarin text. It does not need to appear in a textbook.</p>
-                <textarea id="scriptInput" rows="3" readonly oninput="handleScriptInput()" data-i18n-placeholder="customTextPlaceholder"></textarea>
+                <textarea id="scriptInput" rows="2" readonly oninput="handleScriptInput()" data-i18n-placeholder="customTextPlaceholder"></textarea>
                 <div id="transcriptDisplay" class="transcript" aria-label="Matching script with pinyin" data-i18n-aria-label="scriptWithPinyin"></div>
                 <label id="pinyinToggle" class="pinyin-toggle">
                     <input type="checkbox" id="showPinyin" checked onchange="refreshPinyinDisplay()">
@@ -1071,6 +1189,8 @@ async def read_index():
             let isVoiceCalibrationProcessing = false;
             let isRecording = false;
             let isProcessing = false;
+            let calibrationHadError = false;   // "Do this later" only appears once calibration has failed (or is done)
+            let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
             let chapter5WordItems = [];
@@ -1080,6 +1200,8 @@ async def read_index():
             let lastAssessment = null;
             let activeStudent = null;
             let customTextDraft = "";
+            let customPinyin = { script: "", values: [] };
+            let customPinyinTimer = null;
             let activeFeedbackAttemptId = null;
             let uploadedAudioUrl = null;
             let recordedAudioUrl = null;
@@ -1094,11 +1216,11 @@ async def read_index():
                     continue: "Continue", cancel: "Cancel", appTitle: "Taiwan Mandarin Pronunciation Practice",
             practiceInstructions: "Choose a lesson sample or enter your own Mandarin text, then record yourself reading it:",
             practiceSource: "Practice text", bookTextMode: "Book sample", customTextMode: "My own text",
-            chapter5WordMode: "Chapter 5 · one item at a time", previousWord: "Previous", nextWord: "Next",
-            chapter5Vocabulary: "Vocabulary", chapter5Phrase: "Phrase", chapter5Meaning: "Meaning: {meaning}",
-            chapter5ReferenceAudio: "Listen to the word audio as a reference. It is not used to score your recording.",
-            chapter5Progress: "Item {current} of {total}", chapter5Unavailable: "Chapter 5 practice items are unavailable.",
-            chapter5Ready: "Chapter 5 item ready. Record yourself or upload your reading.",
+            chapter5WordMode: "Topics", previousWord: "Previous", nextWord: "Next",
+            chapter5Vocabulary: "Vocabulary", chapter5Phrase: "Phrase", chapter5Meaning: "{meaning}",
+            chapter5ReferenceAudio: "Reference only – not used for scoring.",
+            chapter5Progress: "{current} / {total}", chapter5Unavailable: "Topic practice items are unavailable.",
+            chapter5Ready: "Ready. Record yourself reading it.",
                     chapter5Topic: "Topic", chapter5AllTopics: "All topics", chapter5AllInTopic: "All in {topic}",
             customTextPreview: "Entered text preview",
             customScriptLabel: "Text to read:",
@@ -1138,16 +1260,33 @@ async def read_index():
                     recordingUnsupported: "Audio recording is not supported in this browser. You can upload an audio file instead.",
                     microphoneFailed: "Could not access the microphone: {error}", serverNoResponse: "The server returned HTTP {status} without an assessment response.",
                     lessonOption: "Lesson {lesson} · Story {story} · Scene {scene} · {character}",
-                    likelyCorrect: "Good", practice: "Practice", uncertain: "Uncertain", insufficientEvidence: "Not enough evidence",
+                    likelyCorrect: "Good", practice: "Needs practice", uncertain: "Okay", insufficientEvidence: "Okay",
                     mismatch: "Not scored: script mismatch", transcriptUnchecked: "Not scored: transcript unchecked",
                     unassessable: "Not enough audio to score", notScored: "Not scored", noMatch: "Speech recognition did not match the script; phrase tone feedback was skipped.",
                     partialMatch: "Speech recognition only partly matched the script; unmatched phrases are not tone-scored.",
                     unchecked: "Speech recognition was not checked, so phrase tone feedback is unavailable.",
                     matched: "Speech recognition matched the script; tone feedback is shown by phrase.", renderPhraseScores: "Each card checks the expected tone sequence for the whole phrase.",
+                    adviceTone1: "“{char}” – tone 1: keep your voice high and steady, with no rise or fall.",
+                    adviceTone2: "“{char}” – tone 2: start at a middle pitch and rise clearly, like asking “huh?”.",
+                    adviceTone3: "“{char}” – tone 3: let your voice sink low, like a soft “hmm…”, instead of staying high.",
+                    adviceTone4: "“{char}” – tone 4: start high and drop quickly, like a firm “No!”.",
+                    retrySlower: "Say this word a little slower and more clearly – don’t rush it.",
+                    retrySteady: "Keep your voice steady and a little louder. Avoid whispering or a creaky voice.",
+                    retryClearer: "Make the tone a bit more distinct so the rise and fall can be heard clearly.",
+                    retryReadExactly: "Read this part exactly as written, from start to finish.",
+                    retryAgain: "Try saying it once more, clearly and at a natural pace.",
+                    qualityClipped: "The recording is distorted. Move back from the microphone and try again.",
+                    qualityTooQuiet: "The recording is too quiet. Speak louder or move closer to the microphone.",
+                    qualityNoisy: "There is too much background noise. Try again somewhere quieter.",
+                    qualityTooShort: "The recording is too short. Try again.",
+                    qualityTooLong: "The recording is too long. Record only the practice phrase.",
+                    qualityNoSpeech: "No speech was detected. Try again.",
+                    qualityNoVoicing: "No clear voice was detected. Speak aloud rather than whispering.",
+                    busyWait: "This usually takes a few seconds.",
+                    notHeard: "Not heard", retryNotHeard: "We couldn’t hear this part. Speak a little louder, read all of it, and try again.",
                     expectedSequence: "Expected", detectedSequence: "Detected", sequenceUnavailable: "Not enough tone evidence",
                     noProbabilityModel: "Tone labels use experimental rules; this system has no trained or calibrated tone probabilities.",
-                    pronunciationFeedback: "Tone feedback", phraseScore: "Phrase score {score}", phraseScoreUnavailable: "Phrase score unavailable", viewJsonOutput: "View JSON response", scriptProvidedOnly: "Using the selected script; ASR and alignment are skipped in Chapter 5 direct mode.", diagnosticNotNeeded: "Not needed for this result",
-                    scriptProvidedOnly: "Using the selected script; ASR and alignment are skipped in Chapter 5 direct mode.", diagnosticNotNeeded: "Not needed for this result",
+                    pronunciationFeedback: "Tone feedback", phraseScore: "Phrase score {score}", phraseScoreUnavailable: "Phrase score unavailable", viewJsonOutput: "View JSON response", scriptProvidedOnly: "Scored against the script shown above, so please read it exactly as written.",
                     syllableDetails: "Syllable details", syllableColumn: "Syllable", toneColumn: "Tone", resultColumn: "Result", noteColumn: "Note",
                     toneShapeNote: "The small line sketches the target tone; the chart shows your measured pitch.",
                     toneShapeAria: "Schematic contour for {tone}",
@@ -1182,11 +1321,11 @@ async def read_index():
                     continue: "繼續", cancel: "取消", appTitle: "台灣華語發音練習",
                     practiceInstructions: "選擇課本範例，或輸入自己的華語文本，再依照內容錄音：",
                     practiceSource: "練習文本", bookTextMode: "課本範例", customTextMode: "自選文本",
-                    chapter5WordMode: "第 5 課・逐詞練習", previousWord: "上一個", nextWord: "下一個",
-                    chapter5Vocabulary: "詞彙", chapter5Phrase: "詞組", chapter5Meaning: "意思：{meaning}",
-                    chapter5ReferenceAudio: "可播放單詞音檔作為參考；評分不會使用此音檔。",
-                    chapter5Progress: "第 {current} 項，共 {total} 項", chapter5Unavailable: "第 5 課練習資料目前無法使用。",
-                    chapter5Ready: "第 5 課項目已準備好。請錄音或上傳朗讀音檔。",
+                    chapter5WordMode: "主題", previousWord: "上一個", nextWord: "下一個",
+                    chapter5Vocabulary: "詞彙", chapter5Phrase: "詞組", chapter5Meaning: "{meaning}",
+                    chapter5ReferenceAudio: "僅供參考，不會用於評分。",
+                    chapter5Progress: "{current} / {total}", chapter5Unavailable: "主題練習資料目前無法使用。",
+                    chapter5Ready: "項目已準備好，請錄音朗讀。",
                     chapter5Topic: "主題", chapter5AllTopics: "所有主題", chapter5AllInTopic: "全部：{topic}",
                     customTextPreview: "輸入文本預覽",
                     customScriptLabel: "朗讀文本：",
@@ -1226,15 +1365,33 @@ async def read_index():
                     recordingUnsupported: "此瀏覽器不支援錄音。你可以改為上傳音檔。",
                     microphoneFailed: "無法使用麥克風：{error}", serverNoResponse: "伺服器回傳 HTTP {status}，沒有提供評估結果。",
                     lessonOption: "第 {lesson} 課 · 故事 {story} · 場景 {scene} · {character}",
-                    likelyCorrect: "良好", practice: "需要練習", uncertain: "不確定", insufficientEvidence: "證據不足",
+                    likelyCorrect: "良好", practice: "需要練習", uncertain: "還可以", insufficientEvidence: "還可以",
                     mismatch: "未評分：文本不符", transcriptUnchecked: "未評分：未檢查辨識文本",
                     unassessable: "音訊不足，無法評分", notScored: "未評分", noMatch: "語音辨識未符合文本，已略過聲調回饋。",
                     partialMatch: "語音辨識只部分符合文本；未符合的詞組不提供聲調回饋。",
                     unchecked: "尚未檢查語音辨識，無法提供詞組聲調回饋。",
                     matched: "語音辨識符合文本，以下顯示整個詞組的聲調回饋。", renderPhraseScores: "每張卡片評估整個詞組的預期聲調順序。",
+                    adviceTone1: "「{char}」第一聲：保持高而平穩的聲音，不要上升或下降。",
+                    adviceTone2: "「{char}」第二聲：從中等高度開始，明顯往上揚，像在問「嗯？」。",
+                    adviceTone3: "「{char}」第三聲：讓聲音沉到低處，像輕輕說「嗯……」，不要停在高音。",
+                    adviceTone4: "「{char}」第四聲：從高處開始，乾脆地往下降，像堅定地說「不！」。",
+                    retrySlower: "這個詞請唸慢一點、清楚一點，不要趕著唸過去。",
+                    retrySteady: "請讓聲音保持穩定，並稍微大聲一點；避免氣音或沙啞的聲音。",
+                    retryClearer: "請把聲調唸得更明顯，讓音高的升降聽得更清楚。",
+                    retryReadExactly: "請從頭到尾照著文字完整唸出來。",
+                    retryAgain: "請再唸一次，吐字清楚，用自然的速度。",
+                    qualityClipped: "錄音有破音。請離麥克風遠一點，再試一次。",
+                    qualityTooQuiet: "錄音太小聲。請說大聲一點，或靠近麥克風。",
+                    qualityNoisy: "背景噪音太多。請在安靜的地方再試一次。",
+                    qualityTooShort: "錄音太短。請再試一次。",
+                    qualityTooLong: "錄音太長。請只錄練習的句子。",
+                    qualityNoSpeech: "沒有偵測到說話聲。請再試一次。",
+                    qualityNoVoicing: "沒有偵測到清楚的嗓音。請出聲說話，不要用氣音。",
+                    busyWait: "通常只需要幾秒鐘。",
+                    notHeard: "沒聽到", retryNotHeard: "這一段沒有聽到聲音。請稍微大聲一點、完整唸出來，再試一次。",
                     expectedSequence: "預期", detectedSequence: "辨識", sequenceUnavailable: "聲調證據不足",
                     noProbabilityModel: "聲調結果使用實驗性規則；目前沒有經訓練或校準的聲調機率模型。",
-                    pronunciationFeedback: "聲調回饋", phraseScore: "詞組分數 {score}", phraseScoreUnavailable: "無詞組分數", viewJsonOutput: "\u67e5\u770b JSON \u8f38\u51fa", scriptProvidedOnly: "???????? 5 ??????????????????", diagnosticNotNeeded: "????????",
+                    pronunciationFeedback: "聲調回饋", phraseScore: "詞組分數 {score}", phraseScoreUnavailable: "無詞組分數", viewJsonOutput: "\u67e5\u770b JSON \u8f38\u51fa", scriptProvidedOnly: "依上方顯示的文字評分，請照著文字唸。",
                     syllableDetails: "音節明細", syllableColumn: "音節", toneColumn: "聲調", resultColumn: "結果", noteColumn: "說明",
                     toneShapeNote: "小圖示意目標聲調走向；下方圖表顯示你錄到的實際音高。",
                     toneShapeAria: "目標聲調示意：{tone}",
@@ -1268,11 +1425,11 @@ async def read_index():
                     continue: "Tiếp tục", cancel: "Hủy", appTitle: "Luyện phát âm tiếng Quan Thoại Đài Loan",
                     practiceInstructions: "Chọn bài mẫu hoặc nhập văn bản tiếng Trung của riêng bạn, rồi đọc và ghi âm:",
                     practiceSource: "Nội dung luyện tập", bookTextMode: "Bài trong sách", customTextMode: "Tự chọn văn bản",
-                    chapter5WordMode: "Chương 5 · luyện từng mục", previousWord: "Trước", nextWord: "Tiếp theo",
-                    chapter5Vocabulary: "Từ vựng", chapter5Phrase: "Cụm từ", chapter5Meaning: "Nghĩa: {meaning}",
-                    chapter5ReferenceAudio: "Có thể nghe audio từ làm mẫu; audio này không được dùng để chấm bài ghi âm.",
-                    chapter5Progress: "Mục {current}/{total}", chapter5Unavailable: "Không tải được dữ liệu luyện tập Chương 5.",
-                    chapter5Ready: "Mục Chương 5 đã sẵn sàng. Hãy ghi âm hoặc tải bài đọc lên.",
+                    chapter5WordMode: "Chủ đề", previousWord: "Trước", nextWord: "Tiếp theo",
+                    chapter5Vocabulary: "Từ vựng", chapter5Phrase: "Cụm từ", chapter5Meaning: "{meaning}",
+                    chapter5ReferenceAudio: "Chỉ để tham khảo, không dùng để chấm điểm.",
+                    chapter5Progress: "{current} / {total}", chapter5Unavailable: "Không tải được dữ liệu luyện tập theo chủ đề.",
+                    chapter5Ready: "Mục đã sẵn sàng. Hãy ghi âm bài đọc của bạn.",
                     chapter5Topic: "Chủ đề", chapter5AllTopics: "Tất cả chủ đề", chapter5AllInTopic: "Tất cả: {topic}",
                     customTextPreview: "Xem trước nội dung đã nhập",
                     customScriptLabel: "Nội dung cần đọc:",
@@ -1312,15 +1469,33 @@ async def read_index():
                     recordingUnsupported: "Trình duyệt này không hỗ trợ ghi âm. Bạn có thể tải tệp âm thanh lên.",
                     microphoneFailed: "Không thể truy cập micro: {error}", serverNoResponse: "Máy chủ trả về HTTP {status} nhưng không có kết quả chấm.",
                     lessonOption: "Bài {lesson} · Truyện {story} · Cảnh {scene} · {character}",
-                    likelyCorrect: "Tốt", practice: "Cần luyện", uncertain: "Chưa chắc", insufficientEvidence: "Chưa đủ bằng chứng",
+                    likelyCorrect: "Tốt", practice: "Cần luyện", uncertain: "Tạm ổn", insufficientEvidence: "Tạm ổn",
                     mismatch: "Không chấm: nội dung không khớp", transcriptUnchecked: "Không chấm: chưa kiểm tra lời nói",
                     unassessable: "Không đủ âm thanh để chấm", notScored: "Không chấm", noMatch: "Nhận dạng giọng nói không khớp kịch bản; đã bỏ qua phản hồi thanh điệu.",
                     partialMatch: "Nhận dạng chỉ khớp một phần; cụm từ không khớp sẽ không được chấm thanh.",
                     unchecked: "Chưa kiểm tra nhận dạng, nên chưa có phản hồi thanh điệu theo cụm từ.",
                     matched: "Nhận dạng khớp nội dung; kết quả thanh điệu bên dưới là theo cụm từ.", renderPhraseScores: "Mỗi thẻ đánh giá cả chuỗi thanh dự kiến của một cụm từ.",
+                    adviceTone1: "“{char}” – thanh 1: giữ giọng cao và đều, không lên cũng không xuống.",
+                    adviceTone2: "“{char}” – thanh 2: bắt đầu ở độ cao vừa rồi lên rõ rệt, như khi hỏi “hả?”.",
+                    adviceTone3: "“{char}” – thanh 3: hạ giọng xuống thấp, như khi khẽ nói “ừm…”, đừng giữ ở giọng cao.",
+                    adviceTone4: "“{char}” – thanh 4: bắt đầu ở giọng cao rồi hạ nhanh, dứt khoát, như khi nói “Không!”.",
+                    retrySlower: "Hãy đọc từ này chậm và rõ hơn một chút, đừng đọc lướt.",
+                    retrySteady: "Hãy giữ giọng đều và to hơn một chút. Tránh thì thầm hoặc giọng khàn.",
+                    retryClearer: "Hãy nhấn thanh điệu rõ hơn một chút để nghe rõ chỗ lên xuống.",
+                    retryReadExactly: "Hãy đọc đúng và đủ như chữ đã cho, từ đầu đến cuối.",
+                    retryAgain: "Hãy thử đọc lại một lần nữa, rõ ràng và với tốc độ tự nhiên.",
+                    qualityClipped: "Bản ghi bị méo tiếng. Hãy lùi xa micro một chút rồi thử lại.",
+                    qualityTooQuiet: "Bản ghi quá nhỏ. Hãy nói to hơn hoặc lại gần micro.",
+                    qualityNoisy: "Có quá nhiều tiếng ồn nền. Hãy thử lại ở nơi yên tĩnh hơn.",
+                    qualityTooShort: "Bản ghi quá ngắn. Hãy thử lại.",
+                    qualityTooLong: "Bản ghi quá dài. Hãy chỉ ghi câu cần luyện.",
+                    qualityNoSpeech: "Không phát hiện giọng nói. Hãy thử lại.",
+                    qualityNoVoicing: "Không phát hiện giọng rõ. Hãy nói thành tiếng, đừng thì thầm.",
+                    busyWait: "Thường chỉ mất vài giây.",
+                    notHeard: "Chưa nghe rõ", retryNotHeard: "Chưa nghe rõ đoạn này. Hãy nói to hơn một chút, đọc đủ cả đoạn rồi thử lại.",
                     expectedSequence: "Kỳ vọng", detectedSequence: "Nhận diện", sequenceUnavailable: "Chưa đủ bằng chứng thanh điệu",
                     noProbabilityModel: "Kết quả dùng quy tắc thử nghiệm; hệ thống chưa có mô hình xác suất thanh điệu đã huấn luyện và hiệu chuẩn.",
-                    pronunciationFeedback: "Phản hồi thanh điệu", phraseScore: "Điểm cụm từ {score}", phraseScoreUnavailable: "Chưa có điểm cụm từ", viewJsonOutput: "Xem JSON ph\u1ea3n h\u1ed3i", scriptProvidedOnly: "D?ng v?n b?n ?? ch?n; ch? ?? tr?c ti?p Ch??ng 5 b? qua nh?n d?ng v? c?n ch?nh.", diagnosticNotNeeded: "K?t qu? n?y kh?ng c?n ch?n ?o?n",
+                    pronunciationFeedback: "Phản hồi thanh điệu", phraseScore: "Điểm cụm từ {score}", phraseScoreUnavailable: "Chưa có điểm cụm từ", viewJsonOutput: "Xem JSON ph\u1ea3n h\u1ed3i", scriptProvidedOnly: "Chấm theo đoạn văn bản hiển thị ở trên, nên hãy đọc đúng như chữ đã cho.",
                     syllableDetails: "Chi tiết âm tiết", syllableColumn: "Âm tiết", toneColumn: "Thanh", resultColumn: "Kết quả", noteColumn: "Ghi chú",
                     toneShapeNote: "Đường nhỏ minh họa thanh mục tiêu; biểu đồ bên dưới là cao độ đo từ bản ghi của bạn.",
                     toneShapeAria: "Contour minh họa cho {tone}",
@@ -1344,6 +1519,432 @@ async def read_index():
                     invalidGroup: "Hãy chọn người Đài Loan hoặc người nước ngoài.", attemptMissing: "Không tìm thấy lượt luyện tập đã chọn.", invalidFeedbackRating: "Điểm đánh giá phải là số nguyên từ 1 đến 5.",
                     feedbackTooLong: "Nhận xét không được dài quá 2.000 ký tự.",
                     scriptMismatch: "Mẫu và nội dung đã chọn không khớp. Chỉ được khác dấu câu và khoảng trắng. Mẫu: {expected} Nội dung nhập: {received}"
+                },
+                id: {
+                    language: "Bahasa",
+                    languageEn: "English",
+                    languageZh: "中文（繁體）",
+                    languageVi: "Tiếng Việt",
+                    speakerProfile: "Profil pembicara",
+                    changeSpeaker: "Ganti pembicara",
+                    profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
+                    profileHint: "Gunakan nama yang membedakan Anda dari orang lain di kelompok yang sama; nama dan kelompok yang sama akan memakai riwayat latihan yang sama.",
+                    name: "Nama",
+                    participantGroup: "Kelompok peserta",
+                    chooseOne: "Pilih salah satu...",
+                    taiwanese: "Orang Taiwan",
+                    foreigner: "Orang asing",
+                    continue: "Lanjutkan",
+                    cancel: "Batal",
+                    appTitle: "Latihan Pelafalan Mandarin Taiwan",
+                    practiceInstructions: "Pilih contoh pelajaran atau ketik teks Mandarin Anda sendiri, lalu rekam diri Anda membacanya:",
+                    practiceSource: "Teks latihan",
+                    bookTextMode: "Contoh buku",
+                    customTextMode: "Teks saya sendiri",
+                    chapter5WordMode: "Topik",
+                    previousWord: "Sebelumnya",
+                    nextWord: "Berikutnya",
+                    chapter5Vocabulary: "Kosakata",
+                    chapter5Phrase: "Frasa",
+                    chapter5Meaning: "{meaning}",
+                    chapter5ReferenceAudio: "Hanya sebagai acuan – tidak dipakai untuk penilaian.",
+                    chapter5Progress: "{current} / {total}",
+                    chapter5Unavailable: "Butir latihan topik tidak tersedia.",
+                    chapter5Ready: "Siap. Rekam diri Anda membacanya.",
+                    chapter5Topic: "Topik",
+                    chapter5AllTopics: "Semua topik",
+                    chapter5AllInTopic: "Semua di {topic}",
+                    customTextPreview: "Pratinjau teks yang dimasukkan",
+                    customScriptLabel: "Teks yang dibaca:",
+                    customTextHint: "Masukkan teks Mandarin apa saja. Tidak harus ada di buku pelajaran.",
+                    customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
+                    customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
+                    customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
+                    sampleRecording: "Rekaman contoh (Pelajaran 5–8):",
+                    loadingSamples: "Memuat rekaman contoh...",
+                    matchingScript: "Teks yang cocok:",
+                    scriptWithPinyin: "Teks yang cocok beserta pinyin",
+                    showPinyin: "Tampilkan pinyin",
+                    startRecording: "Mulai merekam",
+                    stopAndAssess: "Berhenti & nilai",
+                    recordingStop: "Merekam (klik untuk berhenti)...",
+                    recording: "Merekam... Bicaralah dengan jelas ke mikrofon!",
+                    latestRecording: "Rekaman mikrofon terbaru Anda:",
+                    uploadAudio: "Unggah audio Anda:",
+                    uploadHint: "Pilih rekaman diri Anda yang membaca teks terpilih. Format yang didukung: WAV, MP3, M4A, OGG, FLAC, WebM.",
+                    selectedAudio: "Audio yang Anda pilih",
+                    uploadAssess: "Unggah & nilai",
+                    resultsTitle: "Hasil latihan membaca",
+                    viewPitch: "Lihat grafik nada suara Anda (opsional)",
+                    pitchDisplay: "Tampilan nada:",
+                    relativePitch: "Nada relatif (semiton)",
+                    f0Hz: "F0 (Hz)",
+                    recordingLine: "Kontur nada suara Anda",
+                    pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
+                    quickFeedback: "Masukan singkat",
+                    feedbackQuestion: "Seberapa membantu latihan ini? 1 = tidak membantu, 5 = sangat membantu.",
+                    feedbackImprove: "Apa yang perlu kami perbaiki? (opsional)",
+                    feedbackPlaceholder: "Tulis komentar singkat",
+                    sendFeedback: "Kirim masukan",
+                    sendingFeedback: "Mengirim masukan...",
+                    feedbackSaved: "Terima kasih atas masukan Anda!",
+                    feedbackSaveFailed: "Masukan tidak dapat disimpan.",
+                    practicingAs: "Berlatih sebagai {name} ({group})",
+                    profileReady: "Profil {name} siap. Pilih contoh untuk memulai.",
+                    voiceCalibrationTitle: "Sesuaikan dengan suara Anda",
+                    voiceCalibrationPrompt: "Rekam contoh singkat agar umpan balik nada memakai rentang suara yang cocok untuk Anda.",
+                    voiceCalibrationInstruction: "Bacalah teks di bawah dua kali secara alami, sekitar 5–10 detik. Praat memeriksa nada suara Anda dengan dua metode pelacakan. Audio kalibrasi diproses lalu dibuang; hanya statistik nada yang disimpan.",
+                    voiceCalibrationLater: "Lakukan nanti",
+                    calibrationDone: "Selesai",
+                    recordCalibration: "Rekam kalibrasi",
+                    stopCalibration: "Berhenti dan kalibrasi",
+                    calibrationRecording: "Merekam… bacalah teks dua kali.",
+                    calibrationProcessing: "Memeriksa rentang nada suara Anda…",
+                    calibrationSaved: "Kalibrasi suara tersimpan.",
+                    calibrationTooShort: "Rekamlah setidaknya 5 detik.",
+                    calibrationFailed: "Rekaman ini tidak dapat dikalibrasi. Bacalah seluruh teks dengan jelas lalu coba lagi.",
+                    calibrateVoice: "Kalibrasi suara",
+                    recalibrateVoice: "Kalibrasi ulang suara",
+                    voiceCalibrated: "Rentang suara sudah disesuaikan",
+                    voiceNotCalibrated: "Memakai rentang nada umum",
+                    profileSaveFailed: "Profil pembicara tidak dapat disimpan.",
+                    needProfile: "Masukkan nama dan kelompok peserta terlebih dahulu.",
+                    chooseAudio: "Pilih berkas audio terlebih dahulu.",
+                    unsupportedAudio: "Format berkas tidak didukung. Pilih WAV, MP3, M4A, OGG, FLAC, atau WebM.",
+                    emptyAudioFile: "Berkas audio ini kosong. Pilih rekaman lain.",
+                    uploadReady: "{file} siap. Klik Unggah & nilai untuk memeriksanya terhadap teks terpilih.",
+                    chooseSample: "Pilih contoh acuan terlebih dahulu.",
+                    noAudio: "Tidak ada audio yang terekam. Rekam lagi atau pilih berkas lain.",
+                    processing: "Memproses audio dan memeriksa pelafalan...",
+                    assessmentSaved: "Penilaian selesai dan tersimpan!",
+                    assessmentFailed: "Penilaian gagal: {error}",
+                    noSampleAudio: "Tidak ditemukan contoh audio yang cocok.",
+                    sampleDataUnavailable: "Audio contoh atau data teks tidak tersedia di server.",
+                    sampleLoadFailed: "Rekaman contoh tidak dapat dimuat dari server.",
+                    sampleReady: "Teks siap. Rekam diri Anda atau unggah berkas audio yang membacanya.",
+                    sampleAudioUnavailable: "Audio contoh tidak tersedia; Anda tetap bisa berlatih dari teksnya.",
+                    sampleAudioLabel: "Dengarkan audio contoh:",
+                    sampleAudioLoadError: "Audio contoh tidak dapat dimuat. Coba pilih butir itu lagi.",
+                    microphoneHttps: "Akses mikrofon memerlukan HTTPS atau localhost. Anda dapat mengunggah berkas audio sebagai gantinya.",
+                    recordingUnsupported: "Perekaman audio tidak didukung di peramban ini. Anda dapat mengunggah berkas audio sebagai gantinya.",
+                    microphoneFailed: "Tidak dapat mengakses mikrofon: {error}",
+                    serverNoResponse: "Server mengembalikan HTTP {status} tanpa respons penilaian.",
+                    lessonOption: "Pelajaran {lesson} · Cerita {story} · Adegan {scene} · {character}",
+                    likelyCorrect: "Bagus",
+                    practice: "Perlu latihan",
+                    uncertain: "Cukup",
+                    insufficientEvidence: "Cukup",
+                    mismatch: "Tidak dinilai: teks tidak cocok",
+                    transcriptUnchecked: "Tidak dinilai: transkrip belum diperiksa",
+                    unassessable: "Audio tidak cukup untuk dinilai",
+                    notScored: "Tidak dinilai",
+                    noMatch: "Pengenalan ucapan tidak cocok dengan teks; umpan balik nada per frasa dilewati.",
+                    partialMatch: "Pengenalan ucapan hanya sebagian cocok dengan teks; frasa yang tidak cocok tidak dinilai nadanya.",
+                    unchecked: "Pengenalan ucapan tidak diperiksa, sehingga umpan balik nada per frasa tidak tersedia.",
+                    matched: "Pengenalan ucapan cocok dengan teks; umpan balik nada ditampilkan per frasa.",
+                    renderPhraseScores: "Setiap kartu memeriksa urutan nada yang diharapkan untuk seluruh frasa.",
+                    adviceTone1: "“{char}” – nada 1: jaga suara tetap tinggi dan datar, tanpa naik atau turun.",
+                    adviceTone2: "“{char}” – nada 2: mulai dari nada sedang lalu naik dengan jelas, seperti bertanya “hah?”.",
+                    adviceTone3: "“{char}” – nada 3: biarkan suara turun rendah, seperti “hmm…” pelan, jangan tetap tinggi.",
+                    adviceTone4: "“{char}” – nada 4: mulai dari nada tinggi lalu turun cepat, seperti “Tidak!” yang tegas.",
+                    retrySlower: "Ucapkan kata ini sedikit lebih pelan dan jelas – jangan terburu-buru.",
+                    retrySteady: "Jaga suara tetap stabil dan sedikit lebih keras. Hindari berbisik atau suara serak.",
+                    retryClearer: "Buat nadanya sedikit lebih jelas agar naik-turunnya terdengar.",
+                    retryReadExactly: "Bacalah bagian ini persis seperti tertulis, dari awal sampai akhir.",
+                    retryAgain: "Coba ucapkan sekali lagi, dengan jelas dan kecepatan yang wajar.",
+                    qualityClipped: "Rekaman terdistorsi. Menjauhlah sedikit dari mikrofon lalu coba lagi.",
+                    qualityTooQuiet: "Rekaman terlalu pelan. Bicaralah lebih keras atau dekatkan mikrofon.",
+                    qualityNoisy: "Terlalu banyak bising latar. Coba lagi di tempat yang lebih tenang.",
+                    qualityTooShort: "Rekaman terlalu pendek. Coba lagi.",
+                    qualityTooLong: "Rekaman terlalu panjang. Rekam hanya frasa latihan.",
+                    qualityNoSpeech: "Tidak ada ucapan terdeteksi. Coba lagi.",
+                    qualityNoVoicing: "Suara yang jelas tidak terdeteksi. Bicaralah dengan suara, jangan berbisik.",
+                    busyWait: "Biasanya hanya butuh beberapa detik.",
+                    notHeard: "Tidak terdengar",
+                    retryNotHeard: "Bagian ini tidak terdengar. Bicaralah sedikit lebih keras, bacalah seluruhnya, lalu coba lagi.",
+                    expectedSequence: "Diharapkan",
+                    detectedSequence: "Terdeteksi",
+                    sequenceUnavailable: "Bukti nada tidak cukup",
+                    noProbabilityModel: "Label nada memakai aturan eksperimental; sistem ini tidak memiliki probabilitas nada yang dilatih atau dikalibrasi.",
+                    pronunciationFeedback: "Umpan balik nada",
+                    phraseScore: "Skor frasa {score}",
+                    phraseScoreUnavailable: "Skor frasa tidak tersedia",
+                    viewJsonOutput: "Lihat respons JSON",
+                    scriptProvidedOnly: "Dinilai terhadap teks yang ditampilkan di atas, jadi bacalah persis seperti tertulis.",
+                    syllableDetails: "Rincian suku kata",
+                    syllableColumn: "Suku kata",
+                    toneColumn: "Nada",
+                    resultColumn: "Hasil",
+                    noteColumn: "Catatan",
+                    toneShapeNote: "Garis kecil menggambarkan nada target; grafik menunjukkan nada suara yang terukur.",
+                    toneShapeAria: "Kontur skematis untuk {tone}",
+                    toneT1: "T1",
+                    toneT2: "T2",
+                    toneT3: "T3",
+                    toneT4: "T4",
+                    neutralTone: "Netral",
+                    thirdToneSandhi: "perubahan nada ketiga",
+                    buSandhi: "perubahan nada 不",
+                    yiSandhi: "perubahan nada 一",
+                    taiwanReading: "bacaan Taiwan",
+                    phraseFinalTone: "nada akhir frasa",
+                    lexicalToneRule: "nada kamus",
+                    matchedTone: "Kontur nada sesuai dengan target.",
+                    differentTone: "Terdeteksi kontur nada yang berbeda.",
+                    ambiguousTone: "Kontur ini bisa cocok dengan lebih dari satu nada.",
+                    neutralToneUncertain: "Nada netral bergantung pada konteks.",
+                    boundaryDisagreement: "Kontur bagian tengah dan seluruh suku kata tidak sejalan.",
+                    alignmentLow: "Waktu suku kata tidak jelas.",
+                    tooFewFrames: "Data nada bersuara terlalu sedikit.",
+                    sparseF0: "Data nada memiliki celah.",
+                    octaveJump: "Pelacakan nada melompat tiba-tiba.",
+                    incompleteContour: "Data nada tidak mencakup seluruh suku kata.",
+                    pinyinMismatch: "Suku kata yang dikenali berbeda dari teks.",
+                    transcriptNotChecked: "Pengenalan ucapan tidak diperiksa.",
+                    phraseNeedsPractice: "Satu atau lebih suku kata perlu latihan.",
+                    phraseUncertain: "Satu atau lebih suku kata belum pasti.",
+                    otherSyllables: "Suku kata lain",
+                    phrase: "Frasa",
+                    sentence: "Kalimat {number}",
+                    scriptLabel: "Teks: {script}",
+                    noScores: "Belum ada skor pelafalan.",
+                    noPitch: "Tidak ada nada yang dapat diukur pada frasa ini.",
+                    f0Title: "F0 dalam Hz",
+                    relativeTitle: "Nada relatif",
+                    relativeSemitone: "Semiton dari median nada Anda",
+                    halfThirdTone: "Nada 3 setengah",
+                    clause: "kalimat {number}",
+                    pitchDescription: "Kontur nada suara Anda ditampilkan untuk seluruh frasa. Celah pada nada yang terukur dibiarkan kosong.",
+                    reference: "Acuan",
+                    yourRecording: "Rekaman Anda",
+                    lowConfidence: " (penyelarasan atau nada kurang yakin)",
+                    relative: "Relatif",
+                    hz: "Hz",
+                    invalidAudio: "Format berkas audio tidak valid.",
+                    emptyScript: "Teks masukan tidak boleh kosong.",
+                    invalidProfile: "Masukkan profil pembicara yang valid sebelum berlatih.",
+                    sampleMissing: "Contoh prototipe yang dipilih tidak ditemukan.",
+                    noHanScript: "Teks tidak berisi aksara Han yang valid untuk menilai pelafalan.",
+                    emptyName: "Masukkan nama.",
+                    invalidNameLength: "Nama harus terdiri dari 1 sampai 100 karakter.",
+                    invalidGroup: "Pilih Orang Taiwan atau Orang asing.",
+                    attemptMissing: "Percobaan latihan yang dipilih tidak ditemukan.",
+                    invalidFeedbackRating: "Penilaian harus berupa bilangan bulat dari 1 sampai 5.",
+                    feedbackTooLong: "Komentar masukan maksimal 2.000 karakter.",
+                    scriptMismatch: "Contoh terpilih dan teks tidak cocok. Hanya perbedaan tanda baca dan spasi yang diizinkan. Diharapkan: {expected} Dimasukkan: {received}",
+                },
+                hi: {
+                    language: "भाषा",
+                    languageEn: "English",
+                    languageZh: "中文（繁體）",
+                    languageVi: "Tiếng Việt",
+                    speakerProfile: "वक्ता प्रोफ़ाइल",
+                    changeSpeaker: "वक्ता बदलें",
+                    profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
+                    profileHint: "ऐसा नाम चुनें जो आपको उसी समूह के दूसरे लोगों से अलग पहचान दे; एक ही नाम और समूह होने पर वही अभ्यास-इतिहास इस्तेमाल होगा।",
+                    name: "नाम",
+                    participantGroup: "प्रतिभागी समूह",
+                    chooseOne: "कोई एक चुनें...",
+                    taiwanese: "ताइवानी",
+                    foreigner: "विदेशी",
+                    continue: "आगे बढ़ें",
+                    cancel: "रद्द करें",
+                    appTitle: "ताइवानी मंदारिन उच्चारण अभ्यास",
+                    practiceInstructions: "कोई पाठ-नमूना चुनें या अपना मंदारिन पाठ लिखें, फिर उसे पढ़ते हुए अपनी रिकॉर्डिंग करें:",
+                    practiceSource: "अभ्यास का पाठ",
+                    bookTextMode: "पुस्तक का नमूना",
+                    customTextMode: "मेरा अपना पाठ",
+                    chapter5WordMode: "विषय",
+                    previousWord: "पिछला",
+                    nextWord: "अगला",
+                    chapter5Vocabulary: "शब्दावली",
+                    chapter5Phrase: "वाक्यांश",
+                    chapter5Meaning: "{meaning}",
+                    chapter5ReferenceAudio: "केवल संदर्भ के लिए – अंकन में इस्तेमाल नहीं होता।",
+                    chapter5Progress: "{current} / {total}",
+                    chapter5Unavailable: "विषय-आधारित अभ्यास सामग्री उपलब्ध नहीं है।",
+                    chapter5Ready: "तैयार। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
+                    chapter5Topic: "विषय",
+                    chapter5AllTopics: "सभी विषय",
+                    chapter5AllInTopic: "{topic} में सभी",
+                    customTextPreview: "दर्ज किए गए पाठ का पूर्वावलोकन",
+                    customScriptLabel: "पढ़ने का पाठ:",
+                    customTextHint: "कोई भी मंदारिन पाठ लिखें। उसका पाठ्यपुस्तक में होना ज़रूरी नहीं है।",
+                    customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
+                    customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
+                    customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
+                    sampleRecording: "नमूना रिकॉर्डिंग (पाठ 5–8):",
+                    loadingSamples: "नमूना रिकॉर्डिंग लोड हो रही हैं...",
+                    matchingScript: "मिलान वाला पाठ:",
+                    scriptWithPinyin: "पिनयिन सहित मिलान वाला पाठ",
+                    showPinyin: "पिनयिन दिखाएँ",
+                    startRecording: "रिकॉर्डिंग शुरू करें",
+                    stopAndAssess: "रोकें और जाँचें",
+                    recordingStop: "रिकॉर्ड हो रहा है (रोकने के लिए क्लिक करें)...",
+                    recording: "रिकॉर्ड हो रहा है... माइक्रोफ़ोन में साफ़ बोलें!",
+                    latestRecording: "आपकी ताज़ा माइक्रोफ़ोन रिकॉर्डिंग:",
+                    uploadAudio: "अपनी ऑडियो अपलोड करें:",
+                    uploadHint: "चुने हुए पाठ को पढ़ते हुए अपनी रिकॉर्डिंग चुनें। समर्थित फ़ॉर्मैट: WAV, MP3, M4A, OGG, FLAC, WebM।",
+                    selectedAudio: "आपकी चुनी हुई ऑडियो",
+                    uploadAssess: "अपलोड करें और जाँचें",
+                    resultsTitle: "पठन अभ्यास के परिणाम",
+                    viewPitch: "अपना पिच ग्राफ़ देखें (वैकल्पिक)",
+                    pitchDisplay: "पिच प्रदर्शन:",
+                    relativePitch: "सापेक्ष पिच (सेमीटोन)",
+                    f0Hz: "F0 (Hz)",
+                    recordingLine: "आपकी पिच रेखा",
+                    pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
+                    quickFeedback: "त्वरित प्रतिक्रिया",
+                    feedbackQuestion: "यह अभ्यास कितना उपयोगी रहा? 1 = उपयोगी नहीं, 5 = बहुत उपयोगी।",
+                    feedbackImprove: "हमें क्या सुधारना चाहिए? (वैकल्पिक)",
+                    feedbackPlaceholder: "एक छोटी टिप्पणी लिखें",
+                    sendFeedback: "प्रतिक्रिया भेजें",
+                    sendingFeedback: "प्रतिक्रिया भेजी जा रही है...",
+                    feedbackSaved: "आपकी प्रतिक्रिया के लिए धन्यवाद!",
+                    feedbackSaveFailed: "प्रतिक्रिया सहेजी नहीं जा सकी।",
+                    practicingAs: "{name} ({group}) के रूप में अभ्यास",
+                    profileReady: "{name} की प्रोफ़ाइल तैयार है। शुरू करने के लिए कोई नमूना चुनें।",
+                    voiceCalibrationTitle: "अपनी आवाज़ के अनुसार सेट करें",
+                    voiceCalibrationPrompt: "एक छोटा नमूना रिकॉर्ड करें ताकि टोन की प्रतिक्रिया आपकी आवाज़ की पिच-सीमा के अनुसार हो।",
+                    voiceCalibrationInstruction: "नीचे दिया पाठ स्वाभाविक ढंग से दो बार पढ़ें, लगभग 5–10 सेकंड। Praat दो अलग तरीकों से आपकी पिच जाँचता है। कैलिब्रेशन ऑडियो प्रोसेस होकर हटा दी जाती है; केवल पिच के आँकड़े सहेजे जाते हैं।",
+                    voiceCalibrationLater: "बाद में करें",
+                    calibrationDone: "हो गया",
+                    recordCalibration: "कैलिब्रेशन रिकॉर्ड करें",
+                    stopCalibration: "रोकें और कैलिब्रेट करें",
+                    calibrationRecording: "रिकॉर्ड हो रहा है… पाठ को दो बार पढ़ें।",
+                    calibrationProcessing: "आपकी पिच-सीमा जाँची जा रही है…",
+                    calibrationSaved: "आवाज़ का कैलिब्रेशन सहेज लिया गया।",
+                    calibrationTooShort: "कृपया कम से कम 5 सेकंड रिकॉर्ड करें।",
+                    calibrationFailed: "इस रिकॉर्डिंग से कैलिब्रेशन नहीं हो सका। पूरा पाठ साफ़ पढ़कर फिर कोशिश करें।",
+                    calibrateVoice: "आवाज़ कैलिब्रेट करें",
+                    recalibrateVoice: "आवाज़ दोबारा कैलिब्रेट करें",
+                    voiceCalibrated: "आवाज़ की सीमा आपके अनुसार सेट है",
+                    voiceNotCalibrated: "सामान्य पिच-सीमा का उपयोग हो रहा है",
+                    profileSaveFailed: "वक्ता प्रोफ़ाइल सहेजी नहीं जा सकी।",
+                    needProfile: "पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
+                    chooseAudio: "पहले कोई ऑडियो फ़ाइल चुनें।",
+                    unsupportedAudio: "यह फ़ाइल फ़ॉर्मैट समर्थित नहीं है। WAV, MP3, M4A, OGG, FLAC या WebM चुनें।",
+                    emptyAudioFile: "यह ऑडियो फ़ाइल खाली है। कोई दूसरी रिकॉर्डिंग चुनें।",
+                    uploadReady: "{file} तैयार है। चुने हुए पाठ से मिलान जाँचने के लिए “अपलोड करें और जाँचें” पर क्लिक करें।",
+                    chooseSample: "पहले कोई संदर्भ नमूना चुनें।",
+                    noAudio: "कोई ऑडियो रिकॉर्ड नहीं हुई। फिर से रिकॉर्ड करें या कोई दूसरी फ़ाइल चुनें।",
+                    processing: "ऑडियो प्रोसेस हो रही है और उच्चारण जाँचा जा रहा है...",
+                    assessmentSaved: "जाँच पूरी हुई और सहेज ली गई!",
+                    assessmentFailed: "जाँच विफल रही: {error}",
+                    noSampleAudio: "मेल खाते ऑडियो नमूने नहीं मिले।",
+                    sampleDataUnavailable: "सर्वर पर नमूना ऑडियो या पाठ का डेटा उपलब्ध नहीं है।",
+                    sampleLoadFailed: "सर्वर से नमूना रिकॉर्डिंग लोड नहीं हो सकीं।",
+                    sampleReady: "पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें या ऑडियो फ़ाइल अपलोड करें।",
+                    sampleAudioUnavailable: "नमूना ऑडियो उपलब्ध नहीं है; आप पाठ से अभ्यास कर सकते हैं।",
+                    sampleAudioLabel: "नमूना ऑडियो सुनें:",
+                    sampleAudioLoadError: "नमूना ऑडियो लोड नहीं हो सकी। वही आइटम फिर से चुनकर देखें।",
+                    microphoneHttps: "माइक्रोफ़ोन के लिए HTTPS या localhost ज़रूरी है। आप इसके बजाय ऑडियो फ़ाइल अपलोड कर सकते हैं।",
+                    recordingUnsupported: "इस ब्राउज़र में ऑडियो रिकॉर्डिंग समर्थित नहीं है। आप इसके बजाय ऑडियो फ़ाइल अपलोड कर सकते हैं।",
+                    microphoneFailed: "माइक्रोफ़ोन तक पहुँच नहीं मिल सकी: {error}",
+                    serverNoResponse: "सर्वर ने जाँच के उत्तर के बिना HTTP {status} लौटाया।",
+                    lessonOption: "पाठ {lesson} · कहानी {story} · दृश्य {scene} · {character}",
+                    likelyCorrect: "बढ़िया",
+                    practice: "अभ्यास करें",
+                    uncertain: "ठीक-ठाक",
+                    insufficientEvidence: "ठीक-ठाक",
+                    mismatch: "अंकन नहीं हुआ: पाठ मेल नहीं खाता",
+                    transcriptUnchecked: "अंकन नहीं हुआ: ट्रांसक्रिप्ट जाँचा नहीं गया",
+                    unassessable: "अंकन के लिए ऑडियो पर्याप्त नहीं",
+                    notScored: "अंकन नहीं हुआ",
+                    noMatch: "वाक् पहचान पाठ से मेल नहीं खाई; वाक्यांश की टोन प्रतिक्रिया छोड़ दी गई।",
+                    partialMatch: "वाक् पहचान पाठ से केवल आंशिक रूप से मेल खाई; बेमेल वाक्यांशों की टोन का अंकन नहीं होता।",
+                    unchecked: "वाक् पहचान की जाँच नहीं हुई, इसलिए वाक्यांश की टोन प्रतिक्रिया उपलब्ध नहीं है।",
+                    matched: "वाक् पहचान पाठ से मेल खाई; टोन प्रतिक्रिया वाक्यांश के अनुसार दिखाई गई है।",
+                    renderPhraseScores: "हर कार्ड पूरे वाक्यांश के अपेक्षित टोन-क्रम को जाँचता है।",
+                    adviceTone1: "“{char}” – टोन 1: आवाज़ ऊँची और एक-सी रखें, न ऊपर जाए न नीचे।",
+                    adviceTone2: "“{char}” – टोन 2: बीच की पिच से शुरू करें और साफ़ ऊपर उठाएँ, जैसे “हैं?” पूछ रहे हों।",
+                    adviceTone3: "“{char}” – टोन 3: आवाज़ को नीचे उतरने दें, जैसे धीमे से “हम्म…” कहते हैं; ऊँची न रखें।",
+                    adviceTone4: "“{char}” – टोन 4: ऊँची आवाज़ से शुरू करें और तेज़ी से नीचे गिराएँ, जैसे दृढ़ता से “नहीं!” कहते हैं।",
+                    retrySlower: "इस शब्द को थोड़ा धीमे और साफ़ बोलें – जल्दबाज़ी न करें।",
+                    retrySteady: "आवाज़ स्थिर और थोड़ी ऊँची रखें। फुसफुसाने या खरखराती आवाज़ से बचें।",
+                    retryClearer: "टोन को थोड़ा और स्पष्ट करें ताकि उतार-चढ़ाव साफ़ सुनाई दे।",
+                    retryReadExactly: "इस हिस्से को जैसा लिखा है वैसा ही, शुरू से अंत तक पढ़ें।",
+                    retryAgain: "एक बार फिर बोलकर देखें, साफ़ और सामान्य गति से।",
+                    qualityClipped: "रिकॉर्डिंग में विकृति है। माइक्रोफ़ोन से थोड़ा दूर हटें और फिर कोशिश करें।",
+                    qualityTooQuiet: "रिकॉर्डिंग बहुत धीमी है। ज़ोर से बोलें या माइक्रोफ़ोन के पास आएँ।",
+                    qualityNoisy: "पृष्ठभूमि में बहुत शोर है। किसी शांत जगह पर फिर कोशिश करें।",
+                    qualityTooShort: "रिकॉर्डिंग बहुत छोटी है। फिर कोशिश करें।",
+                    qualityTooLong: "रिकॉर्डिंग बहुत लंबी है। केवल अभ्यास वाला वाक्यांश रिकॉर्ड करें।",
+                    qualityNoSpeech: "कोई आवाज़ नहीं मिली। फिर कोशिश करें।",
+                    qualityNoVoicing: "साफ़ आवाज़ नहीं मिली। फुसफुसाने के बजाय आवाज़ के साथ बोलें।",
+                    busyWait: "इसमें आम तौर पर कुछ ही सेकंड लगते हैं।",
+                    notHeard: "सुनाई नहीं दिया",
+                    retryNotHeard: "यह हिस्सा सुनाई नहीं दिया। थोड़ा ज़ोर से बोलें, पूरा पढ़ें और फिर कोशिश करें।",
+                    expectedSequence: "अपेक्षित",
+                    detectedSequence: "पहचाना गया",
+                    sequenceUnavailable: "टोन के पर्याप्त प्रमाण नहीं",
+                    noProbabilityModel: "टोन के लेबल प्रायोगिक नियमों पर आधारित हैं; इस प्रणाली में प्रशिक्षित या कैलिब्रेट की गई टोन-संभावनाएँ नहीं हैं।",
+                    pronunciationFeedback: "टोन प्रतिक्रिया",
+                    phraseScore: "वाक्यांश का स्कोर {score}",
+                    phraseScoreUnavailable: "वाक्यांश का स्कोर उपलब्ध नहीं",
+                    viewJsonOutput: "JSON उत्तर देखें",
+                    scriptProvidedOnly: "अंकन ऊपर दिखाए गए पाठ के आधार पर होता है, इसलिए इसे ठीक वैसा ही पढ़ें जैसा लिखा है।",
+                    syllableDetails: "अक्षर-खंड का विवरण",
+                    syllableColumn: "अक्षर-खंड",
+                    toneColumn: "टोन",
+                    resultColumn: "परिणाम",
+                    noteColumn: "टिप्पणी",
+                    toneShapeNote: "छोटी रेखा लक्ष्य टोन का आकार दिखाती है; चार्ट आपकी मापी गई पिच दिखाता है।",
+                    toneShapeAria: "{tone} की योजनाबद्ध रेखा",
+                    toneT1: "T1",
+                    toneT2: "T2",
+                    toneT3: "T3",
+                    toneT4: "T4",
+                    neutralTone: "तटस्थ",
+                    thirdToneSandhi: "तीसरे टोन का परिवर्तन",
+                    buSandhi: "不 का टोन परिवर्तन",
+                    yiSandhi: "一 का टोन परिवर्तन",
+                    taiwanReading: "ताइवानी उच्चारण",
+                    phraseFinalTone: "वाक्यांश के अंत का टोन",
+                    lexicalToneRule: "शब्दकोश टोन",
+                    matchedTone: "टोन की रेखा लक्ष्य से मेल खाती है।",
+                    differentTone: "टोन की एक अलग रेखा मिली।",
+                    ambiguousTone: "यह रेखा एक से अधिक टोन से मेल खा सकती है।",
+                    neutralToneUncertain: "तटस्थ टोन संदर्भ पर निर्भर करता है।",
+                    boundaryDisagreement: "अक्षर-खंड के बीच के हिस्से और पूरी रेखा में अंतर है।",
+                    alignmentLow: "अक्षर-खंड का समय अस्पष्ट है।",
+                    tooFewFrames: "आवाज़ वाली पिच का डेटा बहुत कम है।",
+                    sparseF0: "पिच के डेटा में अंतराल हैं।",
+                    octaveJump: "पिच ट्रैकिंग में अचानक छलांग है।",
+                    incompleteContour: "पिच का डेटा पूरे अक्षर-खंड को नहीं ढकता।",
+                    pinyinMismatch: "पहचाना गया अक्षर-खंड पाठ से अलग है।",
+                    transcriptNotChecked: "वाक् पहचान की जाँच नहीं हुई।",
+                    phraseNeedsPractice: "एक या अधिक अक्षर-खंडों पर अभ्यास की ज़रूरत है।",
+                    phraseUncertain: "एक या अधिक अक्षर-खंड अनिश्चित हैं।",
+                    otherSyllables: "अन्य अक्षर-खंड",
+                    phrase: "वाक्यांश",
+                    sentence: "वाक्य {number}",
+                    scriptLabel: "पाठ: {script}",
+                    noScores: "उच्चारण के स्कोर उपलब्ध नहीं हैं।",
+                    noPitch: "इस वाक्यांश में मापने योग्य पिच नहीं मिली।",
+                    f0Title: "Hz में F0",
+                    relativeTitle: "सापेक्ष पिच",
+                    relativeSemitone: "आपकी पिच के माध्यिका से सेमीटोन",
+                    halfThirdTone: "आधा-T3",
+                    clause: "वाक्य {number}",
+                    pitchDescription: "पूरे वाक्यांश के लिए आपकी पिच रेखा दिखाई गई है। जहाँ पिच नहीं मापी जा सकी वहाँ जगह खाली रहती है।",
+                    reference: "संदर्भ",
+                    yourRecording: "आपकी रिकॉर्डिंग",
+                    lowConfidence: " (संरेखण या पिच पर भरोसा कम है)",
+                    relative: "सापेक्ष",
+                    hz: "Hz",
+                    invalidAudio: "ऑडियो फ़ाइल का फ़ॉर्मैट अमान्य है।",
+                    emptyScript: "दर्ज किया गया पाठ खाली नहीं हो सकता।",
+                    invalidProfile: "अभ्यास से पहले एक मान्य वक्ता प्रोफ़ाइल दर्ज करें।",
+                    sampleMissing: "चुना हुआ प्रोटोटाइप नमूना नहीं मिला।",
+                    noHanScript: "उच्चारण का अंकन करने के लिए पाठ में कोई मान्य चीनी अक्षर नहीं है।",
+                    emptyName: "नाम दर्ज करें।",
+                    invalidNameLength: "नाम 1 से 100 अक्षरों का होना चाहिए।",
+                    invalidGroup: "ताइवानी या विदेशी में से चुनें।",
+                    attemptMissing: "चुना हुआ अभ्यास-प्रयास नहीं मिला।",
+                    invalidFeedbackRating: "रेटिंग 1 से 5 के बीच की पूर्ण संख्या होनी चाहिए।",
+                    feedbackTooLong: "प्रतिक्रिया की टिप्पणी 2,000 अक्षरों या उससे कम होनी चाहिए।",
+                    scriptMismatch: "चुना हुआ नमूना और पाठ मेल नहीं खाते। केवल विराम-चिह्न और खाली स्थान का अंतर मान्य है। अपेक्षित: {expected} दर्ज किया: {received}",
                 }
             };
 
@@ -1449,6 +2050,7 @@ async def read_index():
                     ? t("stopCalibration") : t("recordCalibration");
                 recordButton.disabled = isVoiceCalibrationProcessing;
                 laterButton.disabled = isVoiceCalibrationRecording || isVoiceCalibrationProcessing;
+                laterButton.hidden = !(calibrated || calibrationHadError);      // never offered to skip up front
                 laterButton.textContent = calibrated ? t("calibrationDone") : t("voiceCalibrationLater");
             }
 
@@ -1492,7 +2094,8 @@ async def read_index():
             }
 
             function chapter5Label(labels) {
-                return labels?.[currentLanguage] || labels?.en || "";
+                const key = currentLanguage === "zh-TW" ? "zh" : currentLanguage;   // the topic data says "zh"
+                return labels?.[key] || labels?.en || "";
             }
 
             function populateChapter5CategoryOptions() {
@@ -1610,7 +2213,7 @@ async def read_index():
                 document.getElementById("chapter5CategoryPicker").hidden = !isChapter5;
                 document.getElementById("chapter5WordControls").hidden = !isChapter5;
                 document.getElementById("customTextHint").hidden = !isCustom;
-                document.getElementById("pinyinToggle").hidden = isCustom;
+                document.getElementById("pinyinToggle").hidden = false;
                 document.getElementById("chapter5ReferenceLabel").hidden = !isChapter5;
                 document.getElementById("sampleAudioSection").hidden = isCustom || !sampleAudio.hasAttribute("src");
                 document.getElementById("scriptLabel").textContent = t(isCustom ? "customScriptLabel" : "matchingScript");
@@ -1629,7 +2232,8 @@ async def read_index():
                 if (selectedPracticeMode() === "custom") {
                     scriptInput.value = customTextDraft;
                     syncPracticeModeUI();
-                    renderTranscript({ script: scriptInput.value, pinyin: [] });
+                    renderCustomTranscript(scriptInput.value);
+                    requestCustomPinyin(scriptInput.value);
                     showTranslatedStatus(hasMandarinCharacters(scriptInput.value) ? "customTextReady" : "customTextHint");
                 } else if (selectedPracticeMode() === "chapter5_word") {
                     syncPracticeModeUI();
@@ -1646,11 +2250,33 @@ async def read_index():
                 syncPracticeControls();
             }
 
+            function renderCustomTranscript(script) {
+                renderTranscript({ script, pinyin: customPinyin.script === script ? customPinyin.values : [] });
+            }
+
+            // The pinyin of what the learner types comes from the server (the same readings the scoring uses).
+            function requestCustomPinyin(script) {
+                clearTimeout(customPinyinTimer);
+                if (!hasMandarinCharacters(script)) return;
+                customPinyinTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/pinyin?text=${encodeURIComponent([...script].slice(0, 200).join(""))}`);
+                        if (!response.ok) return;
+                        const data = await response.json();
+                        customPinyin = { script, values: Array.isArray(data.pinyin) ? data.pinyin : [] };
+                        if (selectedPracticeMode() === "custom" && document.getElementById("scriptInput").value === script) {
+                            renderCustomTranscript(script);
+                        }
+                    } catch (error) { /* the preview simply stays without pinyin */ }
+                }, 250);
+            }
+
             function handleScriptInput() {
                 if (selectedPracticeMode() !== "custom") return;
                 const script = document.getElementById("scriptInput").value;
                 customTextDraft = script;
-                renderTranscript({ script, pinyin: [] });
+                renderCustomTranscript(script);
+                requestCustomPinyin(script);
                 lastAssessment = null;
                 document.getElementById("resultCard").style.display = "none";
                 showFeedbackPanel(null);
@@ -1664,6 +2290,26 @@ async def read_index():
 
             applyLanguage(localStorage.getItem("mandarinUiLanguage") || "en");
 
+            // A full-screen "working" layer for the slow steps (assessment, calibration): a small spinner at the bottom of
+            // the page goes unnoticed. It appears only if the step lasts more than a moment, and cannot be dismissed.
+            function setBusy(isBusy, message = "") {
+                const overlay = document.getElementById("busyOverlay");
+                if (!overlay) return;
+                if (isBusy) {
+                    document.getElementById("busyMessage").textContent = message;
+                    if (overlay.open || busyTimer) return;
+                    busyTimer = setTimeout(() => {
+                        busyTimer = null;
+                        if (!overlay.open && typeof overlay.showModal === "function") overlay.showModal();
+                    }, 200);
+                } else {
+                    clearTimeout(busyTimer);
+                    busyTimer = null;
+                    if (overlay.open) overlay.close();
+                }
+            }
+            document.getElementById("busyOverlay")?.addEventListener("cancel", event => event.preventDefault());
+
             function showStatus(message, isError = false, translation = null) {
                 const status = document.getElementById("status");
                 translation = translation || findTranslationDescriptor(message);
@@ -1675,6 +2321,7 @@ async def read_index():
 
             function renderStatusContent(status, message, isLoading = false) {
                 status.classList.toggle("is-loading", isLoading);
+                setBusy(isLoading, message);
                 status.replaceChildren();
                 if (!isLoading) {
                     status.textContent = message;
@@ -1787,6 +2434,11 @@ async def read_index():
                 status.textContent = t(key, variables);
                 status.dataset.translation = JSON.stringify({ key, variables });
                 status.classList.toggle("error", isError);
+                setBusy(key === "calibrationProcessing", status.textContent);
+                if (isError && !calibrationHadError) {          // a failure must not trap the learner in the dialog
+                    calibrationHadError = true;
+                    syncVoiceCalibrationUI();
+                }
             }
 
             async function toggleVoiceCalibrationRecording() {
@@ -1870,6 +2522,7 @@ async def read_index():
                     setVoiceCalibrationStatus("calibrationFailed", true);
                 } finally {
                     isVoiceCalibrationProcessing = false;
+                    setBusy(false);
                     syncVoiceCalibrationUI();
                 }
             }
@@ -1987,7 +2640,10 @@ async def read_index():
 
             function refreshPinyinDisplay() {
                 const mode = selectedPracticeMode();
-                if (mode === "custom") return;
+                if (mode === "custom") {
+                    renderCustomTranscript(document.getElementById("scriptInput").value);
+                    return;
+                }
                 if (mode === "chapter5_word") {
                     renderChapter5WordItem();
                     refreshPitchPlots();
@@ -2150,6 +2806,7 @@ async def read_index():
                     showTranslatedStatus("assessmentFailed", { error: error.message || error }, true);
                 } finally {
                     isProcessing = false;
+                    setBusy(false);
                     syncPracticeControls();
                 }
             }
@@ -2392,13 +3049,14 @@ async def read_index():
                     practice: t("practice"),
                     uncertain: t("uncertain"),
                     insufficient_evidence: t("insufficientEvidence"),
+                    not_heard: t("notHeard"),
                     text_mismatch: t("mismatch"),
                     transcript_unchecked: t("transcriptUnchecked"),
                     unassessable: t("unassessable")
                 };
                 const statusClass = status => status === "likely_correct"
                     ? "likely-correct"
-                    : status === "practice" ? "practice" : "uncertain";
+                    : status === "practice" ? "practice" : status === "not_heard" ? "not-heard" : "uncertain";
                 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({
                     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
                 }[char]));
@@ -2417,19 +3075,21 @@ async def read_index():
                             ? t("unchecked")
                             : t("matched", { matched: transcriptCheck.matched_syllables || 0, total: transcriptCheck.total_syllables || 0 });
 
+                const qualityKeys = { clipped: "qualityClipped", too_quiet: "qualityTooQuiet", noisy: "qualityNoisy", too_short: "qualityTooShort", too_long: "qualityTooLong", no_speech: "qualityNoSpeech", no_voicing: "qualityNoVoicing" };
+                const qualityKey = data.audio_quality && data.audio_quality.passed === false ? qualityKeys[(data.audio_quality.reasons || [])[0]] : null;
+                const retryKeys = { slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard" };
                 const groups = phrases.map((phrase, index) => {
                     const label = escapeHtml(phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`);
                     const expected = sequenceText(phrase.expected_tone_sequence);
-                    const observed = Array.isArray(phrase.observed_tone_sequence)
-                        && phrase.observed_tone_sequence.some(tone => tone !== null && tone !== undefined)
-                        ? sequenceText(phrase.observed_tone_sequence)
-                        : t("diagnosticNotNeeded");
-                    const icon = phrase.status === "likely_correct" ? "&#10003;" : phrase.status === "practice" ? "&#8635;" : "?";
+                    const icon = phrase.status === "likely_correct" ? "&#10003;" : phrase.status === "practice" ? "&#8635;" : phrase.status === "not_heard" ? "&#8212;" : "?";
+                    const advice = (Array.isArray(phrase.feedback_items) ? phrase.feedback_items : []).map(item =>
+                        item.type === "tone" && item.tone >= 1 && item.tone <= 4 ? t(`adviceTone${item.tone}`, { char: item.char })
+                        : item.type === "retry" && retryKeys[item.code] ? t(retryKeys[item.code]) : "").filter(Boolean);
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="phrase-chart-${index}" onclick="openPhraseChart(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>
-                        <span class="word-card-tone-sequence"><b>${t("detectedSequence")}:</b> ${escapeHtml(observed)}</span>
                         <span class="word-card-status"><span class="status-icon" aria-hidden="true">${icon}</span>${statusLabels[phrase.status] || t("notScored")}</span>
+                        ${advice.map(text => `<span class="word-card-advice">${escapeHtml(text)}</span>`).join("")}
                     </button>`;
                 });
 
@@ -2438,6 +3098,7 @@ async def read_index():
                         <h3 id="pronunciation-title">${t("pronunciationFeedback")}</h3>
                         <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
                         <p class="results-note">${t("noProbabilityModel")}</p>
+                        ${qualityKey ? `<p class="results-advice">${escapeHtml(t(qualityKey))}</p>` : ""}
                         <div class="result-groups">${groups.join("") || `<p>${t("noScores")}</p>`}</div>
                         <details class="json-output">
                             <summary>${t("viewJsonOutput")}</summary>
@@ -2554,8 +3215,9 @@ def _assess_pronunciation(
                 target_script=target_script, calibration=voice_calibration, normalize=converter.convert,
             )
         else:
-            groups, word_annotation_status = tone_assessment.make_groups(
-                clauses, WORD_ANNOTATIONS.get(sample_id, []), converter.convert)
+            words = (tone_assessment.segment_words(clauses, SEGMENT_LEXICON) if practice_mode == "custom"
+                     else WORD_ANNOTATIONS.get(sample_id, []))          # typed text has no annotation: split it into words
+            groups, word_annotation_status = tone_assessment.make_groups(clauses, words, converter.convert)
             contexts = tone_assessment.sentence_contexts(clauses, groups, word_annotation_status)
             payload = tone_assessment.assess_recording(
                 prepared, clauses=clauses, contexts=contexts, groups=groups,
@@ -2576,6 +3238,9 @@ def _assess_pronunciation(
                 status_code=500,
                 detail=f"Assessment completed, but saving this practice attempt failed: {exc}",
             )
+        user_archive.archive_attempt(                       # best effort: never affects the result the learner sees
+            practice_store.get_student(student_id) or {"id": student_id, "name": student_id},
+            payload["saved_attempt"], temp_path, uploaded_filename, payload)
         return payload
     except HTTPException:
         raise

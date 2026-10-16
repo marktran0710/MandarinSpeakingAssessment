@@ -239,5 +239,150 @@ class SentenceProfileTests(unittest.TestCase):
         self.assertEqual(ta.chapter5_contexts(["我也"], item), capt_core.expected_tone_contexts(["我也"]))
 
 
+class DisplayStatusTests(unittest.TestCase):
+    """Sentence practice: more than half of a phrase's scored syllables correct -> yellow (uncertain), not practice."""
+
+    @staticmethod
+    def group(*statuses, tones=None):
+        tones = tones or [2] * len(statuses)
+        return [syllable(status, tone) for status, tone in zip(statuses, tones)]
+
+    def test_off_by_default_so_words_keep_the_strict_status(self):
+        group = self.group("likely_correct", "likely_correct", "practice")
+        self.assertEqual(ta.display_status(group), "practice")
+        self.assertEqual(ta.display_status(group, partial_credit=False), "practice")
+
+    def test_more_than_half_correct_shows_uncertain(self):
+        self.assertEqual(ta.display_status(self.group("likely_correct", "likely_correct", "practice"), True), "uncertain")
+        self.assertEqual(ta.display_status(self.group(*["likely_correct"] * 6, "practice", "practice"), True), "uncertain")
+
+    def test_exactly_half_or_fewer_stays_practice(self):
+        self.assertEqual(ta.display_status(self.group("likely_correct", "practice"), True), "practice")
+        self.assertEqual(ta.display_status(self.group("likely_correct", "likely_correct", "practice", "insufficient_evidence"), True), "practice")
+        self.assertEqual(ta.display_status(self.group("practice", "practice", "likely_correct"), True), "practice")
+
+    def test_doubtful_syllables_count_against_the_phrase(self):
+        group = self.group("likely_correct", "likely_correct", "likely_correct", "practice", "insufficient_evidence")
+        self.assertEqual(ta.display_status(group, True), "uncertain")            # 3 of 5
+        group = self.group("likely_correct", "likely_correct", "practice", "insufficient_evidence", "insufficient_evidence")
+        self.assertEqual(ta.display_status(group, True), "practice")             # 2 of 5
+
+    def test_neutral_syllables_are_not_scored_so_they_do_not_pad_the_share(self):
+        group = self.group("practice", "likely_correct", tones=[3, 5])
+        self.assertEqual(ta.display_status(group, True), "practice")             # 0 of 1 scored syllable
+        group = self.group("likely_correct", "likely_correct", "practice", "likely_correct", tones=[3, 2, 4, 5])
+        self.assertEqual(ta.display_status(group, True), "uncertain")            # 2 of 3 scored
+
+    def test_other_statuses_never_change(self):
+        self.assertEqual(ta.display_status(self.group("likely_correct", "likely_correct"), True), "likely_correct")
+        self.assertEqual(ta.display_status(self.group("insufficient_evidence", "likely_correct"), True), "insufficient_evidence")
+
+
+class PartialCreditPayloadTests(unittest.TestCase):
+    CAL = {"status": "calibrated", "pitch_floor": 90.0, "pitch_ceiling": 450.0, "f0_median": 200.0}
+
+    def result(self):
+        audio, spans = tone_audio([([200, 200, 200, 200], 0.35)] * 3)          # three level syllables
+        syllables = [{"char": c, "start": s, "end": e, "phones": [], "nucleus": (s, e), "alignment_ok": True}
+                     for c, (s, e) in zip("媽媽罵", spans)]                      # the last one should fall (T4)
+        result = tp.verify_utterance(audio, SR, "媽媽罵", self.CAL, alignment=syllables, config=CONFIG)
+        self.assertEqual([s["status"] for s in result["syllables"]], ["likely_correct", "likely_correct", "practice"])
+        return result
+
+    def payload(self, **kwargs):
+        return ta.build_payload(self.result(), groups=[("媽媽罵", 0, 3)], word_annotation_status="matched",
+                                boundaries_from="test", practice_mode="custom", sample_id="custom",
+                                target_script="媽媽罵", audio_quality={"passed": True, "reasons": []}, **kwargs)
+
+    def test_a_mostly_correct_phrase_is_yellow_in_sentence_mode_but_the_syllable_still_says_practice(self):
+        payload = self.payload(partial_credit=True)
+        phrase = payload["phrases"][0]
+        self.assertEqual((phrase["status"], phrase["strict_status"]), ("uncertain", "practice"))
+        self.assertEqual([s["status"] for s in phrase["syllable_diagnostics"]], ["likely_correct", "likely_correct", "practice"])
+        self.assertEqual(phrase["feedback_items"], [{"type": "tone", "char": "罵", "tone": 4}])    # the advice is kept
+        summary = payload["summary"]
+        self.assertEqual((summary["practice"], summary["uncertain"], summary["insufficient_evidence"], summary["partly_correct"]),
+                         (0, 1, 1, 1))
+        self.assertEqual(summary["n_assessable"], 1)
+
+    def test_words_and_the_default_stay_strict(self):
+        payload = self.payload()
+        phrase = payload["phrases"][0]
+        self.assertEqual((phrase["status"], phrase["strict_status"]), ("practice", "practice"))
+        self.assertEqual((payload["summary"]["practice"], payload["summary"]["uncertain"]), (1, 0))
+
+    def test_the_word_service_path_does_not_ask_for_partial_credit(self):
+        import inspect
+        self.assertIn("partial_credit=True", inspect.getsource(ta.assess_recording))
+        self.assertNotIn("partial_credit", inspect.getsource(ta.assess_chapter5_item))
+
+
+class Chapter5PinyinTests(unittest.TestCase):
+    def test_the_catalog_readings_show_over_the_word(self):
+        item = {"script": "沒（有）空", "pinyin": "méi(yǒu) kòng"}
+        self.assertEqual(ta.chapter5_character_pinyin(item), ["méi", "（", "yǒu", "）", "kòng"])
+        self.assertEqual(ta.chapter5_character_pinyin({"script": "音樂", "pinyin": "yīnyuè"}), ["yīn", "yuè"])
+        self.assertEqual(ta.chapter5_character_pinyin({"script": "哥哥", "pinyin": "gēge"}), ["gē", "ge"])
+
+
+class SegmentWordsTests(unittest.TestCase):
+    LEXICON = ta.build_lexicon(["下午茶", "咖啡廳", "我", "要", "哪裡/哪兒", "沒（有）空"], IDENTITY)
+
+    def test_the_lexicon_keeps_multi_character_han_words_and_every_variant(self):
+        self.assertEqual(self.LEXICON, {"下午茶", "咖啡廳", "哪裡", "沒有空"})        # 哪兒: the erhua 兒 is dropped, as in every script
+
+    def test_known_words_stay_whole(self):
+        words = ta.segment_words(["我要喝下午茶"], self.LEXICON)
+        self.assertIn("下午茶", words)
+        self.assertEqual("".join(words), "我要喝下午茶")
+
+    def test_every_character_is_covered_in_order_and_words_never_cross_a_clause(self):
+        clauses = ["我今天想學中文", "你呢", "我們一起去喝下午茶"]
+        words = ta.segment_words(clauses, self.LEXICON)
+        self.assertEqual("".join(words), "".join(clauses))
+        position = 0
+        edges = set()
+        for clause in clauses:
+            position += len(clause)
+            edges.add(position)
+        boundaries, total = set(), 0
+        for word in words:
+            total += len(word)
+            boundaries.add(total)
+        self.assertTrue(edges <= boundaries)                        # each clause end is a word end
+        self.assertTrue(all(len(word) <= 4 for word in words))
+
+    def test_unknown_text_is_split_into_short_words(self):
+        words = ta.segment_words(["我今天想學中文"], self.LEXICON)
+        self.assertGreater(len(words), 2)
+        self.assertTrue(all(len(word) <= 3 for word in words))
+
+    def test_typed_text_is_grouped_by_word_and_counts_as_annotated(self):
+        clauses = ["我今天想學中文", "我們一起去喝下午茶"]
+        groups, status = ta.make_groups(clauses, ta.segment_words(clauses, self.LEXICON), IDENTITY)
+        self.assertEqual(status, "matched")
+        self.assertGreater(len(groups), len(clauses))
+        self.assertEqual(groups[-1][2], sum(len(c) for c in clauses))
+
+    def test_the_book_mode_still_uses_the_teacher_annotation(self):
+        import inspect
+        source = open(ta.__file__, encoding="utf-8").read()
+        self.assertIn("def segment_words", source)
+        main_source = open(str(__import__("pathlib").Path(ta.__file__).with_name("main.py")), encoding="utf-8").read()
+        self.assertIn('practice_mode == "custom"', main_source)
+        self.assertIn("else WORD_ANNOTATIONS.get(sample_id, [])", main_source)
+
+
+class DisplayStatusNotHeardTests(unittest.TestCase):
+    def test_silence_shows_not_heard_in_both_modes_and_never_okay_or_practice(self):
+        silent = [{"status": "insufficient_evidence", "expected_surface_tone": 2, "reasons": ["too_few_voiced_frames"]}]
+        self.assertEqual(ta.display_status(silent), "not_heard")
+        self.assertEqual(ta.display_status(silent, partial_credit=True), "not_heard")
+
+    def test_a_phrase_with_a_measured_voice_keeps_its_strict_status(self):
+        undecided = [{"status": "insufficient_evidence", "expected_surface_tone": 2, "reasons": ["ambiguous_contour"]}]
+        self.assertEqual(ta.display_status(undecided), "insufficient_evidence")
+
+
 if __name__ == "__main__":
     unittest.main()

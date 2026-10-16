@@ -63,6 +63,71 @@ def make_groups(clauses, annotated_words, normalize):
     return groups, status
 
 
+# ---------------------------------------------------------- words in typed text ----
+
+def build_lexicon(words, normalize=lambda text: text):
+    """Words of two to four characters, from the teacher's word annotation and the vocabulary lists."""
+    lexicon = set()
+    for word in words:
+        for variant in re.split(r"[/／]", str(word)):
+            han = "".join(capt_core.prepare_target(normalize(variant)))
+            if 2 <= len(han) <= 4:
+                lexicon.add(han)
+    return lexicon
+
+
+_JIEBA = None
+
+
+def _jieba():
+    global _JIEBA
+    if _JIEBA is None:
+        try:
+            import jieba
+            jieba.setLogLevel(60)
+            _JIEBA = jieba
+        except ImportError:
+            _JIEBA = False
+    return _JIEBA or None
+
+
+def segment_words(clauses, lexicon, max_word=4, cap=3):
+    """Words for text the learner typed, where no word annotation exists, so results can be shown per word.
+
+    Known words (the teacher's annotation and the vocabulary lists) are taken longest first, which reproduces the
+    textbook's own divisions; what is left is split by jieba on the Simplified form (held out from the lexicon, the
+    boundaries agree with the teacher's about 95% of the time). Words are at most `cap` characters and never cross a
+    punctuation clause. Without jieba the unknown characters simply stay single."""
+    jieba = _jieba()
+
+    def unknown(run):
+        if jieba is None or len(run) < 2:
+            return list(run)
+        pieces, position = [], 0
+        for word in jieba.lcut(capt_core.simplified(run)):
+            piece = run[position:position + len(word)]
+            position += len(word)
+            pieces.extend([piece] if len(piece) <= cap else list(piece))
+        return pieces if position == len(run) else list(run)
+
+    words = []
+    for clause in clauses:
+        run, i = "", 0
+        while i < len(clause):
+            for n in range(min(max_word, len(clause) - i), 1, -1):
+                if clause[i:i + n] in lexicon:
+                    words.extend(unknown(run))
+                    run = ""
+                    words.append(clause[i:i + n])
+                    i += n
+                    break
+            else:
+                run += clause[i]
+                i += 1
+        words.extend(unknown(run))
+    return words
+
+
 # ------------------------------------------------------------------ chapter 5 ----
 
 def chapter5_optional_text_variants(text):
@@ -114,6 +179,13 @@ def chapter5_contexts(clauses, item):
     return contexts
 
 
+def chapter5_character_pinyin(item):
+    """Pinyin to show over a Chapter 5 word: the tones the word is scored on (including the catalog's own readings)."""
+    clauses = [c for c in capt_core.prepare_target(item["script"]) if c.strip()]
+    tones = [c["lexical_tone"] for c in chapter5_contexts(clauses, item)]
+    return capt_core.display_pinyin(item["script"], tones=tones)
+
+
 # -------------------------------------------------------------------- payload ----
 
 def phrase_f0(contour, start_sec, end_sec, baseline_hz):
@@ -151,20 +223,82 @@ def _tone_or_zero(tone):
     return 0 if tone == 5 else tone
 
 
+# Why a word could not be judged -> what the learner can do about it. First match wins; codes only, the UI words them.
+_RETRY_BY_REASON = (
+    ("read_exactly", {"bad_alignment"}),
+    ("slower", {"syllable_too_short", "short_analysis_window", "too_few_voiced_frames"}),
+    ("steady", {"unstable_pitch_track", "octave_jump_in_segment", "edge_pitch_step", "low_acoustic_quality"}),
+    ("clearer", {"ambiguous_contour"}),
+)
+MAX_TONE_ADVICE = 3
+
+
+def phrase_feedback(group):
+    """What to do to improve a word, as codes for the UI to word in the learner's language (no measurements).
+
+    practice -> the tone to work on for each flagged syllable; not enough evidence -> how to try again;
+    good -> nothing. A recording that failed the audio quality check is explained once for the whole recording,
+    not under every word."""
+    status = tp.aggregate_status(group)
+    if heard_nothing(group):
+        failed = any("audio_quality_failed" in s["reasons"] for s in group)
+        return [] if failed else [{"type": "retry", "code": "not_heard"}]
+    if status == "practice":
+        return [{"type": "tone", "char": s["character"], "tone": int(s["expected_surface_tone"])}
+                for s in group if s["status"] == "practice"][:MAX_TONE_ADVICE]
+    if status == "insufficient_evidence":
+        reasons = {r for s in group if s["status"] == "insufficient_evidence" for r in s["reasons"]}
+        if "audio_quality_failed" in reasons:
+            return []
+        for code, names in _RETRY_BY_REASON:
+            if reasons & names:
+                return [{"type": "retry", "code": code}]
+        return [{"type": "retry", "code": "again"}]
+    return []
+
+
+PARTIAL_CREDIT_SHARE = 0.5
+
+
+def heard_nothing(group):
+    """No measurable voice anywhere in the phrase (silence, or a recording that was rejected): nothing can be said about
+    its tones, so it is neither good, nor okay, nor something to practise."""
+    return bool(group) and all(
+        s["status"] == "insufficient_evidence" and {"too_few_voiced_frames", "audio_quality_failed"} & set(s.get("reasons") or ())
+        for s in group)
+
+
+def display_status(group, partial_credit=False):
+    """The status a word card shows. Sentence practice (`partial_credit`): a phrase that would show `practice` shows
+    `uncertain` (yellow) instead when MORE than half of its scored syllables are likely_correct, so one doubtful
+    syllable does not turn a mostly-right phrase red. The syllable verdicts themselves are never changed, and the
+    advice for the doubtful syllable is still given. Neutral syllables are not scored, so they do not count.
+    A phrase in which no voice was measured at all shows `not_heard`."""
+    if heard_nothing(group):
+        return "not_heard"
+    status = tp.aggregate_status(group)
+    if status != "practice" or not partial_credit:
+        return status
+    scored = [s for s in group if s["expected_surface_tone"] != 5] or list(group)
+    correct = sum(s["status"] == "likely_correct" for s in scored)
+    return "uncertain" if correct / len(scored) > PARTIAL_CREDIT_SHARE else "practice"
+
+
 def build_payload(result, *, groups, word_annotation_status, boundaries_from, practice_mode, sample_id,
-                  target_script, practice_item=None, audio_quality=None):
+                  target_script, practice_item=None, audio_quality=None, partial_credit=False):
     syllables = result["syllables"]
     baseline = (result.get("f0_extraction") or {}).get("speaker_f0_median")
     phrases = []
     for label, start, end in groups:
         group = syllables[start:end]
-        status = tp.aggregate_status(group)
+        strict = tp.aggregate_status(group)
+        status = display_status(group, partial_credit)
         window = (group[0]["start_ms"] / 1000.0, group[-1]["end_ms"] / 1000.0) if group and "start_ms" in group[0] else None
         flagged = next((s for s in group if s["status"] == "practice"), None)
         note = None
-        if status == "practice":
+        if strict == "practice":
             note = flagged["feedback"]
-        elif status == "insufficient_evidence":
+        elif strict == "insufficient_evidence":
             note = (group[0]["feedback"] if all(s["status"] == "insufficient_evidence" for s in group)
                     else result["config"]["feedback"]["insufficient_evidence"])
         phrases.append({
@@ -175,6 +309,7 @@ def build_payload(result, *, groups, word_annotation_status, boundaries_from, pr
             "observed_tone_sequence": [None] * len(group),   # the verifier checks expected tones; it does not name a tone
             "status": status,
             "phrase_status": status,
+            "strict_status": strict,                         # what the syllables alone say (status can be softer)
             "phrase_window_sec": [round(window[0], 3), round(window[1], 3)] if window else None,
             "phrase_f0": phrase_f0(result.get("contour"), *window, baseline) if window else None,
             "sequence_evidence": [
@@ -182,9 +317,11 @@ def build_payload(result, *, groups, word_annotation_status, boundaries_from, pr
                  "acoustic_quality": s["acoustic_quality"]} for s in group],
             "syllable_diagnostics": group,
             "assessment_note": note,
+            "feedback_items": phrase_feedback(group),
         })
 
-    counts = {k: sum(p["status"] == k for p in phrases) for k in tp.STATUSES}
+    counts = {k: sum(p["status"] == k for p in phrases) for k in (*tp.STATUSES, "uncertain", "not_heard")}
+    yellow = counts["insufficient_evidence"] + counts["uncertain"] + counts["not_heard"]   # neither good nor practice
     total = len(syllables)
     return {
         "success": True,
@@ -230,11 +367,13 @@ def build_payload(result, *, groups, word_annotation_status, boundaries_from, pr
         },
         "summary": {
             "n_phrases": len(phrases),
-            "n_assessable": counts["likely_correct"] + counts["practice"],
+            "n_assessable": counts["likely_correct"] + counts["practice"] + counts["uncertain"],
             "n_with_audio_evidence": sum(1 for p in phrases if p["phrase_f0"]),
             "likely_correct": counts["likely_correct"],
-            "uncertain": counts["insufficient_evidence"],
-            "insufficient_evidence": counts["insufficient_evidence"],
+            "uncertain": yellow,
+            "insufficient_evidence": yellow,
+            "partly_correct": counts["uncertain"],
+            "not_heard": counts["not_heard"],
             "practice": counts["practice"],
             "text_mismatch": 0,
             "transcript_unchecked": 0,
@@ -269,7 +408,7 @@ def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_sta
         boundaries_from=("word-level JSON grouped over MFA syllable boundaries"
                          if word_annotation_status == "matched" else "punctuation clauses"),
         practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
-        audio_quality=prepared.report())
+        audio_quality=prepared.report(), partial_credit=True)
 
 
 def _decided_fraction(result):
