@@ -217,6 +217,45 @@ class CalibrationDialogTests(unittest.TestCase):
         # state used by the first render must be declared before that render (a late `let` breaks the whole page)
         self.assertLess(source.index("let calibrationHadError = false;"), source.index("applyLanguage(localStorage.getItem"))
 
+    def test_all_dialog_and_recorder_state_is_declared_before_the_first_render(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        first_render = source.index("applyLanguage(localStorage.getItem")
+        for declaration in ("let calibrationOutcome", "let calibrationCanStop", "let calibrationClock", "let stopCalibrationMeter",
+                            "let practiceIndicatorTimer", "let stopPracticeMeter", "const CALIBRATION_MIN_MS", "const CALIBRATION_MAX_MS"):
+            self.assertIn(declaration, source)
+            self.assertLess(source.index(declaration), first_render, declaration)
+
+    def test_every_reason_the_server_can_give_has_its_own_translated_tip(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        reasons = set(re.findall(r'CalibrationError\(\s*"(\w+)"', (ROOT / "tone_pipeline.py").read_text(encoding="utf-8")))
+        self.assertGreaterEqual(len(reasons), 6)
+        mapping = dict(re.findall(r'(\w+): "(\w+)",', source[source.index("function calibrationReasonKey"):][:700]))
+        # too_long cannot happen from this page (it stops at 10 s), so it may use the generic message
+        for reason in reasons - {"too_long"}:
+            self.assertIn(reason, mapping, reason)
+        keys = set(mapping.values()) | {"calibrationFailed"}
+        UiLanguagesTests.setUpClass()
+        for code in UiLanguagesTests.CODES:
+            for key in keys:
+                self.assertIn(key, UiLanguagesTests.tables[code], (code, key))
+        self.assertIn('"reason": exc.reason', source)                         # the server tells the page why it said no
+
+    def test_the_page_lets_the_learner_stop_only_inside_the_servers_duration_limits(self):
+        import yaml
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        calibration = yaml.safe_load((ROOT / "tone_v1_config.yaml").read_text(encoding="utf-8"))["calibration"]
+        minimum = int(re.search(r"const CALIBRATION_MIN_MS = (\d+);", source).group(1)) / 1000
+        maximum = int(re.search(r"const CALIBRATION_MAX_MS = (\d+);", source).group(1)) / 1000
+        self.assertGreaterEqual(minimum, calibration["min_duration_sec"])     # "I'm done" never produces a too-short sample
+        self.assertLessEqual(maximum, calibration["max_duration_sec"])        # the automatic stop never produces a too-long one
+
+    def test_the_practice_recorder_shows_a_clock_and_level_and_always_clears_them(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertIn('id="recordingIndicator"', source)
+        self.assertIn("showRecordingIndicator(stream);", source)
+        # hidden again on every way a recording can end: stop button, recorder stop event, microphone failure
+        self.assertGreaterEqual(source.count("hideRecordingIndicator();"), 4)
+
 
 class UiLanguagesTests(unittest.TestCase):
     CODES = ("en", "zh-TW", "vi", "id", "hi")

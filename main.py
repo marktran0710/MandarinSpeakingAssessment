@@ -12,7 +12,7 @@ from threading import Lock
 
 import opencc
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Response, Depends
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from pypinyin import lazy_pinyin, Style
@@ -315,6 +315,8 @@ def calibrate_student_voice(student_id: str, file: UploadFile = File(...)):
         calibration = tone_pipeline.calibrate_voice(samples, sample_rate, tone_assessment.get_config())
         saved = practice_store.save_voice_calibration(student_id, calibration)
         return {"voice_calibration": saved}
+    except tone_pipeline.CalibrationError as exc:          # the page shows a specific, translated tip for each reason
+        return JSONResponse(status_code=422, content={"detail": str(exc), "reason": exc.reason})
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
@@ -779,17 +781,54 @@ async def read_index():
             #speakerDialog .profile-fields { grid-template-columns: 1fr; }
             #cancelProfileBtn { background: #edf2f7; color: #2d3748; margin-top: 12px; }
             #speakerFormError { color: #9b2c2c; min-height: 1.3em; margin: 10px 0 0; }
-            #voiceCalibrationDialog { width: min(520px, calc(100vw - 32px)); box-sizing: border-box; border: 0; border-radius: 14px; padding: 24px; box-shadow: 0 18px 60px rgba(15, 35, 55, 0.28); }
+            #voiceCalibrationDialog { width: min(480px, calc(100vw - 24px)); box-sizing: border-box; border: 0; border-radius: 14px; padding: 20px; box-shadow: 0 18px 60px rgba(15, 35, 55, 0.28); }
             #voiceCalibrationDialog::backdrop { background: rgba(24, 39, 56, 0.55); }
-            #voiceCalibrationDialog h2 { margin-top: 0; }
-            #voiceCalibrationScript { margin: 14px 0; padding: 14px; border: 1px solid #d9e2ef; border-radius: 9px; background: #f7fafc; font-size: 20px; line-height: 1.9; }
-            #voiceCalibrationScript small { display: block; color: #607386; font-size: 14px; line-height: 1.6; }
-            #voiceCalibrationControls { display: flex; flex-wrap: wrap; gap: 9px; }
-            #voiceCalibrationRecordBtn { background: #2b6cb0; color: white; }
-            #voiceCalibrationRecordBtn.recording { background: #1a4f80; }
+            #voiceCalibrationDialog h2 { margin: 0 0 6px; }
+            .cal-why { margin: 0 0 12px; color: #4a5568; line-height: 1.5; }
+            .cal-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+            .cal-step { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #fff; }
+            .cal-head { display: flex; align-items: center; gap: 10px; font-weight: 700; line-height: 1.35; }
+            .cal-num { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #2b6cb0; color: #fff; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
+            .cal-hint { margin: 4px 0 0 34px; color: #607386; font-size: 13px; line-height: 1.4; }
+            #voiceCalibrationScript { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
+            .cal-tile { text-align: center; padding: 8px 2px; border: 1px solid #d9e2ef; border-radius: 9px; background: #f7fafc; min-width: 0; }
+            .cal-tile .han { display: block; font-size: 24px; line-height: 1.25; font-weight: 600; }
+            .cal-tile .py { display: block; font-size: 15px; color: #2d3748; }
+            .cal-tile .tone { display: block; font-size: 11px; color: #607386; overflow-wrap: anywhere; }
+            #voiceCalibrationRecordBtn { width: 100%; min-height: 48px; margin-top: 10px; background: #2b6cb0; color: white; display: flex; align-items: center; justify-content: center; gap: 9px; }
+            #voiceCalibrationRecordBtn::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+            #voiceCalibrationRecordBtn.recording { background: #c53030; }
+            #voiceCalibrationRecordBtn.recording::before { border-radius: 2px; }
+            #voiceCalibrationRecordBtn:disabled { opacity: 0.75; cursor: default; }
+            .cal-live { display: none; margin-top: 10px; }
+            #voiceCalibrationDialog[data-state="recording"] .cal-live { display: block; }
+            .cal-live-row { display: flex; justify-content: space-between; font-size: 13px; color: #4a5568; margin-bottom: 4px; }
+            .cal-meter, .cal-timer { height: 8px; border-radius: 4px; background: #e2e8f0; overflow: hidden; position: relative; }
+            .cal-meter > i { display: block; height: 100%; width: 0; background: #38a169; transition: width 0.08s linear; }
+            .cal-timer-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; color: #4a5568; }
+            .cal-timer-row .cal-timer { flex: 1; }
+            #calibrationTimerText { flex: none; min-width: 3.4em; text-align: right; font-variant-numeric: tabular-nums; }
+            .cal-timer > i { display: block; height: 100%; width: 0; background: #d69e2e; }
+            .cal-timer > i.enough { background: #38a169; }
+            .cal-timer::after { content: ""; position: absolute; left: 52%; top: 0; bottom: 0; width: 2px; background: #fff; }
+            .cal-nosound, .rec-nosound { color: #975a16; font-size: 13px; margin: 6px 0 0; }
+            .cal-nosound[hidden], .rec-nosound[hidden], .rec-indicator[hidden] { display: none; }
+            #voiceCalibrationStatus { margin: 12px 0 0; color: #4a5568; overflow-wrap: anywhere; line-height: 1.5; }
+            #voiceCalibrationStatus:empty { display: none; }
+            #voiceCalibrationStatus.error { color: #9b2c2c; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 10px; padding: 10px 12px; }
+            #voiceCalibrationStatus.success { color: #22543d; background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 10px; padding: 12px; font-weight: 600; }
+            #voiceCalibrationDialog[data-state="success"] .cal-steps, #voiceCalibrationDialog[data-state="success"] .cal-why { display: none; }
+            #voiceCalibrationControls { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+            #voiceCalibrationControls button { flex: 1 1 auto; }
+            #voiceCalibrationControls button[hidden] { display: none; }
             #voiceCalibrationLaterBtn { background: #edf2f7; color: #2d3748; }
-            #voiceCalibrationStatus { min-height: 1.5em; color: #4a5568; overflow-wrap: anywhere; }
-            #voiceCalibrationStatus.error { color: #9b2c2c; }
+            #voiceCalibrationDialog[data-state="success"] #voiceCalibrationLaterBtn { background: #2b6cb0; color: #fff; min-height: 48px; }
+            .cal-privacy { margin: 12px 0 0; font-size: 12px; color: #718096; line-height: 1.4; }
+            .rec-indicator { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 14px; color: #4a5568; }
+            .rec-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #e53e3e; animation: pulse 1.2s infinite; }
+            .rec-clock { flex: none; min-width: 2.6em; font-variant-numeric: tabular-nums; font-weight: 600; }
+            .rec-level { flex: 1; height: 8px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+            .rec-level > i { display: block; height: 100%; width: 0; background: #38a169; transition: width 0.08s linear; }
             #activeStudentPanel { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
             #calibrateVoiceBtn { background: #edf2f7; color: #2d3748; padding: 8px 12px; font-size: 14px; }
             .results-header { border-bottom: 2px solid #edf2f7; padding-bottom: 15px; margin-bottom: 20px; }
@@ -983,7 +1022,8 @@ async def read_index():
                 button { padding: 10px 14px; font-size: 15px; }
                 input[type="text"], textarea, select { padding: 10px; }
                 #speakerDialog, #voiceCalibrationDialog { padding: 16px; }
-                #voiceCalibrationScript { font-size: 18px; padding: 10px; }
+                .cal-step { padding: 10px; }
+                .cal-tile .han { font-size: 22px; }
                 .chapter5-word-controls { padding: 8px; gap: 6px; }
                 .chapter5-word-controls button { font-size: 0; padding: 8px 12px; }
                 #previousChapter5WordBtn::before, #nextChapter5WordBtn::after { margin: 0; font-size: 26px; }
@@ -1036,19 +1076,40 @@ async def read_index():
             </form>
         </dialog>
 
-        <dialog id="voiceCalibrationDialog" aria-labelledby="voiceCalibrationTitle" aria-describedby="voiceCalibrationInstruction">
-            <h2 id="voiceCalibrationTitle" data-i18n="voiceCalibrationTitle">Personalize your voice</h2>
-            <p data-i18n="voiceCalibrationPrompt">Record a short sample so tone feedback can use a pitch range suited to your voice.</p>
-            <p id="voiceCalibrationInstruction" class="upload-hint" data-i18n="voiceCalibrationInstruction">Read the prompt twice, naturally, for about 5–10 seconds. Praat checks your pitch with two tracking methods. The calibration audio is processed and discarded; only pitch statistics are saved.</p>
-            <div id="voiceCalibrationScript" lang="zh-Hant">
-                媽、麻、馬、罵、嗎
-                <small>mā (T1) · má (T2) · mǎ (T3) · mà (T4) · ma (neutral)</small>
-            </div>
-            <div id="voiceCalibrationControls">
-                <button id="voiceCalibrationRecordBtn" type="button" onclick="toggleVoiceCalibrationRecording()" data-i18n="recordCalibration">Record calibration</button>
-                <button id="voiceCalibrationLaterBtn" type="button" onclick="deferVoiceCalibration()" data-i18n="voiceCalibrationLater">Do this later</button>
-            </div>
+        <dialog id="voiceCalibrationDialog" aria-labelledby="voiceCalibrationTitle" aria-describedby="voiceCalibrationInstruction" data-state="idle">
+            <h2 id="voiceCalibrationTitle" data-i18n="voiceCalibrationTitle">Set up your voice</h2>
+            <p id="voiceCalibrationInstruction" class="cal-why" data-i18n="voiceCalibrationPrompt">A 10-second sample lets us judge your tones against your own voice, so the feedback is fair.</p>
+            <ol class="cal-steps">
+                <li class="cal-step">
+                    <div class="cal-head"><span class="cal-num" aria-hidden="true">1</span><span data-i18n="calStep1">Read these five sounds aloud, twice</span></div>
+                    <p class="cal-hint" data-i18n="calStep1Hint">Speak calmly and naturally, like talking to a friend.</p>
+                    <div id="voiceCalibrationScript">
+                        <div class="cal-tile"><span class="han" lang="zh-Hant">媽</span><span class="py">mā</span><span class="tone" data-i18n="calToneHigh">high</span></div>
+                        <div class="cal-tile"><span class="han" lang="zh-Hant">麻</span><span class="py">má</span><span class="tone" data-i18n="calToneRising">rising</span></div>
+                        <div class="cal-tile"><span class="han" lang="zh-Hant">馬</span><span class="py">mǎ</span><span class="tone" data-i18n="calToneDip">dip</span></div>
+                        <div class="cal-tile"><span class="han" lang="zh-Hant">罵</span><span class="py">mà</span><span class="tone" data-i18n="calToneFalling">falling</span></div>
+                        <div class="cal-tile"><span class="han" lang="zh-Hant">嗎</span><span class="py">ma</span><span class="tone" data-i18n="calToneLight">light</span></div>
+                    </div>
+                </li>
+                <li class="cal-step">
+                    <div class="cal-head"><span class="cal-num" aria-hidden="true">2</span><span data-i18n="calStep2">Press the button and start reading</span></div>
+                    <button id="voiceCalibrationRecordBtn" type="button" onclick="toggleVoiceCalibrationRecording()">Start recording</button>
+                    <div class="cal-live">
+                        <div class="cal-live-row"><span data-i18n="micLevel">Microphone level</span></div>
+                        <div class="cal-meter" aria-hidden="true"><i id="calibrationLevelBar"></i></div>
+                        <div class="cal-timer-row">
+                            <div class="cal-timer" aria-hidden="true"><i id="calibrationTimerBar"></i></div>
+                            <span id="calibrationTimerText">0 s</span>
+                        </div>
+                        <p id="calibrationNoSound" class="cal-nosound" data-i18n="micNoSound" hidden>We can't hear you. Speak a little louder or check your microphone.</p>
+                    </div>
+                </li>
+            </ol>
             <p id="voiceCalibrationStatus" role="status" aria-live="polite"></p>
+            <div id="voiceCalibrationControls">
+                <button id="voiceCalibrationLaterBtn" type="button" onclick="deferVoiceCalibration()" data-i18n="voiceCalibrationLater">Skip for now</button>
+            </div>
+            <p class="cal-privacy" data-i18n="calPrivacy">Your recording is not kept. Only a few pitch numbers are saved.</p>
         </dialog>
 
         <dialog id="busyOverlay" aria-label="Working">
@@ -1116,6 +1177,12 @@ async def read_index():
                 <button id="recordBtn" onclick="toggleRecording()" disabled data-i18n="startRecording">Start recording</button>
                 <button id="stopBtn" onclick="stopRecording()" disabled data-i18n="stopAndAssess">Stop &amp; assess</button>
             </div>
+            <div id="recordingIndicator" class="rec-indicator" hidden>
+                <span class="rec-dot" aria-hidden="true"></span>
+                <span id="recordingClock" class="rec-clock">0:00</span>
+                <div class="rec-level" role="img" aria-label="Microphone level" data-i18n-aria-label="micLevel"><i id="recordingLevelBar"></i></div>
+            </div>
+            <p id="recordingNoSound" class="rec-nosound" data-i18n="micNoSound" hidden>We can't hear you. Speak a little louder or check your microphone.</p>
 
             <div id="recordedAudioContainer" hidden>
                 <b id="recordedAudioLabel" data-i18n="latestRecording">Your latest microphone recording:</b>
@@ -1190,6 +1257,14 @@ async def read_index():
             let isRecording = false;
             let isProcessing = false;
             let calibrationHadError = false;   // "Do this later" only appears once calibration has failed (or is done)
+            let calibrationOutcome = "";       // "", "success" or "error": what the dialog shows after an attempt
+            let calibrationCanStop = false;    // the sample is long enough to stop (5 s)
+            let calibrationClock = null;
+            let stopCalibrationMeter = null;
+            let practiceIndicatorTimer = null;
+            let stopPracticeMeter = null;
+            const CALIBRATION_MIN_MS = 5200;   // the server needs 5 s of speech; a little extra for the start-up lag
+            const CALIBRATION_MAX_MS = 10000;
             let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
@@ -1240,11 +1315,29 @@ async def read_index():
                     feedbackImprove: "Anything we should improve? (optional)", feedbackPlaceholder: "Share a short comment", sendFeedback: "Send feedback",
                     sendingFeedback: "Sending feedback...", feedbackSaved: "Thanks for your feedback!", feedbackSaveFailed: "Could not save feedback.",
                     practicingAs: "Practicing as {name} ({group})", profileReady: "Profile ready for {name}. Choose a sample to begin.",
-                    voiceCalibrationTitle: "Personalize your voice", voiceCalibrationPrompt: "Record a short sample so tone feedback can use a pitch range suited to your voice.",
-                    voiceCalibrationInstruction: "Read the prompt twice, naturally, for about 5–10 seconds. Praat checks your pitch with two tracking methods. The calibration audio is processed and discarded; only pitch statistics are saved.",
-                    voiceCalibrationLater: "Do this later", calibrationDone: "Done", recordCalibration: "Record calibration", stopCalibration: "Stop and calibrate",
-                    calibrationRecording: "Recording… read the prompt twice.", calibrationProcessing: "Checking your pitch range…", calibrationSaved: "Voice calibration saved.",
-                    calibrationTooShort: "Please record for at least 5 seconds.", calibrationFailed: "Could not calibrate this recording. Read the full prompt clearly and try again.",
+                    voiceCalibrationTitle: "Set up your voice", voiceCalibrationPrompt: "A 10-second sample lets us judge your tones against your own voice, so the feedback is fair.",
+                    calPrivacy: "Your recording is not kept. Only a few pitch numbers are saved.",
+                    voiceCalibrationLater: "Skip for now", calibrationDone: "Start practicing", recordCalibration: "Start recording", stopCalibration: "I'm done",
+                    calibrationRecording: "Recording… read the five sounds twice.", calibrationProcessing: "Checking your voice…", calibrationSaved: "All set! Your tones will now be judged against your own voice.",
+                    calibrationTooShort: "That was too short. Keep reading until the button lets you stop.", calibrationFailed: "We couldn't use that recording. Read all five sounds twice, clearly, then try again.",
+                    calStep1: "Read these five sounds aloud, twice",
+                    calStep1Hint: "Speak calmly and naturally, like talking to a friend.",
+                    calStep2: "Press the button and start reading",
+                    calToneHigh: "high",
+                    calToneRising: "rising",
+                    calToneDip: "dip",
+                    calToneFalling: "falling",
+                    calToneLight: "light",
+                    calKeepReading: "Keep reading…",
+                    calTryAgain: "Try again",
+                    calSeconds: "{seconds} s",
+                    calClose: "Close",
+                    micNoSound: "We can't hear you. Speak a little louder or check your microphone.",
+                    micLevel: "Microphone level",
+                    calReasonClipped: "The sound was too loud and distorted. Move a little back from the microphone and try again.",
+                    calReasonNoisy: "There was too much background noise. Try again in a quieter place.",
+                    calReasonUnclear: "We couldn't follow your pitch clearly. Read all five sounds twice, calmly, and try again.",
+                    calReasonQuiet: "We heard too little voice. Speak out loud (a whisper doesn't work) and try again.",
                     calibrateVoice: "Calibrate voice", recalibrateVoice: "Recalibrate voice", voiceCalibrated: "Voice range personalized", voiceNotCalibrated: "Using a general pitch range",
                     profileSaveFailed: "Could not save speaker profile.", needProfile: "Enter your name and participant group first.",
                     chooseAudio: "Choose an audio file first.", unsupportedAudio: "Unsupported file format. Choose WAV, MP3, M4A, OGG, FLAC, or WebM.",
@@ -1345,11 +1438,29 @@ async def read_index():
                     feedbackImprove: "你覺得哪些地方可以改進？（選填）", feedbackPlaceholder: "請簡短留言", sendFeedback: "送出回饋",
                     sendingFeedback: "正在送出回饋…", feedbackSaved: "謝謝你的回饋！", feedbackSaveFailed: "無法儲存回饋。",
                     practicingAs: "目前使用者：{name}（{group}）", profileReady: "使用者資料已準備好，{name}，請選擇範例開始練習。",
-                    voiceCalibrationTitle: "個人化你的聲音", voiceCalibrationPrompt: "錄製一小段聲音，讓聲調回饋使用適合你的音高範圍。",
-                    voiceCalibrationInstruction: "請自然地將提示內容讀兩次，約 5–10 秒。Praat 會用兩種追蹤方式檢查音高。校準音檔只用於即時分析後丟棄，只會儲存音高統計資料。",
-                    voiceCalibrationLater: "稍後再做", calibrationDone: "完成", recordCalibration: "開始校準錄音", stopCalibration: "停止並校準",
-                    calibrationRecording: "錄音中……請將提示內容讀兩次。", calibrationProcessing: "正在檢查音高範圍……", calibrationSaved: "已儲存個人聲音校準。",
-                    calibrationTooShort: "請至少錄音 5 秒。", calibrationFailed: "無法校準這段錄音。請清楚讀完整段提示後再試一次。",
+                    voiceCalibrationTitle: "設定你的聲音", voiceCalibrationPrompt: "錄一段約 10 秒的聲音，系統就能依你自己的音高來判斷聲調，回饋會更公平。",
+                    calPrivacy: "錄音不會被保存，只會儲存少量音高數據。",
+                    voiceCalibrationLater: "先跳過", calibrationDone: "開始練習", recordCalibration: "開始錄音", stopCalibration: "我讀完了",
+                    calibrationRecording: "錄音中……請把五個音讀兩遍。", calibrationProcessing: "正在檢查你的聲音……", calibrationSaved: "完成！之後的聲調會依你自己的聲音來判斷。",
+                    calibrationTooShort: "錄音太短了。請繼續朗讀，等按鈕可以按時再停止。", calibrationFailed: "這段錄音無法使用。請清楚地把五個音讀兩遍，再試一次。",
+                    calStep1: "請把這五個音大聲讀兩遍",
+                    calStep1Hint: "像和朋友聊天一樣，自然、放鬆地讀。",
+                    calStep2: "按下按鈕，開始朗讀",
+                    calToneHigh: "高平",
+                    calToneRising: "上升",
+                    calToneDip: "降升",
+                    calToneFalling: "下降",
+                    calToneLight: "輕聲",
+                    calKeepReading: "請繼續朗讀……",
+                    calTryAgain: "再試一次",
+                    calSeconds: "{seconds} 秒",
+                    calClose: "關閉",
+                    micNoSound: "聽不到你的聲音。請稍微大聲一點，或檢查麥克風。",
+                    micLevel: "麥克風音量",
+                    calReasonClipped: "聲音太大而破音了。請離麥克風遠一點，再試一次。",
+                    calReasonNoisy: "背景噪音太多。請到安靜的地方再試一次。",
+                    calReasonUnclear: "無法清楚追蹤你的音高。請自然地把五個音讀兩遍，再試一次。",
+                    calReasonQuiet: "聽到的聲音太少。請出聲朗讀（氣音無法使用），再試一次。",
                     calibrateVoice: "校準聲音", recalibrateVoice: "重新校準聲音", voiceCalibrated: "已個人化音高範圍", voiceNotCalibrated: "目前使用一般音高範圍",
                     profileSaveFailed: "無法儲存使用者資料。", needProfile: "請先輸入姓名和參與者類別。",
                     chooseAudio: "請先選擇音檔。", unsupportedAudio: "不支援此檔案格式。請選擇 WAV、MP3、M4A、OGG、FLAC 或 WebM。",
@@ -1449,11 +1560,29 @@ async def read_index():
                     feedbackImprove: "Bạn muốn chúng tôi cải thiện điều gì? (không bắt buộc)", feedbackPlaceholder: "Viết nhận xét ngắn", sendFeedback: "Gửi phản hồi",
                     sendingFeedback: "Đang gửi phản hồi...", feedbackSaved: "Cảm ơn phản hồi của bạn!", feedbackSaveFailed: "Không thể lưu phản hồi.",
                     practicingAs: "Đang luyện tập: {name} ({group})", profileReady: "Đã sẵn sàng, {name}. Hãy chọn mẫu để bắt đầu.",
-                    voiceCalibrationTitle: "Cá nhân hóa giọng nói", voiceCalibrationPrompt: "Ghi một đoạn ngắn để hệ thống chọn dải cao độ phù hợp với giọng của bạn.",
-                    voiceCalibrationInstruction: "Đọc tự nhiên đoạn gợi ý hai lần, trong khoảng 5–10 giây. Praat kiểm tra cao độ bằng hai cách theo dõi. Âm thanh hiệu chuẩn chỉ được xử lý rồi xóa; hệ thống chỉ lưu thống kê cao độ.",
-                    voiceCalibrationLater: "Để sau", calibrationDone: "Xong", recordCalibration: "Ghi mẫu hiệu chuẩn", stopCalibration: "Dừng và hiệu chuẩn",
-                    calibrationRecording: "Đang ghi… hãy đọc đoạn gợi ý hai lần.", calibrationProcessing: "Đang kiểm tra dải cao độ…", calibrationSaved: "Đã lưu hiệu chuẩn giọng nói.",
-                    calibrationTooShort: "Hãy ghi ít nhất 5 giây.", calibrationFailed: "Không thể hiệu chuẩn bản ghi này. Hãy đọc rõ toàn bộ đoạn gợi ý rồi thử lại.",
+                    voiceCalibrationTitle: "Thiết lập giọng nói của bạn", voiceCalibrationPrompt: "Một đoạn ghi khoảng 10 giây giúp hệ thống chấm thanh điệu theo chính giọng của bạn, nên nhận xét sẽ công bằng hơn.",
+                    calPrivacy: "Bản ghi không được lưu lại. Hệ thống chỉ lưu vài số liệu về cao độ.",
+                    voiceCalibrationLater: "Bỏ qua lúc này", calibrationDone: "Bắt đầu luyện tập", recordCalibration: "Bắt đầu ghi", stopCalibration: "Tôi đọc xong rồi",
+                    calibrationRecording: "Đang ghi… hãy đọc năm âm hai lần.", calibrationProcessing: "Đang kiểm tra giọng của bạn…", calibrationSaved: "Xong rồi! Từ giờ thanh điệu sẽ được chấm theo chính giọng của bạn.",
+                    calibrationTooShort: "Bản ghi quá ngắn. Hãy đọc tiếp cho đến khi bấm được nút dừng.", calibrationFailed: "Không dùng được bản ghi này. Hãy đọc rõ cả năm âm, hai lần, rồi thử lại.",
+                    calStep1: "Đọc to năm âm này, hai lần",
+                    calStep1Hint: "Đọc nhẹ nhàng, tự nhiên như đang nói chuyện với bạn bè.",
+                    calStep2: "Bấm nút và bắt đầu đọc",
+                    calToneHigh: "cao",
+                    calToneRising: "lên",
+                    calToneDip: "xuống-lên",
+                    calToneFalling: "xuống",
+                    calToneLight: "nhẹ",
+                    calKeepReading: "Hãy đọc tiếp…",
+                    calTryAgain: "Thử lại",
+                    calSeconds: "{seconds} giây",
+                    calClose: "Đóng",
+                    micNoSound: "Chưa nghe thấy giọng bạn. Hãy nói to hơn một chút hoặc kiểm tra micro.",
+                    micLevel: "Mức âm lượng micro",
+                    calReasonClipped: "Âm thanh quá to và bị vỡ. Hãy lùi xa micro một chút rồi thử lại.",
+                    calReasonNoisy: "Có quá nhiều tiếng ồn xung quanh. Hãy thử lại ở nơi yên tĩnh hơn.",
+                    calReasonUnclear: "Chưa theo dõi rõ cao độ của bạn. Hãy đọc nhẹ nhàng cả năm âm hai lần rồi thử lại.",
+                    calReasonQuiet: "Nghe được quá ít giọng nói. Hãy đọc thành tiếng (thì thầm sẽ không dùng được) rồi thử lại.",
                     calibrateVoice: "Hiệu chuẩn giọng", recalibrateVoice: "Hiệu chuẩn lại giọng", voiceCalibrated: "Đã cá nhân hóa dải cao độ", voiceNotCalibrated: "Đang dùng dải cao độ mặc định",
                     profileSaveFailed: "Không thể lưu thông tin người nói.", needProfile: "Trước tiên hãy nhập tên và nhóm người tham gia.",
                     chooseAudio: "Trước tiên hãy chọn tệp âm thanh.", unsupportedAudio: "Định dạng tệp không được hỗ trợ. Chọn WAV, MP3, M4A, OGG, FLAC hoặc WebM.",
@@ -1591,18 +1720,36 @@ async def read_index():
                     feedbackSaveFailed: "Masukan tidak dapat disimpan.",
                     practicingAs: "Berlatih sebagai {name} ({group})",
                     profileReady: "Profil {name} siap. Pilih contoh untuk memulai.",
-                    voiceCalibrationTitle: "Sesuaikan dengan suara Anda",
-                    voiceCalibrationPrompt: "Rekam contoh singkat agar umpan balik nada memakai rentang suara yang cocok untuk Anda.",
-                    voiceCalibrationInstruction: "Bacalah teks di bawah dua kali secara alami, sekitar 5–10 detik. Praat memeriksa nada suara Anda dengan dua metode pelacakan. Audio kalibrasi diproses lalu dibuang; hanya statistik nada yang disimpan.",
-                    voiceCalibrationLater: "Lakukan nanti",
-                    calibrationDone: "Selesai",
-                    recordCalibration: "Rekam kalibrasi",
-                    stopCalibration: "Berhenti dan kalibrasi",
-                    calibrationRecording: "Merekam… bacalah teks dua kali.",
-                    calibrationProcessing: "Memeriksa rentang nada suara Anda…",
-                    calibrationSaved: "Kalibrasi suara tersimpan.",
-                    calibrationTooShort: "Rekamlah setidaknya 5 detik.",
-                    calibrationFailed: "Rekaman ini tidak dapat dikalibrasi. Bacalah seluruh teks dengan jelas lalu coba lagi.",
+                    voiceCalibrationTitle: "Atur suara Anda",
+                    voiceCalibrationPrompt: "Contoh suara sekitar 10 detik membuat nada Anda dinilai sesuai suara Anda sendiri, sehingga umpan baliknya lebih adil.",
+                    calPrivacy: "Rekaman Anda tidak disimpan. Hanya beberapa angka nada yang disimpan.",
+                    voiceCalibrationLater: "Lewati dulu",
+                    calibrationDone: "Mulai berlatih",
+                    recordCalibration: "Mulai merekam",
+                    stopCalibration: "Saya sudah selesai",
+                    calibrationRecording: "Merekam… bacalah kelima bunyi dua kali.",
+                    calibrationProcessing: "Memeriksa suara Anda…",
+                    calibrationSaved: "Selesai! Mulai sekarang nada Anda dinilai sesuai suara Anda sendiri.",
+                    calibrationTooShort: "Rekaman terlalu singkat. Teruslah membaca sampai tombol berhenti bisa ditekan.",
+                    calibrationFailed: "Rekaman ini tidak bisa dipakai. Bacalah kelima bunyi dengan jelas, dua kali, lalu coba lagi.",
+                    calStep1: "Bacalah lima bunyi ini dengan lantang, dua kali",
+                    calStep1Hint: "Bacalah dengan tenang dan alami, seperti mengobrol dengan teman.",
+                    calStep2: "Tekan tombol dan mulai membaca",
+                    calToneHigh: "tinggi",
+                    calToneRising: "naik",
+                    calToneDip: "turun-naik",
+                    calToneFalling: "turun",
+                    calToneLight: "ringan",
+                    calKeepReading: "Teruskan membaca…",
+                    calTryAgain: "Coba lagi",
+                    calSeconds: "{seconds} dtk",
+                    calClose: "Tutup",
+                    micNoSound: "Suara Anda tidak terdengar. Bicaralah sedikit lebih keras atau periksa mikrofon.",
+                    micLevel: "Tingkat suara mikrofon",
+                    calReasonClipped: "Suara terlalu keras dan pecah. Menjauhlah sedikit dari mikrofon lalu coba lagi.",
+                    calReasonNoisy: "Terlalu banyak bising di sekitar. Coba lagi di tempat yang lebih tenang.",
+                    calReasonUnclear: "Nada suara Anda belum bisa diikuti dengan jelas. Bacalah kelima bunyi dua kali dengan tenang lalu coba lagi.",
+                    calReasonQuiet: "Suara yang terdengar terlalu sedikit. Bicaralah dengan suara keras (berbisik tidak bisa) lalu coba lagi.",
                     calibrateVoice: "Kalibrasi suara",
                     recalibrateVoice: "Kalibrasi ulang suara",
                     voiceCalibrated: "Rentang suara sudah disesuaikan",
@@ -1804,18 +1951,36 @@ async def read_index():
                     feedbackSaveFailed: "प्रतिक्रिया सहेजी नहीं जा सकी।",
                     practicingAs: "{name} ({group}) के रूप में अभ्यास",
                     profileReady: "{name} की प्रोफ़ाइल तैयार है। शुरू करने के लिए कोई नमूना चुनें।",
-                    voiceCalibrationTitle: "अपनी आवाज़ के अनुसार सेट करें",
-                    voiceCalibrationPrompt: "एक छोटा नमूना रिकॉर्ड करें ताकि टोन की प्रतिक्रिया आपकी आवाज़ की पिच-सीमा के अनुसार हो।",
-                    voiceCalibrationInstruction: "नीचे दिया पाठ स्वाभाविक ढंग से दो बार पढ़ें, लगभग 5–10 सेकंड। Praat दो अलग तरीकों से आपकी पिच जाँचता है। कैलिब्रेशन ऑडियो प्रोसेस होकर हटा दी जाती है; केवल पिच के आँकड़े सहेजे जाते हैं।",
-                    voiceCalibrationLater: "बाद में करें",
-                    calibrationDone: "हो गया",
-                    recordCalibration: "कैलिब्रेशन रिकॉर्ड करें",
-                    stopCalibration: "रोकें और कैलिब्रेट करें",
-                    calibrationRecording: "रिकॉर्ड हो रहा है… पाठ को दो बार पढ़ें।",
-                    calibrationProcessing: "आपकी पिच-सीमा जाँची जा रही है…",
-                    calibrationSaved: "आवाज़ का कैलिब्रेशन सहेज लिया गया।",
-                    calibrationTooShort: "कृपया कम से कम 5 सेकंड रिकॉर्ड करें।",
-                    calibrationFailed: "इस रिकॉर्डिंग से कैलिब्रेशन नहीं हो सका। पूरा पाठ साफ़ पढ़कर फिर कोशिश करें।",
+                    voiceCalibrationTitle: "अपनी आवाज़ सेट करें",
+                    voiceCalibrationPrompt: "लगभग 10 सेकंड का नमूना हमें आपके टोन को आपकी अपनी आवाज़ के हिसाब से परखने देता है, ताकि प्रतिक्रिया निष्पक्ष रहे।",
+                    calPrivacy: "आपकी रिकॉर्डिंग सहेजी नहीं जाती। केवल कुछ पिच-आँकड़े सहेजे जाते हैं।",
+                    voiceCalibrationLater: "अभी छोड़ें",
+                    calibrationDone: "अभ्यास शुरू करें",
+                    recordCalibration: "रिकॉर्डिंग शुरू करें",
+                    stopCalibration: "मेरा पढ़ना हो गया",
+                    calibrationRecording: "रिकॉर्ड हो रहा है… पाँचों ध्वनियाँ दो बार पढ़ें।",
+                    calibrationProcessing: "आपकी आवाज़ जाँची जा रही है…",
+                    calibrationSaved: "हो गया! अब आपके टोन आपकी अपनी आवाज़ के हिसाब से परखे जाएँगे।",
+                    calibrationTooShort: "रिकॉर्डिंग बहुत छोटी थी। तब तक पढ़ते रहें जब तक बटन दबाने लायक न हो जाए।",
+                    calibrationFailed: "यह रिकॉर्डिंग इस्तेमाल नहीं हो सकी। पाँचों ध्वनियाँ साफ़ दो बार पढ़कर फिर कोशिश करें।",
+                    calStep1: "इन पाँच ध्वनियों को ज़ोर से, दो बार पढ़ें",
+                    calStep1Hint: "शांत और स्वाभाविक ढंग से पढ़ें, जैसे दोस्त से बात कर रहे हों।",
+                    calStep2: "बटन दबाएँ और पढ़ना शुरू करें",
+                    calToneHigh: "ऊँचा",
+                    calToneRising: "चढ़ता",
+                    calToneDip: "गिर-चढ़",
+                    calToneFalling: "गिरता",
+                    calToneLight: "हल्का",
+                    calKeepReading: "पढ़ते रहें…",
+                    calTryAgain: "फिर कोशिश करें",
+                    calSeconds: "{seconds} सेकंड",
+                    calClose: "बंद करें",
+                    micNoSound: "आपकी आवाज़ सुनाई नहीं दे रही। थोड़ा ज़ोर से बोलें या माइक्रोफ़ोन जाँचें।",
+                    micLevel: "माइक्रोफ़ोन स्तर",
+                    calReasonClipped: "आवाज़ बहुत तेज़ होकर फट गई। माइक्रोफ़ोन से थोड़ा दूर हटकर फिर कोशिश करें।",
+                    calReasonNoisy: "आसपास बहुत शोर था। किसी शांत जगह पर फिर कोशिश करें।",
+                    calReasonUnclear: "आपकी पिच साफ़ पकड़ में नहीं आई। पाँचों ध्वनियाँ शांति से दो बार पढ़कर फिर कोशिश करें।",
+                    calReasonQuiet: "आवाज़ बहुत कम सुनाई दी। ज़ोर से बोलें (फुसफुसाने से काम नहीं चलेगा) और फिर कोशिश करें।",
                     calibrateVoice: "आवाज़ कैलिब्रेट करें",
                     recalibrateVoice: "आवाज़ दोबारा कैलिब्रेट करें",
                     voiceCalibrated: "आवाज़ की सीमा आपके अनुसार सेट है",
@@ -2046,12 +2211,124 @@ async def read_index():
                     ? t(calibrated ? "voiceCalibrated" : "voiceNotCalibrated")
                     : "";
                 button.textContent = t(calibrated ? "recalibrateVoice" : "calibrateVoice");
+                const dialog = document.getElementById("voiceCalibrationDialog");
+                dialog.dataset.state = isVoiceCalibrationProcessing ? "processing"
+                    : isVoiceCalibrationRecording ? "recording" : (calibrationOutcome || "idle");
                 recordButton.textContent = isVoiceCalibrationRecording
-                    ? t("stopCalibration") : t("recordCalibration");
-                recordButton.disabled = isVoiceCalibrationProcessing;
+                    ? t(calibrationCanStop ? "stopCalibration" : "calKeepReading")
+                    : t(calibrationOutcome === "error" ? "calTryAgain" : "recordCalibration");
+                recordButton.disabled = isVoiceCalibrationProcessing || (isVoiceCalibrationRecording && !calibrationCanStop);
+                recordButton.classList.toggle("recording", isVoiceCalibrationRecording);
+                recordButton.hidden = calibrationOutcome === "success";
                 laterButton.disabled = isVoiceCalibrationRecording || isVoiceCalibrationProcessing;
                 laterButton.hidden = !(calibrated || calibrationHadError);      // never offered to skip up front
-                laterButton.textContent = calibrated ? t("calibrationDone") : t("voiceCalibrationLater");
+                laterButton.textContent = t(calibrationOutcome === "success" ? "calibrationDone"
+                    : calibrated ? "calClose" : "voiceCalibrationLater");
+            }
+
+            // Live microphone feedback shared by the calibration dialog and the practice recorder: a level bar that moves
+            // with the voice, and a hint when nothing has been heard for two seconds.
+            function startMicMeter(stream, barElement, hintElement) {
+                let context = null;
+                let frame = 0;
+                let stopped = false;
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContextClass || !barElement) return () => {};
+                    context = new AudioContextClass();
+                    const analyser = context.createAnalyser();
+                    analyser.fftSize = 1024;
+                    context.createMediaStreamSource(stream).connect(analyser);
+                    const samples = new Float32Array(analyser.fftSize);
+                    const startedAt = Date.now();
+                    let lastHeardAt = startedAt;
+                    const tick = () => {
+                        if (stopped) return;
+                        analyser.getFloatTimeDomainData(samples);
+                        let energy = 0;
+                        for (let i = 0; i < samples.length; i++) energy += samples[i] * samples[i];
+                        const level = Math.sqrt(energy / samples.length);
+                        barElement.style.width = `${Math.min(100, Math.round(Math.sqrt(level) * 160))}%`;
+                        const now = Date.now();
+                        if (level > 0.008) lastHeardAt = now;
+                        if (hintElement) hintElement.hidden = !(now - startedAt > 2000 && now - lastHeardAt > 2000);
+                        frame = requestAnimationFrame(tick);
+                    };
+                    tick();
+                } catch (error) {
+                    return () => {};                               // the meter is a nicety; recording works without it
+                }
+                return () => {
+                    stopped = true;
+                    cancelAnimationFrame(frame);
+                    try { context.close(); } catch (error) { /* already closed */ }
+                    barElement.style.width = "0%";
+                    if (hintElement) hintElement.hidden = true;
+                };
+            }
+
+            function formatClock(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+            }
+
+            function showRecordingIndicator(stream) {
+                const clock = document.getElementById("recordingClock");
+                const startedAt = Date.now();
+                hideRecordingIndicator();
+                document.getElementById("recordingIndicator").hidden = false;
+                clock.textContent = formatClock(0);
+                practiceIndicatorTimer = window.setInterval(() => { clock.textContent = formatClock(Date.now() - startedAt); }, 250);
+                stopPracticeMeter = startMicMeter(stream, document.getElementById("recordingLevelBar"),
+                    document.getElementById("recordingNoSound"));
+            }
+
+            function hideRecordingIndicator() {
+                window.clearInterval(practiceIndicatorTimer);
+                practiceIndicatorTimer = null;
+                if (stopPracticeMeter) stopPracticeMeter();
+                stopPracticeMeter = null;
+                document.getElementById("recordingIndicator").hidden = true;
+            }
+
+            function startCalibrationLive(stream) {
+                stopCalibrationLive();
+                calibrationCanStop = false;
+                const bar = document.getElementById("calibrationTimerBar");
+                const text = document.getElementById("calibrationTimerText");
+                const update = () => {
+                    const elapsed = Date.now() - voiceCalibrationStartedAt;
+                    bar.style.width = `${Math.min(100, elapsed / CALIBRATION_MAX_MS * 100)}%`;
+                    bar.classList.toggle("enough", elapsed >= CALIBRATION_MIN_MS);
+                    text.textContent = t("calSeconds", { seconds: Math.min(10, Math.floor(elapsed / 1000)) });
+                    if (elapsed >= CALIBRATION_MIN_MS && !calibrationCanStop) {
+                        calibrationCanStop = true;                  // the button turns into "I'm done"
+                        syncVoiceCalibrationUI();
+                    }
+                };
+                update();
+                calibrationClock = window.setInterval(update, 100);
+                stopCalibrationMeter = startMicMeter(stream, document.getElementById("calibrationLevelBar"),
+                    document.getElementById("calibrationNoSound"));
+            }
+
+            function stopCalibrationLive() {
+                window.clearInterval(calibrationClock);
+                calibrationClock = null;
+                if (stopCalibrationMeter) stopCalibrationMeter();
+                stopCalibrationMeter = null;
+            }
+
+            // Which tip to show for each way the server can reject a calibration recording.
+            function calibrationReasonKey(reason) {
+                return {
+                    too_short: "calibrationTooShort",
+                    clipped: "calReasonClipped",
+                    boundary_hits: "calReasonNoisy",
+                    noisy: "calReasonNoisy",
+                    ac_cc_disagree: "calReasonUnclear",
+                    too_little_voicing: "calReasonQuiet",
+                }[reason] || "calibrationFailed";
             }
 
             function refreshSampleOptions() {
@@ -2415,7 +2692,9 @@ async def read_index():
                 const status = document.getElementById("voiceCalibrationStatus");
                 status.textContent = "";
                 status.dataset.translation = "";
-                status.classList.remove("error");
+                status.classList.remove("error", "success");
+                calibrationOutcome = "";
+                calibrationCanStop = false;
                 if (!dialog.open) dialog.showModal();
                 syncVoiceCalibrationUI();
                 document.getElementById("voiceCalibrationRecordBtn").focus();
@@ -2434,6 +2713,10 @@ async def read_index():
                 status.textContent = t(key, variables);
                 status.dataset.translation = JSON.stringify({ key, variables });
                 status.classList.toggle("error", isError);
+                status.classList.toggle("success", key === "calibrationSaved");
+                if (isError) calibrationOutcome = "error";
+                else if (key === "calibrationSaved") calibrationOutcome = "success";
+                else calibrationOutcome = "";
                 setBusy(key === "calibrationProcessing", status.textContent);
                 if (isError && !calibrationHadError) {          // a failure must not trap the learner in the dialog
                     calibrationHadError = true;
@@ -2468,6 +2751,7 @@ async def read_index():
                     };
                     voiceCalibrationRecorder.onstop = async () => {
                         window.clearTimeout(voiceCalibrationTimer);
+                        stopCalibrationLive();
                         if (voiceCalibrationStream) voiceCalibrationStream.getTracks().forEach(track => track.stop());
                         voiceCalibrationStream = null;
                         isVoiceCalibrationRecording = false;
@@ -2485,16 +2769,18 @@ async def read_index():
                     voiceCalibrationRecorder.start();
                     isVoiceCalibrationRecording = true;
                     setVoiceCalibrationStatus("calibrationRecording");
+                    startCalibrationLive(voiceCalibrationStream);
                     syncVoiceCalibrationUI();
                     voiceCalibrationTimer = window.setTimeout(() => {
                         if (isVoiceCalibrationRecording && voiceCalibrationRecorder?.state === "recording") {
                             voiceCalibrationRecorder.stop();
                         }
-                    }, 10000);
+                    }, CALIBRATION_MAX_MS);
                 } catch (error) {
                     if (voiceCalibrationStream) voiceCalibrationStream.getTracks().forEach(track => track.stop());
                     voiceCalibrationStream = null;
                     isVoiceCalibrationRecording = false;
+                    stopCalibrationLive();
                     setVoiceCalibrationStatus("microphoneFailed", true, { error: error.message || error });
                     syncVoiceCalibrationUI();
                 }
@@ -2512,14 +2798,18 @@ async def read_index():
                         method: "POST", body: formData
                     });
                     const data = await response.json();
-                    if (!response.ok) throw new Error(data.detail || t("calibrationFailed"));
+                    if (!response.ok) {
+                        const failure = new Error(typeof data.detail === "string" ? data.detail : "");
+                        failure.reason = data.reason || "";
+                        throw failure;
+                    }
                     activeStudent.voice_calibration = data.voice_calibration;
                     localStorage.setItem("mandarinPracticeStudent", JSON.stringify(activeStudent));
                     updateActiveStudentLabel();
                     sessionStorage.removeItem(calibrationDismissKey(activeStudent.id));
                     setVoiceCalibrationStatus("calibrationSaved");
                 } catch (error) {
-                    setVoiceCalibrationStatus("calibrationFailed", true);
+                    setVoiceCalibrationStatus(calibrationReasonKey(error.reason), true);
                 } finally {
                     isVoiceCalibrationProcessing = false;
                     setBusy(false);
@@ -2928,6 +3218,7 @@ async def read_index():
 
                         mediaRecorder.onstop = async () => {
                             isRecording = false;
+                            hideRecordingIndicator();
                             document.getElementById("recordBtn").classList.remove("recording");
                             document.getElementById("recordBtn").innerText = t("startRecording");
                             const audioBlob = new Blob(audioChunks, { type: recordingMimeType });
@@ -2938,12 +3229,14 @@ async def read_index():
                         mediaRecorder.start();
                         isRecording = true;
                         isProcessing = false;
+                        showRecordingIndicator(stream);
                         syncPracticeControls();
                         document.getElementById("recordBtn").classList.add("recording");
                         document.getElementById("recordBtn").innerText = t("recordingStop");
                         showTranslatedStatus("recording");
                     } catch (err) {
                         if (stream) stream.getTracks().forEach(track => track.stop());
+                        hideRecordingIndicator();
                         isProcessing = false;
                         syncPracticeControls();
                         showTranslatedStatus("microphoneFailed", { error: err.message || err }, true);
@@ -2959,6 +3252,7 @@ async def read_index():
                     mediaRecorder.stop();
                     mediaRecorder.stream.getTracks().forEach(track => track.stop());
                     isRecording = false;
+                    hideRecordingIndicator();
                     document.getElementById("recordBtn").classList.remove("recording");
                     document.getElementById("recordBtn").innerText = t("startRecording");
                     syncPracticeControls();
