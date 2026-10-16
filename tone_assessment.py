@@ -130,16 +130,23 @@ def segment_words(clauses, lexicon, max_word=4, cap=3):
 
 # ------------------------------------------------------------------ chapter 5 ----
 
-def chapter5_optional_text_variants(text):
-    """Expand one parenthesized optional span into present/omitted transcript forms."""
-    variants = [text]
+def split_optional(text):
+    """'裡(面)' -> ('裡', '面', ''): the text before, inside and after one parenthesized optional span, or None."""
     for opening, closing in ((chr(0xFF08), chr(0xFF09)), ("(", ")")):
         start = text.find(opening)
         end = text.find(closing, start + 1) if start >= 0 else -1
         if start >= 0 and end > start:
-            prefix, optional, suffix = text[:start], text[start + 1:end], text[end + 1:]
-            variants.extend((prefix + suffix, prefix + optional + suffix))
-            break
+            return text[:start], text[start + 1:end], text[end + 1:]
+    return None
+
+
+def chapter5_optional_text_variants(text):
+    """Expand one parenthesized optional span into present/omitted transcript forms."""
+    variants = [text]
+    parts = split_optional(text)
+    if parts:
+        prefix, optional, suffix = parts
+        variants.extend((prefix + suffix, prefix + optional + suffix))
     return variants
 
 
@@ -177,6 +184,25 @@ def chapter5_contexts(clauses, item):
     if "".join(clauses) in {"沒空", "沒有空"} and supplied_pinyin.endswith("kòng") and contexts:
         contexts[-1] = {**contexts[-1], "lexical_tone": 4, "target_tone": 4, "tone_rule": "catalog_pinyin_disambiguation"}
     return contexts
+
+
+def chapter5_display_cells(item):
+    """Characters with pinyin for an item written with an optional part, e.g. 裡(面): [{char, pinyin, optional}, ...].
+
+    The recording says 裡面 and both 裡 and 裡面 are accepted, so the learner is shown the full form with the optional
+    part marked, not just 裡. Items without an optional part return None (their plain script and pinyin are shown)."""
+    text = (split_variants(str(item.get("traditional_chinese") or item.get("script") or "")) or [""])[0]
+    parts = split_optional(text)
+    if not parts or not parts[1].strip():
+        return None
+    prefix, optional, suffix = parts
+    full = prefix + optional + suffix
+    clauses = [c for c in capt_core.prepare_target(full) if c.strip()]
+    pinyin = capt_core.display_pinyin(full, tones=[c["lexical_tone"] for c in chapter5_contexts(clauses, item)])
+    if len(pinyin) != len(full):
+        return None
+    flags = [False] * len(prefix) + [True] * len(optional) + [False] * len(suffix)
+    return [{"char": char, "pinyin": letters, "optional": flag} for char, letters, flag in zip(full, pinyin, flags)]
 
 
 def chapter5_character_pinyin(item):

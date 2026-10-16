@@ -209,6 +209,55 @@ class NotHeardLabelTests(unittest.TestCase):
         self.assertIn('status === "not_heard" ? "not-heard"', source)
 
 
+class OptionalPartTests(unittest.TestCase):
+    """Topics items written like 裡(面): the recording says 裡面 and both forms are accepted, so show the full form."""
+
+    @staticmethod
+    def cells(workbook_text, script, pinyin=""):
+        import tone_assessment as ta
+        return ta.chapter5_display_cells({"traditional_chinese": workbook_text, "script": script, "pinyin": pinyin})
+
+    def test_the_optional_part_is_shown_with_its_own_pinyin_and_marked(self):
+        cells = self.cells("裡(面)", "裡")
+        self.assertEqual([(c["char"], c["pinyin"], c["optional"]) for c in cells], [("裡", "lǐ", False), ("面", "miàn", True)])
+        cells = self.cells("電視(機)", "電視")
+        self.assertEqual([(c["char"], c["optional"]) for c in cells], [("電", False), ("視", False), ("機", True)])
+
+    def test_brackets_never_become_cells_of_their_own(self):
+        cells = self.cells("沒（有）空", "沒（有）空", "méi(yǒu) kòng")
+        self.assertEqual([(c["char"], c["pinyin"], c["optional"]) for c in cells],
+                         [("沒", "méi", False), ("有", "yǒu", True), ("空", "kòng", False)])      # kòng, not kōng
+
+    def test_items_without_an_optional_part_are_unchanged(self):
+        self.assertIsNone(self.cells("錢包", "錢包"))
+        self.assertIsNone(self.cells("哪裡/哪兒", "哪裡"))                                       # slash alternatives are not "optional"
+
+    def test_every_catalog_item_with_an_optional_part_gets_cells_and_every_other_item_none(self):
+        import json
+        import tone_assessment as ta
+        items = json.loads((ROOT / "chapter5_word_practice" / "items.json").read_text(encoding="utf-8"))["items"]
+        optional = [i for i in items if ta.split_optional(i["traditional_chinese"])]
+        self.assertGreaterEqual(len(optional), 8)
+        for item in optional:
+            cells = ta.chapter5_display_cells(item)
+            self.assertTrue(cells and any(c["optional"] for c in cells), item["word_key"])
+            self.assertTrue(all(c["pinyin"] and c["pinyin"] not in "()（）" for c in cells), item["word_key"])
+            variants = {ta.chapter5_candidates(item, item["script"], lambda t: t)[i]["script_variant"] for i in range(len(ta.chapter5_candidates(item, item["script"], lambda t: t)))}
+            self.assertIn("".join(c["char"] for c in cells), variants, item["word_key"])           # the shown form is one that is scored
+
+    def test_the_page_renders_cells_and_explains_the_optional_part_in_every_language(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertIn('"display_cells": tone_assessment.chapter5_display_cells(item)', source)
+        self.assertIn('renderTranscript(cells ? { cells } : { script: item.script, pinyin: item.character_pinyin || [] });', source)
+        self.assertIn('id="chapter5OptionalHint"', source)
+        self.assertIn(".transcript-char.optional {", source)
+        hints = re.findall(r'chapter5OptionalHint: "([^"]*)"', source)
+        self.assertEqual(len(hints), 5)
+        for hint in hints:
+            self.assertIn("{short}", hint)
+            self.assertIn("{full}", hint)
+
+
 class StatusIconTests(unittest.TestCase):
     def test_okay_is_a_half_filled_circle_not_a_question_mark(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")

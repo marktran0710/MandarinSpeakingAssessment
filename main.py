@@ -258,6 +258,7 @@ async def get_chapter5_word_items():
             "traditional_chinese": item["traditional_chinese"],
             "pinyin": item["pinyin"],
             "character_pinyin": tone_assessment.chapter5_character_pinyin(item),
+            "display_cells": tone_assessment.chapter5_display_cells(item),   # full form with the optional part marked, or null
             "category_id": category_assignments.get(str(item["word_id"]), {}).get("category_id"),
             "subcategory_id": category_assignments.get(str(item["word_id"]), {}).get("subcategory_id"),
             "pos": item["pos"],
@@ -946,6 +947,10 @@ async def read_index():
 
             .hanzi { font-size: 22px; font-weight: bold; color: #2d3748; display: block; }
             .pinyin { font-size: 12px; color: #718096; display: block; }
+            .transcript-char.optional { opacity: 0.6; }
+            .transcript-char.optional > span:first-child { border-bottom: 2px dotted #a0aec0; }
+            #chapter5OptionalHint { margin: 6px 0 0; }
+            #chapter5OptionalHint[hidden] { display: none; }
             .tone-tag { font-size: 10px; margin-top: 4px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
             .tone-likely-correct { background: #c6f6d5; color: #22543d; }
             .tone-likely-incorrect { background: #fed7d7; color: #742a2a; }
@@ -1172,6 +1177,7 @@ async def read_index():
                 <p id="customTextHint" class="upload-hint" data-i18n="customTextHint" hidden>Enter any Mandarin text. It does not need to appear in a textbook.</p>
                 <textarea id="scriptInput" rows="2" readonly oninput="handleScriptInput()" data-i18n-placeholder="customTextPlaceholder"></textarea>
                 <div id="transcriptDisplay" class="transcript" aria-label="Matching script with pinyin" data-i18n-aria-label="scriptWithPinyin"></div>
+                <p id="chapter5OptionalHint" class="upload-hint" hidden></p>
                 <label id="pinyinToggle" class="pinyin-toggle">
                     <input type="checkbox" id="showPinyin" checked onchange="refreshPinyinDisplay()">
                     <span data-i18n="showPinyin">Show pinyin</span>
@@ -1298,6 +1304,7 @@ async def read_index():
             practiceSource: "Practice text", bookTextMode: "Book sample", customTextMode: "My own text",
             chapter5WordMode: "Topics", previousWord: "Previous", nextWord: "Next",
             chapter5Vocabulary: "Vocabulary", chapter5Phrase: "Phrase", chapter5Meaning: "{meaning}",
+                    chapter5OptionalHint: "The lighter part is optional: “{short}” and “{full}” are both accepted.",
             chapter5ReferenceAudio: "Reference only – not used for scoring.",
             chapter5Progress: "{current} / {total}", chapter5Unavailable: "Topic practice items are unavailable.",
             chapter5Ready: "Ready. Record yourself reading it.",
@@ -1421,6 +1428,7 @@ async def read_index():
                     practiceSource: "練習文本", bookTextMode: "課本範例", customTextMode: "自選文本",
                     chapter5WordMode: "主題", previousWord: "上一個", nextWord: "下一個",
                     chapter5Vocabulary: "詞彙", chapter5Phrase: "詞組", chapter5Meaning: "{meaning}",
+                    chapter5OptionalHint: "淺色的部分可說可不說：「{short}」或「{full}」都可以。",
                     chapter5ReferenceAudio: "僅供參考，不會用於評分。",
                     chapter5Progress: "{current} / {total}", chapter5Unavailable: "主題練習資料目前無法使用。",
                     chapter5Ready: "項目已準備好，請錄音朗讀。",
@@ -1543,6 +1551,7 @@ async def read_index():
                     practiceSource: "Nội dung luyện tập", bookTextMode: "Bài trong sách", customTextMode: "Tự chọn văn bản",
                     chapter5WordMode: "Chủ đề", previousWord: "Trước", nextWord: "Tiếp theo",
                     chapter5Vocabulary: "Từ vựng", chapter5Phrase: "Cụm từ", chapter5Meaning: "{meaning}",
+                    chapter5OptionalHint: "Phần màu nhạt là tùy chọn: đọc “{short}” hay “{full}” đều được.",
                     chapter5ReferenceAudio: "Chỉ để tham khảo, không dùng để chấm điểm.",
                     chapter5Progress: "{current} / {total}", chapter5Unavailable: "Không tải được dữ liệu luyện tập theo chủ đề.",
                     chapter5Ready: "Mục đã sẵn sàng. Hãy ghi âm bài đọc của bạn.",
@@ -1681,6 +1690,7 @@ async def read_index():
                     chapter5Vocabulary: "Kosakata",
                     chapter5Phrase: "Frasa",
                     chapter5Meaning: "{meaning}",
+                    chapter5OptionalHint: "Bagian yang lebih pudar bersifat opsional: “{short}” maupun “{full}” sama-sama diterima.",
                     chapter5ReferenceAudio: "Hanya sebagai acuan – tidak dipakai untuk penilaian.",
                     chapter5Progress: "{current} / {total}",
                     chapter5Unavailable: "Butir latihan topik tidak tersedia.",
@@ -1912,6 +1922,7 @@ async def read_index():
                     chapter5Vocabulary: "शब्दावली",
                     chapter5Phrase: "वाक्यांश",
                     chapter5Meaning: "{meaning}",
+                    chapter5OptionalHint: "हल्के रंग वाला हिस्सा वैकल्पिक है: “{short}” और “{full}” दोनों मान्य हैं।",
                     chapter5ReferenceAudio: "केवल संदर्भ के लिए – अंकन में इस्तेमाल नहीं होता।",
                     chapter5Progress: "{current} / {total}",
                     chapter5Unavailable: "विषय-आधारित अभ्यास सामग्री उपलब्ध नहीं है।",
@@ -2456,7 +2467,16 @@ async def read_index():
                 const item = chapter5WordItems[chapter5WordIndex];
                 if (!item) return;
                 document.getElementById("scriptInput").value = item.script;
-                renderTranscript({ script: item.script, pinyin: item.character_pinyin || [] });
+                const cells = Array.isArray(item.display_cells) && item.display_cells.length ? item.display_cells : null;
+                renderTranscript(cells ? { cells } : { script: item.script, pinyin: item.character_pinyin || [] });
+                const optionalHint = document.getElementById("chapter5OptionalHint");
+                optionalHint.hidden = !cells;           // the recording says 裡面; the learner may say 裡 or 裡面
+                if (cells) {
+                    optionalHint.textContent = t("chapter5OptionalHint", {
+                        short: cells.filter(cell => !cell.optional).map(cell => cell.char).join(""),
+                        full: cells.map(cell => cell.char).join("")
+                    });
+                }
                 const audio = document.getElementById("sampleAudio");
                 audio.pause();
                 document.getElementById("sampleAudioError").hidden = true;
@@ -2498,6 +2518,7 @@ async def read_index():
                 document.getElementById("customTextHint").hidden = !isCustom;
                 document.getElementById("pinyinToggle").hidden = false;
                 document.getElementById("chapter5ReferenceLabel").hidden = !isChapter5;
+                if (!isChapter5) document.getElementById("chapter5OptionalHint").hidden = true;
                 document.getElementById("sampleAudioSection").hidden = isCustom || !sampleAudio.hasAttribute("src");
                 document.getElementById("scriptLabel").textContent = t(isCustom ? "customScriptLabel" : "matchingScript");
                 document.getElementById("transcriptDisplay").setAttribute("aria-label", t(isCustom ? "customTextPreview" : "scriptWithPinyin"));
@@ -2926,16 +2947,19 @@ async def read_index():
                 const transcript = document.getElementById("transcriptDisplay");
                 transcript.replaceChildren();
                 const pinyin = Array.isArray(sample.pinyin) ? sample.pinyin : [];
-                [...sample.script].forEach((character, index) => {
+                // `cells` (character, pinyin, optional) is used when part of the word is optional, e.g. 裡(面)
+                const cells = Array.isArray(sample.cells) ? sample.cells
+                    : [...sample.script].map((character, index) => ({ char: character, pinyin: pinyin[index], optional: false }));
+                cells.forEach(cell => {
                     const characterElement = document.createElement("span");
-                    characterElement.className = "transcript-char";
+                    characterElement.className = cell.optional ? "transcript-char optional" : "transcript-char";
                     const hanziElement = document.createElement("span");
-                    hanziElement.textContent = character;
+                    hanziElement.textContent = cell.char;
                     characterElement.appendChild(hanziElement);
-                    if (document.getElementById("showPinyin").checked && pinyin[index]) {
+                    if (document.getElementById("showPinyin").checked && cell.pinyin) {
                         const pinyinElement = document.createElement("span");
                         pinyinElement.className = "transcript-pinyin";
-                        pinyinElement.textContent = pinyin[index];
+                        pinyinElement.textContent = cell.pinyin;
                         characterElement.appendChild(pinyinElement);
                     }
                     transcript.appendChild(characterElement);
