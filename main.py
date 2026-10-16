@@ -887,6 +887,7 @@ async def read_index():
             .word-card-advice { display: block; margin-top: 4px; color: #4a5568; font-size: 12.5px; line-height: 1.45; text-align: left; }
             .results-advice { margin: 0 0 12px; padding: 9px 12px; border-left: 3px solid #d69e2e; background: #fffaf0; color: #744210; font-size: 13px; line-height: 1.45; }
             .status-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
+            .status-icon.half { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
             .json-output { display: none; /* temporarily hidden: remove this line to show "View JSON response" again */ margin-top: 16px; border-top: 1px solid #e2e8f0; }
             .json-output > summary { padding: 10px 2px; color: #2b6cb0; font-size: 14px; font-weight: 600; cursor: pointer; }
             .json-output pre { max-height: 420px; overflow: auto; margin: 0; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f7fafc; color: #243447; font: 12px/1.5 Consolas, 'Courier New', monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -3388,14 +3389,17 @@ async def read_index():
                 const groups = phrases.map((phrase, index) => {
                     const label = escapeHtml(phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`);
                     const expected = sequenceText(phrase.expected_tone_sequence);
-                    const icon = phrase.status === "likely_correct" ? "&#10003;" : phrase.status === "practice" ? "&#8635;" : phrase.status === "not_heard" ? "&#8212;" : "?";
+                    // Good = tick, Needs practice = "again" arrow, Not heard = dash, Okay = a half-filled circle ("partly there"),
+                    // drawn with CSS: a "?" read as "something is wrong with the system", and it needs no font glyph.
+                    const icon = phrase.status === "likely_correct" ? "&#10003;" : phrase.status === "practice" ? "&#8635;" : phrase.status === "not_heard" ? "&#8212;" : "";
+                    const iconClass = icon ? "status-icon" : "status-icon half";
                     const advice = (Array.isArray(phrase.feedback_items) ? phrase.feedback_items : []).map(item =>
                         item.type === "tone" && item.tone >= 1 && item.tone <= 4 ? t(`adviceTone${item.tone}`, { char: item.char })
                         : item.type === "retry" && retryKeys[item.code] ? t(retryKeys[item.code]) : "").filter(Boolean);
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="phrase-chart-${index}" onclick="openPhraseChart(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>
-                        <span class="word-card-status"><span class="status-icon" aria-hidden="true">${icon}</span>${statusLabels[phrase.status] || t("notScored")}</span>
+                        <span class="word-card-status"><span class="${iconClass}" aria-hidden="true">${icon}</span>${statusLabels[phrase.status] || t("notScored")}</span>
                         ${advice.map(text => `<span class="word-card-advice">${escapeHtml(text)}</span>`).join("")}
                     </button>`;
                 });

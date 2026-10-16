@@ -209,6 +209,16 @@ class NotHeardLabelTests(unittest.TestCase):
         self.assertIn('status === "not_heard" ? "not-heard"', source)
 
 
+class StatusIconTests(unittest.TestCase):
+    def test_okay_is_a_half_filled_circle_not_a_question_mark(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertNotIn('"not_heard" ? "&#8212;" : "?"', source)                    # the old "?" icon
+        self.assertIn('const iconClass = icon ? "status-icon" : "status-icon half";', source)
+        self.assertIn(".status-icon.half { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }", source)
+        for icon in ("&#10003;", "&#8635;", "&#8212;"):                              # the other three keep their symbols
+            self.assertIn(icon, source)
+
+
 class CalibrationDialogTests(unittest.TestCase):
     def test_skipping_is_not_offered_up_front_but_nobody_can_get_stuck(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
