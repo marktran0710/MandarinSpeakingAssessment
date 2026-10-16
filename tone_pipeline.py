@@ -1,0 +1,1301 @@
+"""
+Tone verification pipeline v1.
+
+    student calibration -> personalised Praat floor/ceiling -> Praat AC + CC extraction -> sanity checks /
+    adaptive retries -> forced alignment (MFA) -> F0 cleanup -> semitone normalisation ->
+    lexical -> surface tone -> expected-tone verifier -> confidence gating
+
+The system already knows the transcript, so the verifier asks "is this contour compatible with the surface
+tone expected here?" and never "which tone class is this audio?". It is deliberately harder to accuse the
+learner of an error than to accept a plausible pronunciation: everything that is not clearly good or clearly
+wrong is `insufficient_evidence`. All thresholds live in tone_v1_config.yaml.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import os
+import shutil
+import subprocess
+import tempfile
+import threading
+from copy import deepcopy
+from pathlib import Path
+
+import numpy as np
+import parselmouth
+import yaml
+from pypinyin import Style, lazy_pinyin
+from scipy.io import wavfile
+from scipy.signal import medfilt, resample_poly
+
+import audio_prep
+import capt_core
+
+CONFIG_PATH = Path(__file__).with_name("tone_v1_config.yaml")
+MFA_EXE = os.environ.get("MFA_EXE", r"D:\CodexData\mfa-runtime\env\Scripts\mfa.exe")
+MFA_ROOT_DIR = os.environ.get("MFA_ROOT_DIR", r"D:\CodexData\mfa-runtime\models")
+TONE_LETTERS = set("˥˦˧˨˩")
+SILENCE_LABELS = {"", "<eps>", "sil", "sp"}
+METHOD = "tone_pipeline_v1"
+STATUSES = ("likely_correct", "practice", "insufficient_evidence")
+_MFA_LOCK = threading.Lock()
+
+
+class AlignmentError(ValueError):
+    """The forced alignment could not be trusted (OOV character, <unk>, spn, word mismatch...)."""
+
+
+class CalibrationError(ValueError):
+    """The calibration recording is not good enough to build a speaker profile."""
+
+    def __init__(self, reason, message):
+        super().__init__(message)
+        self.reason = reason
+
+
+def load_config(path=None, overrides=None):
+    with open(path or CONFIG_PATH, encoding="utf-8") as handle:
+        config = yaml.safe_load(handle)
+    for section, values in (overrides or {}).items():
+        config.setdefault(section, {}).update(values)
+    return config
+
+
+def _round_to(value, step, mode):
+    ratio = value / step
+    return step * {"nearest": round, "ceil": math.ceil}[mode](ratio)
+
+
+def hz_to_st(f0, reference_hz):
+    return 12.0 * np.log2(np.asarray(f0, dtype=float) / float(reference_hz))
+
+
+def _st_diff(a, b):
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return 12.0 * np.log2(a / b)
+
+
+# ------------------------------------------------------------ Praat AC + CC ----
+
+def run_praat_ac_cc(samples, sample_rate, floor, ceiling, config):
+    """Run To Pitch (ac) and (cc) with the frozen config; CC is resampled onto the AC time grid."""
+    pitch_cfg = config["pitch"]
+    samples = np.asarray(samples, dtype=np.float64).reshape(-1)
+    if sample_rate <= 0:
+        raise ValueError("Sample rate must be positive.")
+    if len(samples) == 0:
+        empty = np.array([], dtype=float)
+        return empty, empty, empty
+    sound = parselmouth.Sound(samples, sampling_frequency=sample_rate)
+    tracks = {}
+    for method in ("ac", "cc"):
+        pitch = getattr(sound, f"to_pitch_{method}")(
+            time_step=float(pitch_cfg["time_step"]),
+            pitch_floor=float(floor),
+            max_number_of_candidates=int(pitch_cfg["max_candidates"]),
+            very_accurate=bool(pitch_cfg["very_accurate"]),
+            silence_threshold=float(pitch_cfg["silence_threshold"]),
+            voicing_threshold=float(pitch_cfg["voicing_threshold"]),
+            octave_cost=float(pitch_cfg["octave_cost"]),
+            octave_jump_cost=float(pitch_cfg["octave_jump_cost"]),
+            voiced_unvoiced_cost=float(pitch_cfg["voiced_unvoiced_cost"]),
+            pitch_ceiling=float(ceiling),
+        )
+        f0 = np.asarray(pitch.selected_array["frequency"], dtype=float)
+        f0[~(np.isfinite(f0) & (f0 > 0))] = np.nan
+        tracks[method] = (np.asarray(pitch.xs(), dtype=float), f0)
+    times, ac = tracks["ac"]
+    cc = _resample_nearest(times, *tracks["cc"], max_gap=float(pitch_cfg["time_step"]) * 0.55)
+    return times, ac, cc
+
+
+def _resample_nearest(target_times, times, values, max_gap):
+    out = np.full(len(target_times), np.nan)
+    if not len(times) or not len(target_times):
+        return out
+    index = np.clip(np.searchsorted(times, target_times), 1, max(len(times) - 1, 1))
+    index = np.minimum(index, len(times) - 1)
+    left_closer = np.abs(target_times - times[np.maximum(index - 1, 0)]) <= np.abs(times[index] - target_times)
+    nearest = np.where(left_closer, np.maximum(index - 1, 0), index)
+    close = np.abs(times[nearest] - target_times) <= max_gap
+    out[close] = values[nearest[close]]
+    return out
+
+
+# ------------------------------------------------------------- calibration ----
+
+def build_profile(stable_hz, config):
+    """Percentiles of agreed F0 -> personal floor/ceiling. No recording-level gates (see calibrate_voice)."""
+    cal = config["calibration"]
+    p10, median, p90, p95 = [float(v) for v in np.percentile(stable_hz, [10, 50, 90, 95])]
+    floor = float(np.clip(
+        _round_to(cal["floor_scale"] * median, cal["floor_round_to"], "nearest"),
+        cal["floor_min"], cal["floor_max"]))
+    ceiling = float(np.clip(
+        _round_to(cal["ceiling_scale"] * p95, cal["ceiling_round_to"], "ceil"),
+        cal["ceiling_min"], cal["ceiling_max"]))
+    return {
+        "status": "calibrated",
+        "calibration_version": config["calibration_version"],
+        "method": f"{METHOD}.calibration",
+        "f0_p10": round(p10, 1),
+        "f0_median": round(median, 1),
+        "f0_p90": round(p90, 1),
+        "f0_p95": round(p95, 1),
+        "pitch_floor": floor,
+        "pitch_ceiling": ceiling,
+        "acoustic_profile": acoustic_profile(median, config),
+        # Aliases kept for practice_store and the existing UI.
+        "pitch_floor_hz": floor,
+        "pitch_ceiling_hz": ceiling,
+        "f0_hz": {"p10": round(p10, 1), "p50": round(median, 1), "p90": round(p90, 1),
+                  "p95": round(p95, 1), "baseline": round(median, 1)},
+    }
+
+
+def acoustic_profile(median_hz, config):
+    """low / mid / high / very_high by calibrated median F0 (an acoustic label, not a sex/gender label)."""
+    profiles = config["profiles"]
+    if median_hz < profiles["low_max_median_hz"]:
+        return "low"
+    if median_hz < profiles["mid_max_median_hz"]:
+        return "mid"
+    if median_hz < profiles["high_max_median_hz"]:
+        return "high"
+    return "very_high"
+
+
+def wide_pass_stable_frames(samples, sample_rate, config):
+    """Wide AC+CC pass. Returns the agreed frames (Hz) plus the raw material for the quality gate."""
+    cal, tol = config["calibration"], config["sanity"]["ac_cc_tolerance_st"]
+    times, ac, cc = run_praat_ac_cc(samples, sample_rate, cal["wide_floor"], cal["wide_ceiling"], config)
+    both = np.isfinite(ac) & np.isfinite(cc)
+    agree = both & (np.abs(_st_diff(ac, cc)) <= tol)
+    stable = np.full(len(ac), np.nan)
+    stable[agree] = np.sqrt(ac[agree] * cc[agree])
+    return {"times": times, "ac": ac, "cc": cc, "both": both, "agree": agree, "stable": stable}
+
+
+def reject_octave_candidates(stable_hz, config):
+    """Drop agreed frames that sit an octave-ish distance from the speaker's first-pass median."""
+    stable_hz = np.asarray(stable_hz, dtype=float)
+    if not len(stable_hz):
+        return stable_hz, 0
+    first_median = float(np.median(stable_hz))
+    keep = np.abs(hz_to_st(stable_hz, first_median)) <= config["calibration"]["octave_reject_st"]
+    return stable_hz[keep], int((~keep).sum())
+
+
+def analyze_calibration_tokens(times, voiced, config):
+    """Report on the first N voiced stretches (isolated tokens). Advisory: only produces warnings."""
+    cal = config["calibration"]
+    step = float(np.median(np.diff(times))) if len(times) > 1 else config["pitch"]["time_step"]
+    bridge = int(round(cal["token_gap_sec"] / step))
+    segments = []
+    for start, end in _voiced_runs(voiced):
+        if segments and start - segments[-1][1] <= bridge:
+            segments[-1][1] = end
+        else:
+            segments.append([start, end])
+    tokens = []
+    for start, end in segments[: cal["token_count"]]:
+        frames = int(voiced[start:end].sum())
+        span = float((end - start) * step)
+        tokens.append({      # plain Python types only: the profile is stored as JSON
+            "start_sec": round(float(times[start]), 3), "voiced_span_sec": round(span, 3), "voiced_frames": frames,
+            "meets_minimum": bool(span >= cal["token_min_voiced_sec"] and frames >= cal["token_min_frames"]),
+            "meets_preferred": bool(span >= cal["token_preferred_voiced_sec"] and frames >= cal["token_preferred_frames"]),
+        })
+    warnings = []
+    if len(segments) < cal["token_count"]:
+        warnings.append(f"Only {len(segments)} separate voiced stretches found; expected {cal['token_count']} isolated tokens.")
+    short = [i + 1 for i, t in enumerate(tokens) if not t["meets_minimum"]]
+    if short:
+        warnings.append(f"Calibration tokens {short} are shorter than the minimum usable voicing.")
+    return {"tokens": tokens, "warnings": warnings}
+
+
+def calibrate_voice(samples, sample_rate, config=None):
+    """Quality-gated speaker F0 profile. Raises CalibrationError instead of creating a poor profile."""
+    config = config or load_config()
+    cal = config["calibration"]
+    raw = np.asarray(samples, dtype=np.float64).reshape(-1)
+    if sample_rate <= 0:
+        raise ValueError("Sample rate must be positive.")
+    duration = len(raw) / float(sample_rate)
+    if duration < cal["min_duration_sec"]:
+        raise CalibrationError("too_short", "Record a calibration sample of at least 5 seconds.")
+    if duration > cal["max_duration_sec"]:
+        raise CalibrationError("too_long", "Record a calibration sample of at most about 10 seconds.")
+    clipped = audio_prep.clipped_fraction(raw, cal["clip_level"])
+    if clipped > cal["max_clipped_fraction"]:
+        raise CalibrationError("clipped", "The recording is clipped. Move back from the microphone and try again.")
+
+    audio = capt_core.normalize_audio(raw)
+    wide = wide_pass_stable_frames(audio, sample_rate, config)
+    step = float(config["pitch"]["time_step"])
+
+    voiced_any = np.isfinite(wide["ac"]) | np.isfinite(wide["cc"])
+    edge_hits = lambda track: (  # noqa: E731
+        np.isfinite(track) & ((track <= cal["wide_floor"] + cal["boundary_margin_hz"])
+                              | (track >= cal["wide_ceiling"] - cal["boundary_margin_hz"])))
+    boundary_rate = float((edge_hits(wide["ac"]) | edge_hits(wide["cc"])).sum() / voiced_any.sum()) if voiced_any.any() else 0.0
+    if boundary_rate > cal["boundary_hit_rate"]:
+        raise CalibrationError(
+            "boundary_hits", "Pitch kept hitting the tracker limits; record again in a quieter place.")
+
+    agreement = float(wide["agree"].sum() / wide["both"].sum()) if wide["both"].any() else 0.0
+    if agreement < cal["hard_min_agreement"]:
+        raise CalibrationError(
+            "ac_cc_disagree", "Pitch tracking was not reliable. Read the prompt clearly and try again.")
+
+    stable_hz, octave_rejected = reject_octave_candidates(wide["stable"][np.isfinite(wide["stable"])], config)
+    voiced_sec = len(stable_hz) * step
+    if len(stable_hz) < cal["min_stable_frames"] or voiced_sec < cal["min_voiced_sec"]:
+        raise CalibrationError(
+            "too_little_voicing",
+            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.")
+
+    _, median_hnr = audio_prep.voicing_metrics(audio, sample_rate, config["audio_quality"]["voiced_min_hnr_db"])
+    median_hnr = float("-inf") if median_hnr is None else median_hnr
+    if median_hnr < cal["min_median_hnr_db"]:
+        raise CalibrationError("noisy", "The recording is too noisy or breathy. Record again in a quiet place.")
+
+    profile = build_profile(stable_hz, config)
+    token_report = analyze_calibration_tokens(wide["times"], np.isfinite(wide["stable"]), config)
+    warnings = list(token_report["warnings"])
+    reliable = agreement >= cal["preferred_agreement"]
+    if not reliable:
+        warnings.append("AC/CC agreement is below the preferred level; the profile may be less precise.")
+    profile.update({
+        "sample_duration_sec": round(duration, 3),
+        "stable_frame_count": int(len(stable_hz)),
+        "ac_cc_agreement": round(agreement, 4),
+        "reliable": reliable,
+        "quality": {
+            "voiced_sec": round(voiced_sec, 2), "clipped_fraction": round(clipped, 5),
+            "median_hnr_db": round(median_hnr, 1), "boundary_hit_rate": round(boundary_rate, 4),
+            "octave_candidates_rejected": octave_rejected, "tokens": token_report["tokens"],
+        },
+        "warnings": warnings,
+    })
+    return profile
+
+
+def pooled_calibration(recordings, config=None):
+    """Speaker profile from several recordings (benchmarks only: no recording-level gates)."""
+    config = config or load_config()
+    frames = []
+    for samples, sample_rate in recordings:
+        wide = wide_pass_stable_frames(capt_core.normalize_audio(samples), sample_rate, config)
+        frames.append(wide["stable"][np.isfinite(wide["stable"])])
+    stable, _ = reject_octave_candidates(np.concatenate(frames) if frames else np.array([]), config)
+    if len(stable) < config["calibration"]["min_stable_frames"]:
+        raise CalibrationError("too_little_voicing", "Not enough voiced frames to pool a speaker profile.")
+    profile = build_profile(stable, config)
+    profile["pooled_from_recordings"] = len(recordings)
+    return profile
+
+
+# --------------------------------------------------- merge + sanity checks ----
+
+def merge_ac_cc(ac, cc, tolerance_st):
+    """Agreeing frames -> geometric mean; single-tracker frames kept; disagreements left to `resolve`."""
+    merged = np.full(len(ac), np.nan)
+    both = np.isfinite(ac) & np.isfinite(cc)
+    agree = both & (np.abs(_st_diff(ac, cc)) <= tolerance_st)
+    merged[agree] = np.sqrt(ac[agree] * cc[agree])
+    only_ac = np.isfinite(ac) & ~np.isfinite(cc)
+    only_cc = np.isfinite(cc) & ~np.isfinite(ac)
+    merged[only_ac] = ac[only_ac]
+    merged[only_cc] = cc[only_cc]
+    return merged, both & ~agree
+
+
+def _local_reference(values, index, radius):
+    lo = max(0, index - radius)
+    window = values[lo: index + radius + 1].copy()
+    window[index - lo] = np.nan
+    window = window[np.isfinite(window)]
+    return float(np.median(window)) if len(window) >= 3 else None
+
+
+def resolve_disagreements(merged, ac, cc, disagree, config):
+    """Where AC and CC disagree keep whichever tracker is continuous with its neighbours, else drop."""
+    radius = int(config["cleanup"]["octave_context_frames"])
+    out = merged.copy()
+    for index in np.flatnonzero(disagree):
+        reference = _local_reference(merged, index, radius)
+        if reference is None:
+            continue
+        best = min((ac[index], cc[index]), key=lambda v: abs(_st_diff(v, reference)))
+        if abs(_st_diff(best, reference)) <= 3.0:
+            out[index] = best
+    return out
+
+
+def count_octave_jumps(values, threshold_st, max_gap_frames=2, in_semitones=False):
+    """Adjacent-frame jumps >= threshold. `values` are Hz unless `in_semitones` is set."""
+    idx = np.flatnonzero(np.isfinite(values))
+    if len(idx) < 2:
+        return 0
+    near = np.diff(idx) <= max_gap_frames
+    if in_semitones:
+        steps = np.abs(values[idx[1:]] - values[idx[:-1]])
+    else:
+        steps = np.abs(_st_diff(values[idx[1:]], values[idx[:-1]]))
+    return int(np.count_nonzero(near & (steps >= threshold_st)))
+
+
+def sanity_metrics(merged, ac, cc, floor, ceiling, config):
+    san = config["sanity"]
+    both = np.isfinite(ac) & np.isfinite(cc)
+    agree = both & (np.abs(_st_diff(ac, cc)) <= san["ac_cc_tolerance_st"])
+    agreement = float(agree.sum() / both.sum()) if both.any() else 0.0
+    voiced = np.isfinite(merged)
+    n_voiced = int(voiced.sum())
+    either = int((np.isfinite(ac) | np.isfinite(cc)).sum())
+    margin = san["boundary_margin"]
+    near_ceiling = voiced & (np.nan_to_num(merged) >= ceiling * (1 - margin))
+    near_floor = voiced & (np.nan_to_num(merged, nan=1e9) <= floor * (1 + margin))
+    ceiling_rate = float(near_ceiling.sum() / n_voiced) if n_voiced else 0.0
+    floor_rate = float(near_floor.sum() / n_voiced) if n_voiced else 0.0
+    jumps = count_octave_jumps(merged, san["octave_jump_st"])
+    coverage_ratio = n_voiced / either if either else 1.0
+    reasons = []
+    if agreement < san["min_agreement"]:
+        reasons.append("ac_cc_disagree")
+    if ceiling_rate > san["boundary_hit_rate"]:
+        reasons.append("ceiling_hit")
+    if floor_rate > san["boundary_hit_rate"]:
+        reasons.append("floor_hit")
+    if jumps:
+        reasons.append("octave_jump")
+    if either >= 20 and coverage_ratio < san["min_coverage_ratio"]:
+        reasons.append("coverage_collapse")
+    return {
+        "ac_cc_agreement": round(agreement, 4),
+        "ceiling_hit_rate": round(ceiling_rate, 4),
+        "floor_hit_rate": round(floor_rate, 4),
+        "octave_jumps": jumps,
+        "voiced_frames": n_voiced,
+        "coverage_ratio": round(coverage_ratio, 4),
+        "suspicious": reasons,
+    }
+
+
+def _penalty(metrics, jump_penalty=0.5):
+    return ((1 - metrics["ac_cc_agreement"]) + metrics["ceiling_hit_rate"] + metrics["floor_hit_rate"]
+            + min(metrics["octave_jumps"], 2) * jump_penalty)
+
+
+def octave_up_fraction(f0_a, f0_b, config):
+    """Fraction of co-voiced frames where A sits about one octave above B."""
+    both = np.isfinite(f0_a) & np.isfinite(f0_b)
+    if both.sum() < 6:
+        return 0.0
+    tol = config["cleanup"]["octave_tolerance_st"]
+    return float(np.mean(np.abs(_st_diff(f0_a[both], f0_b[both]) - 12.0) <= tol))
+
+
+def _retry_candidates(floor, ceiling, reasons, config):
+    """Only widen the direction that looks suspicious; never the full 3x3 grid."""
+    san = config["sanity"]
+    cstep, fstep = san["ceiling_retry_step_hz"], san["floor_retry_step_hz"]
+    lo, hi = san["ceiling_retry_min"], san["ceiling_retry_max"]
+    out = []
+    if "ceiling_hit" in reasons:
+        out.append((floor, min(hi, ceiling + cstep)))
+    if "floor_hit" in reasons:
+        out.append((max(san["floor_retry_min"], floor - fstep), ceiling))
+    if {"octave_jump", "ac_cc_disagree", "coverage_collapse"} & set(reasons):
+        out.append((floor, max(lo, ceiling - cstep)))
+        out.append((floor + fstep, ceiling))
+    seen, unique = {(floor, ceiling)}, []
+    for candidate in out:
+        if candidate not in seen:
+            seen.add(candidate)
+            unique.append(candidate)
+    return unique
+
+
+def select_pass(passes, config):
+    """Best pass by agreement, boundary hits, octave jumps, coverage and consistency with the other passes."""
+    san = config["sanity"]
+    max_voiced = max(p["metrics"]["voiced_frames"] for p in passes) or 1
+    scored = []
+    for index, p in enumerate(passes):
+        score = _penalty(p["metrics"], san["octave_jump_penalty"])
+        score += san["coverage_weight"] * (1 - p["metrics"]["voiced_frames"] / max_voiced)
+        for other in passes:
+            if other is p:
+                continue
+            # Passes with different floors have slightly different frame grids.
+            other_f0 = _resample_nearest(p["times"], other["times"], other["f0"], config["pitch"]["time_step"] * 0.55)
+            if octave_up_fraction(p["f0"], other_f0, config) >= san["octave_branch_fraction"]:
+                score += san["octave_branch_penalty"]
+                p.setdefault("flags", []).append("octave_above_other_pass")
+        scored.append((score, index))
+    return passes[min(scored)[1]]
+
+
+def extract_f0(samples, sample_rate, floor, ceiling, config=None):
+    """Adaptive AC+CC extraction with the sanity check / directional retry."""
+    config = config or load_config()
+    tol = config["sanity"]["ac_cc_tolerance_st"]
+
+    def one_pass(f, c):
+        times, ac, cc = run_praat_ac_cc(samples, sample_rate, f, c, config)
+        merged, disagree = merge_ac_cc(ac, cc, tol)
+        merged = resolve_disagreements(merged, ac, cc, disagree, config)
+        return {"floor": f, "ceiling": c, "times": times, "ac": ac, "cc": cc, "f0": merged,
+                "metrics": sanity_metrics(merged, ac, cc, f, c, config)}
+
+    first = one_pass(floor, ceiling)
+    passes = [first]
+    if first["metrics"]["suspicious"]:
+        for f, c in _retry_candidates(floor, ceiling, first["metrics"]["suspicious"], config):
+            passes.append(one_pass(f, c))
+    best = select_pass(passes, config) if len(passes) > 1 else first
+    support = [
+        _resample_nearest(best["times"], p["times"], p["f0"], config["pitch"]["time_step"] * 0.55)
+        for p in passes if p is not best
+    ]
+    unresolved = {"ac_cc_disagree", "coverage_collapse"} & set(best["metrics"]["suspicious"])
+    return {
+        "times": best["times"], "f0": best["f0"], "ac": best["ac"], "cc": best["cc"],
+        "support_tracks": support,
+        "pitch_floor": best["floor"], "pitch_ceiling": best["ceiling"],
+        "diagnostics": {
+            **best["metrics"],
+            "retried": len(passes) > 1,
+            "stable": not unresolved,
+            "passes": [{"floor": p["floor"], "ceiling": p["ceiling"], **p["metrics"], "flags": p.get("flags", [])}
+                       for p in passes],
+        },
+    }
+
+
+# ----------------------------------------------- cleanup + semitone normalisation ----
+
+def correct_octaves(f0, sources, config):
+    """Halve/double a frame only when it is an octave off its neighbours AND another source supports it."""
+    clean = config["cleanup"]
+    radius = int(clean["octave_context_frames"])
+    tol = clean["octave_tolerance_st"]
+    out = f0.copy()
+    corrected = np.zeros(len(f0), dtype=bool)
+    for index in np.flatnonzero(np.isfinite(f0)):
+        reference = _local_reference(f0, index, radius)
+        if reference is None:
+            continue
+        offset = _st_diff(f0[index], reference)
+        if not 12.0 - tol <= abs(offset) <= 12.0 + tol:
+            continue
+        candidate = f0[index] / 2.0 if offset > 0 else f0[index] * 2.0
+        supported = any(
+            np.isfinite(src[index]) and abs(_st_diff(src[index], candidate)) <= tol for src in sources
+        )
+        if supported and abs(_st_diff(candidate, reference)) < abs(offset):
+            out[index] = candidate
+            corrected[index] = True
+    return out, corrected
+
+
+def _voiced_runs(mask):
+    padded = np.diff(np.r_[False, mask, False].astype(np.int8))
+    return list(zip(np.flatnonzero(padded == 1), np.flatnonzero(padded == -1)))
+
+
+def smooth_and_interpolate(st, step_sec, config):
+    """Median filter inside voiced runs; interpolate only gaps <= interpolate_gap_ms."""
+    clean = config["cleanup"]
+    window = int(clean["median_filter_frames"]) | 1
+    out = st.copy()
+    for start, end in _voiced_runs(np.isfinite(st)):
+        run = st[start:end]
+        w = min(window, (len(run) // 2) * 2 + 1)
+        if w >= 3:
+            padded = np.pad(run, w // 2, mode="edge")
+            out[start:end] = medfilt(padded, w)[w // 2: w // 2 + len(run)]
+    max_gap = int(round(clean["interpolate_gap_ms"] / 1000.0 / step_sec))
+    runs = _voiced_runs(np.isfinite(out))
+    for (_, left_end), (right_start, _) in zip(runs, runs[1:]):
+        if 0 < right_start - left_end <= max_gap:
+            out[left_end - 1: right_start + 1] = np.interp(
+                np.arange(left_end - 1, right_start + 1), [left_end - 1, right_start],
+                [out[left_end - 1], out[right_start]])
+    return out
+
+
+def _frame_confidence(f0, ac, cc, extra_tracks, tolerance_st):
+    """Per-frame trust in the merged F0: 1.0 when AC and CC agree, 0.6 when one tracker is confirmed by another
+    pass, 0.3 for a single unconfirmed tracker or a disagreement that had to be resolved."""
+    confidence = np.zeros(len(f0))
+    for index in np.flatnonzero(np.isfinite(f0)):
+        a, c = ac[index], cc[index]
+        if np.isfinite(a) and np.isfinite(c) and abs(_st_diff(a, c)) <= tolerance_st:
+            confidence[index] = 1.0
+        elif any(np.isfinite(t[index]) and abs(_st_diff(t[index], f0[index])) <= tolerance_st for t in extra_tracks):
+            confidence[index] = 0.6
+        else:
+            confidence[index] = 0.3
+    return confidence
+
+
+def _split_at_jumps(f0, jump_st, max_gap_frames=2):
+    """Runs of consecutive voiced frames; a gap longer than max_gap_frames or a jump >= jump_st starts a new run."""
+    runs, current = [], []
+    last = None
+    for index in np.flatnonzero(np.isfinite(f0)):
+        if last is not None and (index - last > max_gap_frames or abs(_st_diff(f0[index], f0[last])) >= jump_st):
+            runs.append(current)
+            current = []
+        current.append(index)
+        last = index
+    if current:
+        runs.append(current)
+    return runs
+
+
+def correct_octave_runs(f0, ac, cc, extra_tracks, baseline_hz, config):
+    """Fix a sustained octave error: two neighbouring runs exactly an octave apart, one of them mis-tracked.
+
+    The run to move is the less trustworthy one: fewer frames, less AC/CC agreement, no confirmation from the other
+    tracker or passes, and (for the speaker) a pitch far outside their usual range. Nothing is moved unless one run
+    is clearly weaker than the other and the junction is smooth after the move. Jumps that are not an octave
+    (creaky voice, a new syllable) are left alone."""
+    clean = config["cleanup"]
+    out = f0.copy()
+    corrected = np.zeros(len(f0), dtype=bool)
+    if not clean["octave_run_correction"]:
+        return out, corrected
+    tol, jump = clean["octave_tolerance_st"], config["sanity"]["octave_jump_st"]
+    confidence = _frame_confidence(f0, ac, cc, extra_tracks, config["sanity"]["ac_cc_tolerance_st"])
+
+    def score(run):
+        median_st = float(np.median(hz_to_st(out[run], baseline_hz)))
+        in_range = abs(median_st) <= clean["octave_range_st"]
+        return float(confidence[run].sum()) * (1.0 if in_range else 0.5)
+
+    for _ in range(4):                                   # shifting one run can expose the next junction
+        changed = False
+        runs = _split_at_jumps(out, jump)
+        for left, right in zip(runs, runs[1:]):
+            if right[0] - left[-1] > 2:
+                continue                                 # separated by a gap: different syllables, not a jump
+            # Compare the two frames at the junction (the pair that made the jump), not run medians: a glitch run
+            # can sit an octave off its neighbour at the join while a long, sloping neighbour has another median.
+            step = float(_st_diff(out[right[0]], out[left[-1]]))
+            if not 12.0 - tol <= abs(step) <= 12.0 + tol:
+                continue                                 # not an octave: creak or a syllable change, leave it
+            weaker, stronger = (right, left) if score(right) < score(left) else (left, right)
+            if score(stronger) < clean["octave_run_decisive_ratio"] * score(weaker):
+                continue                                 # neither run is clearly the mis-tracked one
+            # step > 0: the right run is an octave above the left one. Move the weaker run onto the stronger.
+            move = -12.0 if (weaker is right) == (step > 0) else 12.0
+            candidate = out[weaker] * 2.0 ** (move / 12.0)
+            moved_edge = candidate[-1] if weaker is left else candidate[0]        # frame at the junction
+            other_edge = out[right[0]] if weaker is left else out[left[-1]]
+            if abs(_st_diff(moved_edge, other_edge)) > clean["octave_run_continuity_st"]:
+                continue                                 # moving it does not restore a smooth contour
+            out[weaker] = candidate
+            corrected[weaker] = True
+            changed = True
+            break
+        if not changed:
+            break
+    return out, corrected
+
+
+def clean_contour(extraction, baseline_hz, config):
+    """Octave correction -> median filter -> short-gap interpolation -> semitones re. speaker median."""
+    sources = [extraction["ac"], extraction["cc"], *extraction["support_tracks"]]
+    f0, corrected = correct_octaves(extraction["f0"], sources, config)
+    f0, run_corrected = correct_octave_runs(
+        f0, extraction["ac"], extraction["cc"], extraction["support_tracks"], baseline_hz, config)
+    corrected = corrected | run_corrected
+    times = extraction["times"]
+    step = float(np.median(np.diff(times))) if len(times) > 1 else config["pitch"]["time_step"]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        st = hz_to_st(f0, baseline_hz)
+    return {
+        "times": times,
+        "st": smooth_and_interpolate(st, step, config),
+        "observed": np.isfinite(extraction["f0"]),
+        "octave_corrected": corrected,
+        "step": step,
+    }
+
+
+# --------------------------------------------------------------- alignment ----
+
+def _write_wav_16k_mono(samples, sample_rate, path):
+    samples = np.asarray(samples, dtype=np.float64).reshape(-1)
+    if int(sample_rate) != 16000:
+        divisor = math.gcd(16000, int(sample_rate))
+        samples = resample_poly(samples, 16000 // divisor, int(sample_rate) // divisor)
+    peak = float(np.max(np.abs(samples))) if len(samples) else 0.0
+    if peak > 1.0:
+        samples = samples / peak
+    wavfile.write(path, 16000, (samples * 32767).astype(np.int16))
+
+
+def dictionary_fingerprint(config):
+    """Short hash of the MFA dictionary content (or its name when it is an installed dictionary).
+
+    Anything that caches an alignment must include this: a cached alignment (or cached failure) made with an
+    older dictionary is wrong once characters have been added."""
+    name = config["alignment"]["mfa_dictionary"]
+    path = CONFIG_PATH.parent / name
+    return hashlib.sha1(path.read_bytes() if path.is_file() else name.encode("utf-8")).hexdigest()[:10]
+
+
+def _dictionary_argument(dictionary, workdir):
+    """MFA caches a compiled dictionary by *file name*, so a rebuilt dictionary with an unchanged name silently
+    keeps the old words (every new character aligns as <unk>). Hand MFA a copy whose name carries a content hash."""
+    path = CONFIG_PATH.parent / dictionary
+    if not path.is_file():
+        return dictionary                      # an installed MFA dictionary name
+    digest = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+    named = Path(workdir) / f"{path.stem}_{digest}.dict"
+    shutil.copyfile(path, named)
+    return str(named)
+
+
+def mfa_align(samples, sample_rate, chars, config=None):
+    """Run `mfa align_one` on the fixed script (no ASR, no tokenization) and return its tiers."""
+    config = config or load_config()
+    align = config["alignment"]
+    if not Path(MFA_EXE).exists():
+        raise AlignmentError(f"MFA executable not found: {MFA_EXE}")
+    workdir = Path(tempfile.mkdtemp(prefix="tonepipe-mfa-"))
+    try:
+        wav, txt, result_path = workdir / "utterance.wav", workdir / "utterance.txt", workdir / "result.json"
+        _write_wav_16k_mono(samples, sample_rate, wav)
+        txt.write_text(" ".join(chars), encoding="utf-8")
+        # align_one's last argument is the output *file*; a directory exits 0 and writes nothing.
+        command = [
+            MFA_EXE, "align_one", "--output_format", "json", "--no_tokenization",
+            "--no_textgrid_cleanup", "--no_use_mp", "--no_use_threading", "--num_jobs", "1",
+            "--single_speaker", "--quiet", str(wav), str(txt),
+            align["mfa_dictionary"], align["mfa_acoustic_model"], str(result_path),
+        ]
+        command[command.index(align["mfa_dictionary"])] = _dictionary_argument(align["mfa_dictionary"], workdir)
+        env = {**os.environ, "MFA_ROOT_DIR": MFA_ROOT_DIR}
+        with _MFA_LOCK:  # concurrent mfa processes interleave writes to command_history.yaml and corrupt it
+            try:
+                result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                        env=env, timeout=align["mfa_timeout_sec"])
+            except subprocess.TimeoutExpired:
+                raise AlignmentError("MFA timed out.")
+        if result.returncode != 0 or not result_path.exists():
+            raise AlignmentError(f"MFA failed (exit {result.returncode}): {(result.stderr or result.stdout)[-400:]}")
+        return json.loads(result_path.read_text(encoding="utf-8"))["tiers"]
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+def syllables_from_tiers(tiers, chars, config=None):
+    """Turn MFA word/phone tiers into one syllable per character, with the vowel nucleus located."""
+    align = (config or load_config())["alignment"]
+    words = [e for e in tiers["words"]["entries"] if e[2] not in SILENCE_LABELS]
+    phones = tiers["phones"]["entries"]
+    if len(words) != len(chars):
+        raise AlignmentError(f"MFA returned {len(words)} words for {len(chars)} characters.")
+    syllables = []
+    for char, (start, end, label) in zip(chars, words):
+        if label == "<unk>" and not align["allow_unk"]:
+            raise AlignmentError(f"Character {char} is out of vocabulary (<unk>); fix the dictionary.")
+        if label != char and label != "<unk>":
+            raise AlignmentError(f"MFA word {label!r} does not match script character {char!r}.")
+        inside = [p for p in phones if start - 1e-6 <= (p[0] + p[1]) / 2 <= end + 1e-6
+                  and p[2] not in SILENCE_LABELS]
+        if any(p[2] == "spn" for p in inside) and not align["allow_spn"]:
+            raise AlignmentError(f"Character {char} aligned to spn; fix the dictionary.")
+        nucleus = next((i for i, p in enumerate(inside) if TONE_LETTERS & set(p[2])), None)
+        syllables.append({
+            "char": char, "start": float(start), "end": float(end),
+            "phones": [(float(p[0]), float(p[1]), p[2]) for p in inside],
+            "nucleus": None if nucleus is None else (float(inside[nucleus][0]), float(inside[-1][1])),
+        })
+    return syllables
+
+
+def _mark_alignment_sanity(syllables):
+    """Flag syllables with impossible boundaries (empty or overlapping the previous one)."""
+    previous_end = -math.inf
+    for syllable in syllables:
+        ok = syllable["end"] > syllable["start"] and syllable["start"] >= previous_end - 0.02
+        syllable["alignment_ok"] = bool(syllable.get("alignment_ok", True) and ok)
+        previous_end = max(previous_end, syllable["end"])
+    return syllables
+
+
+# ---------------------------------------------------- features + verifier ----
+
+def syllable_features(times, st, start, end):
+    """Per-syllable acoustic features (the 12 core ones plus mean / core range) on a segment [start, end)."""
+    span = max(end - start, 1e-6)
+    voiced = np.isfinite(st)
+    n = int(voiced.sum())
+    feats = {"duration": float(end - start), "voiced_ratio": n / len(st) if len(st) else 0.0,
+             "voiced_frames": n}
+    if n == 0:
+        return feats
+    v_st, v_pos = st[voiced], (times[voiced] - start) / span
+    edge = max(2, int(math.ceil(0.2 * n)))
+    third = max(1, n // 3)
+    low = int(np.argmin(v_st))
+    feats.update({
+        "start_ST": float(v_st[:edge].mean()), "end_ST": float(v_st[-edge:].mean()),
+        "min_ST": float(v_st[low]), "max_ST": float(v_st.max()),
+        "range_ST": float(v_st.max() - v_st[low]),
+        "range_core_ST": float(np.percentile(v_st, 90) - np.percentile(v_st, 10)),
+        "mean_ST": float(v_st.mean()),
+        "min_position": float(v_pos[low]), "max_position": float(v_pos[int(np.argmax(v_st))]),
+        "early_to_late_delta": float(v_st[:third].mean() - v_st[-third:].mean()),
+        "fall_before_min": float(v_st[: low + 1].max() - v_st[low]),
+        "rise_after_min": float(v_st[low:].max() - v_st[low]),
+    })
+    return feats
+
+
+def _ge(x, threshold):
+    """1 at/above the threshold, falling linearly to 0 at 40% of it."""
+    return float(np.clip((x - 0.4 * threshold) / (0.6 * threshold), 0.0, 1.0))
+
+
+def _le(x, threshold, width=None):
+    """1 at/below the threshold, falling linearly to 0 after `width` more."""
+    return float(np.clip(1.0 - (x - threshold) / (width or threshold), 0.0, 1.0))
+
+
+def _window(x, low, high, margin=0.1):
+    if low <= x <= high:
+        return 1.0
+    return float(np.clip(1.0 - (low - x if x < low else x - high) / margin, 0.0, 1.0))
+
+
+def tone_scores(f, allow_half_t3, config):
+    """Soft 0..1 fit of a contour to each of T1-T4 (T3 = max of full and, if the context allows, half)."""
+    t = config["tone"]
+    t1 = _le(abs(f["early_to_late_delta"]), t["t1_max_delta_st"]) * _le(
+        f["range_core_ST"], t["t1_max_range_st"], width=2.0)
+    t2 = _ge(f["rise_after_min"], t["t2_min_rise_st"]) * _le(f["min_position"], t["t2_max_min_position"], 0.2)
+    t3_full = (_ge(f["fall_before_min"], t["t3_min_fall_st"]) * _ge(f["rise_after_min"], t["t3_min_full_rise_st"])
+               * _window(f["min_position"], t["t3_min_position"], t["t3_max_position"]))
+    t3_half = (_ge(f["fall_before_min"], t["t3_min_fall_st"]) * _le(f["rise_after_min"], t["t3_min_full_rise_st"], 1.0)
+               * _ge(f["min_position"], 0.5)) if allow_half_t3 else 0.0
+    t4 = _ge(f["early_to_late_delta"], t["t4_min_fall_st"])
+    return {1: t1, 2: t2, 3: max(t3_full, t3_half), 4: t4, "t3_full": t3_full, "t3_half": t3_half}
+
+
+# ------------------------------------------------------- confidence gating ----
+
+def acoustic_quality(components, config):
+    weights = config["confidence"]["quality_weights"]
+    return float(sum(weights[k] * float(np.clip(components[k], 0, 1)) for k in weights))
+
+
+def decide(quality, match, config, allow_practice=True):
+    """likely_correct needs decent quality and match; practice needs high quality and mismatch (= 1 - match)."""
+    conf = config["confidence"]
+    mismatch = 1.0 - match
+    if quality >= conf["likely_correct_quality"] and match >= conf["likely_correct_match"]:
+        return "likely_correct"
+    if allow_practice and quality >= conf["practice_quality"] and mismatch >= conf["practice_mismatch"]:
+        return "practice"
+    return "insufficient_evidence"
+
+
+def student_feedback(status, expected_tone, config):
+    text = config["feedback"]
+    if status == "practice":
+        return text["practice"].get(expected_tone, text["insufficient_evidence"])
+    return text[status]
+
+
+def _segment_for(syllable, config):
+    clean = config["cleanup"]
+    if syllable["nucleus"] is not None:
+        return syllable["nucleus"][0], syllable["nucleus"][1], syllable.get("segment_source", "vowel_nucleus")
+    span = syllable["end"] - syllable["start"]
+    return (syllable["start"] + clean["fallback_onset_trim"] * span,
+            syllable["end"] - clean["fallback_offset_trim"] * span, "syllable_trimmed")
+
+
+def _pinyin(char, lexical_tone):
+    base = lazy_pinyin(char, style=Style.NORMAL)[0]
+    return f"{base}{lexical_tone}" if lexical_tone else base
+
+
+def _empty_result(context, char, config, speaker, status="insufficient_evidence", reasons=()):
+    result = {
+        "index": context["index"], "character": char, "pinyin": _pinyin(char, context["lexical_tone"]),
+        "lexical_tone": context["lexical_tone"], "expected_surface_tone": context["target_tone"],
+        "tone_rule": context["tone_rule"],
+        "speaker_f0_median": speaker.get("baseline_hz"), "pitch_floor": speaker.get("pitch_floor"),
+        "pitch_ceiling": speaker.get("pitch_ceiling"),
+        "tone_match": None, "tone_mismatch": None, "detected_alternative": None,
+        "acoustic_quality": 0.0, "status": status, "reasons": list(reasons),
+    }
+    result["feedback"] = student_feedback(status, context["target_tone"], config)
+    return result
+
+
+def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True):
+    align = config["alignment"]
+    seg_start, seg_end, source = _segment_for(syllable, config)
+    mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
+    st, times = clean["st"][mask], clean["times"][mask]
+    feats = syllable_features(times, st, seg_start, seg_end)
+    syllable_sec = syllable["end"] - syllable["start"]
+
+    ac, cc = extraction["ac"][mask], extraction["cc"][mask]
+    either, both = np.isfinite(ac) | np.isfinite(cc), np.isfinite(ac) & np.isfinite(cc)
+    agree = both & (np.abs(_st_diff(ac, cc)) <= config["sanity"]["ac_cc_tolerance_st"])
+    n_voiced = max(feats["voiced_frames"], 1)
+    remaining_jumps = count_octave_jumps(st, config["sanity"]["octave_jump_st"], in_semitones=True)
+    unstable = int(clean["octave_corrected"][mask].sum()) + 2 * remaining_jumps
+    components = {
+        "ac_cc_agreement": float(agree.sum() / either.sum()) if either.any() else 0.0,
+        "voiced_coverage": feats["voiced_ratio"],
+        "octave_stability": max(0.0, 1.0 - unstable / n_voiced),
+        "alignment_quality": (0.5 * min(1.0, feats["voiced_frames"] / (2 * align["min_voiced_frames"]))
+                              + 0.5 * min(1.0, syllable_sec * 1000 / (2 * align["min_syllable_ms"]))
+                              if syllable.get("alignment_ok", True) else 0.0),
+    }
+    quality = acoustic_quality(components, config)
+    reasons = []
+    if not stable_track:
+        quality *= config["confidence"]["unstable_pitch_quality_factor"]
+        reasons.append("unstable_pitch_track")
+
+    result = _empty_result(context, syllable["char"], config, speaker, reasons=reasons)
+    if "boundary_shift_ms" in syllable:
+        result["boundary_shift_ms"] = syllable["boundary_shift_ms"]
+    result.update({
+        "start_ms": round(syllable["start"] * 1000), "end_ms": round(syllable["end"] * 1000),
+        "duration_ms": round(syllable_sec * 1000),
+        "analysis_segment": {"start_ms": round(seg_start * 1000), "end_ms": round(seg_end * 1000), "source": source},
+        "ac_cc_agreement": round(components["ac_cc_agreement"], 3),
+        "voiced_ratio": round(feats["voiced_ratio"], 3),
+        "features": {k: round(v, 3) for k, v in feats.items()},
+        "acoustic_quality": round(quality, 3),
+        "quality_components": {k: round(v, 3) for k, v in components.items()},
+        "_syllable_sec": syllable_sec, "_feats": feats,
+    })
+    if feats["voiced_frames"]:
+        result.update({
+            "start_st": round(feats["start_ST"], 2), "end_st": round(feats["end_ST"], 2),
+            "min_st": round(feats["min_ST"], 2), "max_st": round(feats["max_ST"], 2),
+            "range_st": round(feats["range_ST"], 2), "min_position": round(feats["min_position"], 2),
+            "max_position": round(feats["max_position"], 2),
+            "early_to_late_delta_st": round(feats["early_to_late_delta"], 2),
+            "fall_before_min_st": round(feats["fall_before_min"], 2),
+            "rise_after_min_st": round(feats["rise_after_min"], 2),
+        })
+
+    gate = []
+    if not syllable.get("alignment_ok", True):
+        gate.append("bad_alignment")
+    if syllable_sec * 1000 < align["min_syllable_ms"]:
+        gate.append("syllable_too_short")
+    if feats["voiced_frames"] < align["min_voiced_frames"]:
+        gate.append("too_few_voiced_frames")
+    if not gate and remaining_jumps:  # a jump >7 st between adjacent frames is a tracking error, not a tone movement
+        gate.append("octave_jump_in_segment")
+    reasons.extend(gate)
+    result["reasons"] = reasons
+    result["_gated"] = bool(gate)
+    if gate:
+        result["feedback"] = student_feedback("insufficient_evidence", context["target_tone"], config)
+        return result
+
+    if context["target_tone"] == 5:
+        result["_pending_neutral"] = True   # needs the rest of the utterance for the duration reference
+        return result
+
+    expected = context["target_tone"]
+    scores = tone_scores(feats, allows_half_third(context), config)
+    match = scores[expected]
+    others = {tone: scores[tone] for tone in (1, 2, 3, 4) if tone != expected}
+    status = decide(quality, match, config)
+    edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
+        times, st, seg_start, seg_end, expected, allows_half_third(context), status, quality, config)
+    result.update({
+        "tone_scores": {str(k): round(scores[k], 3) for k in (1, 2, 3, 4)},
+        "tone_match": round(match, 3), "tone_mismatch": round(1.0 - match, 3),
+        "detected_alternative": max(others, key=others.get),   # diagnostic only; never used for gating
+        "status": "insufficient_evidence" if edge_step else status,
+    })
+    if edge_step:
+        result["reasons"].append("edge_pitch_step")
+    elif status == "insufficient_evidence":
+        result["reasons"].append(
+            "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
+    result["feedback"] = student_feedback(result["status"], expected, config)
+    return result
+
+
+def edge_fragment_mask(times, st, step_st, fragment_sec):
+    """Frames of a short voiced run at either edge of `st` that lies beyond an implausible one-frame step, or None.
+
+    Real tone movements are smooth (about 1 st per 5 ms at the very most); a jump of `step_st` or more between adjacent
+    frames, followed by only a brief plateau before the segment ends, is a tracking artefact (a harmonic jump, creak,
+    the tail of the voicing) rather than something the speaker did."""
+    idx = np.flatnonzero(np.isfinite(st))
+    if len(idx) < 3:
+        return None
+    frame = float(np.median(np.diff(times))) if len(times) > 1 else 0.005
+    steps = np.flatnonzero((np.diff(idx) <= 2) & (np.abs(np.diff(st[idx])) >= step_st))
+    if not len(steps):
+        return None
+    drop = np.zeros(len(st), dtype=bool)
+    last = steps[-1]
+    if (idx[-1] - idx[last + 1] + 1) * frame <= fragment_sec:
+        drop[idx[last + 1:]] = True
+    first = steps[0]
+    if (idx[first] - idx[0] + 1) * frame <= fragment_sec:
+        drop[idx[: first + 1]] = True
+    return drop if drop.any() else None
+
+
+def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_half_t3, status, quality, config):
+    """True when the verdict rests on a short edge fragment behind an implausible pitch step.
+
+    The syllable is scored again without that fragment; if the status differs, the evidence is not solid. This can only
+    turn a decision into an abstention, never the other way round."""
+    clean = config["cleanup"]
+    drop = edge_fragment_mask(times, st, clean["edge_step_st"], clean["edge_fragment_ms"] / 1000.0)
+    if drop is None:
+        return False
+    trimmed = np.where(drop, np.nan, st)
+    if int(np.isfinite(trimmed).sum()) < config["alignment"]["min_voiced_frames"]:
+        return True
+    scores = tone_scores(syllable_features(times, trimmed, seg_start, seg_end), allow_half_t3, config)
+    return decide(quality, scores[expected], config) != status
+
+
+def allows_half_third(context):
+    """A surface T3 that is not clause-final may be a half-third (fall -> low), even at a word boundary."""
+    return bool(context["allow_half_t3"]
+                or (context["lexical_tone"] == 3 and context["target_tone"] == 3 and not context["is_clause_final"]))
+
+
+def finalize_neutral(results, config):
+    """Neutral tone in v1.
+
+    The script already says which syllables are neutral, so nothing is classified as T1-T4 and no duration or pitch-
+    range rule is applied (native isolated words showed pitch spreads of 6-12 st, far beyond any fixed ceiling).
+    A neutral syllable is `likely_correct` when its audio is usable (it passed the same gates as every syllable: a
+    trusted alignment, enough voiced frames, long enough, acoustic quality at the likely_correct level) and
+    `insufficient_evidence` when the pitch or alignment is too poor. It is never `practice`.
+    tone_match / tone_mismatch stay null: the tone itself was not scored."""
+    for result in results:
+        if not result.get("_pending_neutral"):
+            continue
+        usable = result["acoustic_quality"] >= config["confidence"]["likely_correct_quality"]
+        result["status"] = "likely_correct" if usable else "insufficient_evidence"
+        if not usable:
+            result["reasons"].append("low_acoustic_quality")
+        result["feedback"] = student_feedback(result["status"], 5, config)
+
+
+def enforce_neutral_policy(results, config):
+    """v1 policy: a neutral-tone syllable is `likely_correct` or `insufficient_evidence`, never `practice`.
+
+    An F0 shape alone must not accuse the learner of a neutral-tone error. finalize_neutral already behaves this
+    way; this is the single place that guarantees it. It is a silent
+    guard: the downgrade leaves no trace in the reasons, payload or UI (only a private flag, dropped by _public)."""
+    if config["neutral"]["allow_practice"]:
+        return
+    for result in results:
+        if result["expected_surface_tone"] == 5 and result["status"] == "practice":
+            result["status"] = "insufficient_evidence"
+            result["feedback"] = student_feedback("insufficient_evidence", 5, config)
+            result["_neutral_policy_downgrade"] = True
+
+
+def _public(result):
+    return {k: v for k, v in result.items() if not k.startswith("_")}
+
+
+def aggregate_status(syllables):
+    """Status of a group of syllables (word / phrase / file).
+
+    Any `practice` wins. Otherwise the group is `likely_correct` only if every scored (non-neutral)
+    syllable is; neutral syllables never block it, because v1 only weakly checks them.
+    """
+    if any(s["status"] == "practice" for s in syllables):
+        return "practice"
+    scored = [s for s in syllables if s["expected_surface_tone"] != 5]
+    pool = scored or list(syllables)
+    if pool and all(s["status"] == "likely_correct" for s in pool):
+        return "likely_correct"
+    return "insufficient_evidence"
+
+
+def _contour_payload(clean):
+    """Semitone contour (re. speaker median) for charts; unvoiced frames are None."""
+    return {
+        "step_sec": round(float(clean["step"]), 4),
+        "times": [round(float(t), 3) for t in clean["times"]],
+        "st": [round(float(v), 2) if np.isfinite(v) else None for v in clean["st"]],
+    }
+
+
+def _resolve_pitch_range(calibration, pitch_range):
+    calibrated = isinstance(calibration, dict) and calibration.get("status") == "calibrated"
+    baseline = None
+    floor, ceiling = 75.0, 450.0
+    if calibrated:
+        floor = float(calibration.get("pitch_floor", calibration.get("pitch_floor_hz")))
+        ceiling = float(calibration.get("pitch_ceiling", calibration.get("pitch_ceiling_hz")))
+        baseline = float(calibration.get("f0_median", (calibration.get("f0_hz") or {}).get("baseline")))
+    if pitch_range:
+        floor, ceiling = (float(v) for v in pitch_range)
+    return calibrated, floor, ceiling, baseline
+
+
+def syllable_count(script):
+    return len(capt_core.expected_tone_contexts(capt_core.prepare_target(script)))
+
+
+def needs_mfa(syllable_count, config):
+    """A one-syllable script needs no forced alignment: the syllable is simply the voiced run."""
+    return not (syllable_count == 1 and config["alignment"]["skip_mfa_single_syllable"])
+
+
+def single_syllable_alignment(extraction, char, config):
+    """The longest voiced run (gaps up to single_syllable_bridge_ms bridged) as the one syllable; [] if none."""
+    times = extraction["times"]
+    if not len(times):
+        return []
+    step = float(np.median(np.diff(times))) if len(times) > 1 else config["pitch"]["time_step"]
+    bridge = int(round(config["alignment"]["single_syllable_bridge_ms"] / 1000.0 / step))
+    runs = []
+    for start, end in _voiced_runs(np.isfinite(extraction["f0"])):
+        if runs and start - runs[-1][1] <= bridge:
+            runs[-1][1] = end
+        else:
+            runs.append([start, end])
+    if not runs:
+        return []
+    start, end = max(runs, key=lambda run: run[1] - run[0])
+    first, last = float(times[start]), float(times[end - 1]) + step
+    return [{"char": char, "start": first, "end": last, "phones": [], "nucleus": (first, last),
+             "segment_source": "voiced_run"}]
+
+
+def _shifted_segment(syllable, shift_start, shift_end, config):
+    """Analysis segment of a syllable whose start / end boundaries moved by the given seconds.
+
+    The nucleus start moves with the syllable start (the onset keeps its length); the end is shared."""
+    start, end = syllable["start"] + shift_start, syllable["end"] + shift_end
+    if syllable["nucleus"] is not None:
+        return syllable["nucleus"][0] + shift_start, end
+    span = end - start
+    cleanup = config["cleanup"]
+    return start + cleanup["fallback_onset_trim"] * span, end - cleanup["fallback_offset_trim"] * span
+
+
+def search_boundaries(syllables, contexts, clean, config):
+    """Choose syllable boundaries within +-max_shift_ms of the aligner's so the expected tones fit best.
+
+    MFA boundaries between sonorants are uncertain, and a boundary that is 40 ms off moves F0 from one syllable
+    into its neighbour. Rather than trust one segmentation, look for a plausible one (dynamic programming over
+    the shared boundaries, a small penalty for moving them) in which each syllable fits its expected tone. A
+    syllable is then only called `practice` if NO plausible segmentation makes its expected tone fit.
+    Returns (syllables, info); the syllables are unchanged when the search is off or not applicable."""
+    cfg = config["boundary_search"]
+    count = len(syllables)
+    info = {"enabled": bool(cfg["enabled"]), "applied": False, "shifts_ms": [0] * max(count - 1, 0),
+            "mean_match_before": None, "mean_match_after": None}
+    if not cfg["enabled"] or count < 2 or any(not s.get("alignment_ok", True) for s in syllables):
+        return syllables, info
+    step, width = cfg["step_ms"] / 1000.0, cfg["max_shift_ms"] / 1000.0
+    reach = int(round(width / step))
+    offsets = [round(k * step, 4) for k in range(-reach, reach + 1)]
+    zero = offsets.index(0.0)
+    min_length = config["alignment"]["min_syllable_ms"] / 1000.0
+    min_frames = config["alignment"]["min_voiced_frames"]
+
+    def fit(index, shift_start, shift_end):
+        syllable, context = syllables[index], contexts[index]
+        if syllable["end"] + shift_end - (syllable["start"] + shift_start) < min_length:
+            return None
+        seg_start, seg_end = _shifted_segment(syllable, shift_start, shift_end, config)
+        if seg_end <= seg_start:
+            return None
+        if context["target_tone"] == 5:
+            return 0.5                                  # neutral: no preference, neighbours decide the boundary
+        mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
+        feats = syllable_features(clean["times"][mask], clean["st"][mask], seg_start, seg_end)
+        if feats["voiced_frames"] < min_frames:
+            return 0.0
+        return tone_scores(feats, allows_half_third(context), config)[context["target_tone"]]
+
+    best = {zero: (0.0, [zero])}                        # outer boundaries stay where the aligner put them
+    for index in range(count):
+        following = {}
+        for b in ([zero] if index == count - 1 else range(len(offsets))):
+            for a, (score, path) in best.items():
+                value = fit(index, offsets[a], offsets[b])
+                if value is None:
+                    continue
+                total = score + value - cfg["shift_penalty"] * abs(offsets[b]) / width
+                if b not in following or total > following[b][0]:
+                    following[b] = (total, path + [b])
+        if not following:
+            return syllables, info                      # no feasible segmentation: keep the aligner's
+        best = following
+    path = best[zero][1]
+    shifts = [offsets[k] for k in path]
+
+    def mean_match(chosen):
+        values = [fit(i, chosen[i], chosen[i + 1]) for i in range(count) if contexts[i]["target_tone"] != 5]
+        values = [0.0 if v is None else v for v in values]
+        return float(np.mean(values)) if values else None
+
+    before, after = mean_match([0.0] * (count + 1)), mean_match(shifts)
+    adjusted = []
+    for i, syllable in enumerate(syllables):
+        a, b = shifts[i], shifts[i + 1]
+        moved = dict(syllable, start=syllable["start"] + a, end=syllable["end"] + b,
+                     boundary_shift_ms={"start": round(a * 1000), "end": round(b * 1000)})
+        if syllable["nucleus"] is not None:
+            moved["nucleus"] = (syllable["nucleus"][0] + a, syllable["nucleus"][1] + b)
+        adjusted.append(moved)
+    info.update({"applied": any(shifts), "shifts_ms": [round(v * 1000) for v in shifts[1:-1]],
+                 "mean_match_before": None if before is None else round(before, 3),
+                 "mean_match_after": None if after is None else round(after, 3)})
+    return adjusted, info
+
+
+def verify_utterance(samples, sample_rate, script, calibration=None, *, alignment=None, config=None,
+                     pitch_range=None, contexts=None, rejected_reasons=None, force_mfa=False):
+    """Full pipeline on one recording of a known script.
+
+    `alignment` can inject syllables (tests, cached alignments); `pitch_range=(floor, ceiling)` overrides the
+    calibrated range while keeping the calibrated median for semitone normalisation (fixed-range comparison);
+    `contexts` replaces the default surface-tone contexts (word-boundary sandhi, catalog pinyin overrides).
+    A failed alignment never raises: every syllable becomes insufficient_evidence. `rejected_reasons` (from
+    audio_prep: clipped, too_quiet, noisy, ...) short-circuits before alignment with the same outcome.
+    A one-syllable script is aligned by its voiced run instead of MFA unless `force_mfa` is set; set it when the
+    caller is choosing between script variants of different length (a voiced run cannot tell 裡 from 裡面).
+    """
+    config = config or load_config()
+    if contexts is None:
+        contexts = capt_core.expected_tone_contexts(capt_core.prepare_target(script))
+    chars = [c["char"] for c in contexts]
+    if not chars:
+        raise ValueError("The script contains no Chinese characters.")
+    samples = np.asarray(samples, dtype=np.float64).reshape(-1)
+    calibrated, floor, ceiling, baseline = _resolve_pitch_range(calibration, pitch_range)
+    speaker = {"baseline_hz": baseline, "pitch_floor": floor, "pitch_ceiling": ceiling}
+
+    base = {"method": METHOD, "script": "".join(chars), "calibrated": calibrated, "aligner": None,
+            "calibration_version": (calibration or {}).get("calibration_version") if calibrated else None,
+            "acoustic_profile": (calibration or {}).get("acoustic_profile") if calibrated else None}
+    if rejected_reasons:
+        results = [_empty_result(c, c["char"], config, speaker, reasons=["audio_quality_failed", *rejected_reasons])
+                   for c in contexts]
+        message = config["feedback"]["audio_quality"].get(
+            rejected_reasons[0], config["feedback"]["insufficient_evidence"])
+        for result in results:
+            result["feedback"] = message
+        return {**base, "alignment_error": None, "audio_quality_failed": list(rejected_reasons),
+                "f0_extraction": None, "contour": None, "boundary_search": None, "syllables": results,
+                "summary": {k: sum(r["status"] == k for r in results) for k in STATUSES},
+                "feedback": message, "config": deepcopy(config)}
+
+    alignment_error = None
+    extraction = None
+    base["aligner"] = "injected" if alignment is not None else "mfa"
+    try:
+        if alignment is None and not force_mfa and not needs_mfa(len(contexts), config):
+            extraction = extract_f0(samples, sample_rate, floor, ceiling, config)
+            alignment = single_syllable_alignment(extraction, chars[0], config)
+            base["aligner"] = "voiced_run"
+            if not alignment:
+                raise AlignmentError("No voiced speech was found in the recording.")
+        syllables = alignment if alignment is not None else syllables_from_tiers(
+            mfa_align(samples, sample_rate, chars, config), chars, config)
+        if len(syllables) != len(contexts):
+            raise AlignmentError("Alignment length does not match the script.")
+        _mark_alignment_sanity(syllables)
+    except AlignmentError as exc:
+        alignment_error = str(exc)
+
+    if alignment_error:
+        results = [_empty_result(c, c["char"], config, speaker, reasons=["alignment_failed"]) for c in contexts]
+        return {**base, "alignment_error": alignment_error, "audio_quality_failed": None,
+                "f0_extraction": None, "contour": None, "boundary_search": None,
+                "syllables": results,
+                "summary": {k: sum(r["status"] == k for r in results) for k in STATUSES},
+                "feedback": config["feedback"]["insufficient_evidence"], "config": deepcopy(config)}
+
+    if extraction is None:
+        extraction = extract_f0(samples, sample_rate, floor, ceiling, config)
+    # Voiced frames that no aligned syllable covers mean the script does not account for what was said
+    # (a missing word, an omitted optional character, a wrong variant): the alignment cannot be trusted.
+    voiced_frames = np.isfinite(extraction["f0"])
+    covered = np.zeros(len(voiced_frames), dtype=bool)
+    for syllable in syllables:
+        covered |= (extraction["times"] >= syllable["start"]) & (extraction["times"] < syllable["end"])
+    outside = float((voiced_frames & ~covered).sum() / max(int(voiced_frames.sum()), 1))
+    unaligned = outside > config["alignment"]["max_unaligned_voiced_fraction"]
+    if unaligned:
+        for syllable in syllables:
+            syllable["alignment_ok"] = False
+    extraction["diagnostics"].update({"voiced_outside_syllables": round(outside, 3), "speech_outside_alignment": unaligned})
+    if baseline is None:
+        voiced = extraction["f0"][np.isfinite(extraction["f0"])]
+        if not len(voiced):
+            raise ValueError("No voiced pitch found in the recording.")
+        baseline = float(np.median(voiced))
+        speaker["baseline_hz"] = baseline
+    clean = clean_contour(extraction, baseline, config)
+
+    syllables, boundary_search = search_boundaries(syllables, contexts, clean, config)
+    # A jump counts against stability only if it survives cleanup (median filter, octave fixes) AND lies inside a
+    # syllable's analysis segment. A step between two syllables is an ordinary transition, not a tracking error.
+    jump_st = config["sanity"]["octave_jump_st"]
+    jumps_left = count_octave_jumps(clean["st"], jump_st, in_semitones=True)
+    jumps_in_segments = 0
+    for syllable in syllables:
+        seg_start, seg_end, _ = _segment_for(syllable, config)
+        window = clean["st"][(clean["times"] >= seg_start) & (clean["times"] < seg_end)]
+        jumps_in_segments += count_octave_jumps(window, jump_st, in_semitones=True)
+    stable = extraction["diagnostics"]["stable"] and jumps_in_segments == 0
+    extraction["diagnostics"].update({"stable": stable, "octave_jumps_after_cleanup": jumps_left,
+                                      "octave_jumps_in_segments": jumps_in_segments,
+                                      "octave_frames_corrected": int(clean["octave_corrected"].sum())})
+    raw = [verify_syllable(s, ctx, extraction, clean, config, speaker, stable) for s, ctx in zip(syllables, contexts)]
+    finalize_neutral(raw, config)
+    enforce_neutral_policy(raw, config)
+    results = [_public(r) for r in raw]
+    counts = {k: sum(r["status"] == k for r in results) for k in STATUSES}
+    overall_status = aggregate_status(results)
+    if overall_status == "practice":
+        overall = config["feedback"]["practice"].get(
+            next(r["expected_surface_tone"] for r in results if r["status"] == "practice"))
+    else:
+        overall = config["feedback"][overall_status]
+    return {
+        **base,
+        "alignment_error": None,
+        "audio_quality_failed": None,
+        "f0_extraction": {"pitch_floor": extraction["pitch_floor"], "pitch_ceiling": extraction["pitch_ceiling"],
+                          "speaker_f0_median": round(baseline, 1), **extraction["diagnostics"]},
+        "syllables": results,
+        "summary": counts,
+        "feedback": overall,
+        "contour": _contour_payload(clean),
+        "boundary_search": boundary_search,
+        "config": deepcopy(config),
+    }

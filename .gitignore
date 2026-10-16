@@ -5,15 +5,20 @@ env/
 .venv/
 venv/
 
-# Local datasets and generated alignment cache
+# Local datasets
 api_dataset_full_*/
-alignment_cache_v2.json
+/practice_data/
 
-# Trained model artifacts, except the runtime model used by the API
+# Trained model artifacts (the tone pipeline loads none at runtime)
 *.joblib
-!tone_model_v2.joblib
 
 # Test and tool caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Local run results and tool output
+/outputs/
+/output/
+.playwright-cli/
+chapter5_word_practice/tone_audit_results/

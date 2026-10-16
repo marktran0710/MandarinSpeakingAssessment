@@ -1,0 +1,195 @@
+# Tone verification pipeline v1 - frozen / tunable config (see tone_pipeline.py).
+#
+# FROZEN      : pitch.* (Praat) and the calibration wide-pass settings. Do not tune.
+# SPEAKER-ADAPTIVE: pitch_floor / pitch_ceiling / f0_median come from the student's calibration profile.
+# TUNABLE     : sanity.*, cleanup.*, tone.*, neutral.*, confidence.*, profiles.* (tune against teacher labels).
+
+calibration_version: speaker_f0_v1
+
+pitch:
+  time_step: 0.005
+  max_candidates: 15
+  silence_threshold: 0.03
+  voicing_threshold: 0.35
+  octave_cost: 0.01
+  octave_jump_cost: 0.35
+  voiced_unvoiced_cost: 0.14
+  very_accurate: false
+
+calibration:
+  wide_floor: 50
+  wide_ceiling: 600
+  floor_scale: 0.40
+  floor_min: 50
+  floor_max: 120
+  floor_round_to: 10          # 230 Hz median -> 92 -> 90 Hz
+  ceiling_scale: 1.25
+  ceiling_min: 350
+  ceiling_max: 550
+  ceiling_round_to: 50        # ceil_to_50: 346 * 1.25 = 432.5 -> 450 Hz
+  # Recording-level quality gate. A failed gate raises CalibrationError; no profile is created.
+  min_duration_sec: 4.9       # "5 s" with tolerance for decoder rounding
+  max_duration_sec: 12.0
+  min_voiced_sec: 2.0
+  min_stable_frames: 30
+  max_clipped_fraction: 0.005
+  clip_level: 0.99
+  min_median_hnr_db: 6.0      # whisper-like / very noisy recordings have no reliable harmonic structure
+  hard_min_agreement: 0.60    # below this the profile is refused
+  preferred_agreement: 0.80   # below this the profile is kept but flagged reliable=false with a warning
+  boundary_hit_rate: 0.05     # wide pass touching 50 / 600 Hz more often than this -> unreliable
+  boundary_margin_hz: 3.0
+  octave_reject_st: 10.0      # frames this far from the first median are octave/subharmonic candidates
+  # Isolated calibration tokens (媽 麻 馬 罵 嗎): reported as warnings, never as hard failures.
+  token_count: 5
+  token_gap_sec: 0.15
+  token_min_voiced_sec: 0.30
+  token_preferred_voiced_sec: 0.40
+  token_min_frames: 50
+  token_preferred_frames: 70
+
+# Per-recording gate, run on the raw decoded signal before alignment (audio_prep.py).
+audio_quality:
+  frame_ms: 25
+  min_duration_sec: 0.35
+  max_duration_sec: 60.0
+  clip_level: 0.99
+  max_clipped_fraction: 0.005
+  min_peak: 0.02              # about -34 dBFS: too quiet to analyse
+  speech_rms_ratio: 0.10      # a frame is speech above this fraction of the loud-frame level
+  min_speech_sec: 0.10        # short neutral syllables (吧, 的, 了) are ~0.15-0.2 s; this only has to catch 'no speech'
+  snr_noise_percentile: 10    # SNR ~ loud-frame level over quietest-frame level (frame RMS percentiles)
+  snr_speech_percentile: 95
+  min_snr_db: 8.0
+  voiced_min_hnr_db: 0.0      # Praat HNR frames above this count as voiced (pure noise sits below it)
+  min_voiced_sec: 0.08
+  min_median_hnr_db: 6.0
+  hnr_min_voiced_sec: 0.30    # HNR over less voicing than this is too noisy an estimate to reject a recording on (SNR still applies)
+  trim_padding_sec: 0.20
+  trim_rms_ratio: 0.05
+  target_peak: 0.95
+
+sanity:
+  ac_cc_tolerance_st: 1.0
+  octave_jump_st: 7.0
+  boundary_hit_rate: 0.05
+  min_agreement: 0.80         # what "AC ~ CC" means as a ratio of co-voiced frames
+  boundary_margin: 0.02       # a frame within 2% of floor/ceiling counts as touching it
+  min_coverage_ratio: 0.60    # merged voiced frames / frames either tracker voiced; below = coverage collapse
+  ceiling_retry_step_hz: 100
+  ceiling_retry_min: 300
+  ceiling_retry_max: 600
+  floor_retry_step_hz: 20
+  floor_retry_min: 50
+  coverage_weight: 1.0        # pass selection: penalty for voicing fewer frames than the best pass
+  octave_branch_penalty: 1.0  # pass selection: pass sits an octave above another pass (likely doubled)
+  octave_jump_penalty: 0.5    # pass selection: per adjacent-frame jump >= octave_jump_st (counted up to 2)
+  octave_branch_fraction: 0.45
+
+cleanup:
+  median_filter_frames: 5
+  interpolate_gap_ms: 30
+  fallback_onset_trim: 0.15
+  fallback_offset_trim: 0.10
+  octave_context_frames: 8
+  octave_tolerance_st: 1.5
+  # Sustained octave errors (a whole run tracked an octave off): move the less trustworthy of two runs that sit
+  # exactly an octave apart. Non-octave jumps (creak, a new syllable) are never "corrected".
+  octave_run_correction: true
+  octave_run_decisive_ratio: 1.5   # the stronger run must score at least this much higher than the weaker
+  octave_run_continuity_st: 3.0    # after the move the junction must be this smooth
+  octave_range_st: 9.0             # a run this far from the speaker's median counts as half as plausible
+  # A one-frame step this large inside a syllable is a tracking artefact, not a tone movement. If dropping the short
+  # voiced run beyond such a step (at either edge of the analysis segment) changes the verdict, the syllable is
+  # insufficient_evidence (edge_pitch_step): a few frames must not decide between accusing and accepting.
+  edge_step_st: 3.5
+  edge_fragment_ms: 40
+
+alignment:
+  min_syllable_ms: 70
+  min_voiced_frames: 6
+  allow_unk: false
+  allow_spn: false
+  max_unaligned_voiced_fraction: 0.25   # more voiced speech than this outside every aligned syllable = alignment not trusted
+  skip_mfa_single_syllable: true        # one-syllable script: the syllable is the longest voiced run, no forced alignment
+  single_syllable_bridge_ms: 80          # voiced gaps up to this are bridged when finding that run
+  # Stock mandarin_taiwan_mfa plus the catalog characters it lacks (python build_mfa_dictionary.py).
+  # Relative paths resolve against this project folder; a bare name uses an installed MFA dictionary.
+  mfa_dictionary: mfa/mandarin_taiwan_catalog.dict
+  mfa_acoustic_model: mandarin_mfa
+  mfa_timeout_sec: 120
+
+# An item with several variants (哪裡/哪兒, 裡(面)) only needs ONE reading scored. A clip may hold more than one
+# reading (say 裡面 then 裡); separate readings are found by pauses and the best (reading, variant) pair is scored.
+variants:
+  split_on_pause_ms: 180      # a pause at least this long separates two readings
+  min_chunk_ms: 150
+  chunk_padding_ms: 120
+  max_chunks: 3
+  chunk_rms_ratio: 0.10       # a frame is speech above this fraction of the loud-frame level
+
+# MFA boundaries between sonorants are uncertain. Search a small window around each shared boundary for a
+# segmentation in which the expected tones fit, so `practice` needs EVERY plausible segmentation to disagree.
+boundary_search:
+  enabled: true
+  max_shift_ms: 60
+  step_ms: 20
+  shift_penalty: 0.05         # per unit of |shift| / max_shift, so ties keep the aligner's boundary
+
+tone:
+  t1_max_delta_st: 2.0
+  t1_max_range_st: 4.0
+
+  t2_min_rise_st: 2.5
+  t2_max_min_position: 0.8
+
+  t3_min_fall_st: 2.0
+  t3_min_full_rise_st: 2.0
+  t3_min_position: 0.25
+  t3_max_position: 0.80
+
+  t4_min_fall_st: 3.0
+
+# Neutral tone is NOT scored (v1): the script says which syllables are neutral, nothing is classified as T1-T4 and no
+# duration / pitch-range rule is applied. A neutral syllable is likely_correct when its audio is usable (same gates as
+# every syllable) and insufficient_evidence otherwise. It can never be `practice`.
+neutral:
+  allow_practice: false       # v1 policy; enforced silently by enforce_neutral_policy
+
+confidence:
+  likely_correct_quality: 0.65
+  likely_correct_match: 0.70
+
+  practice_quality: 0.80
+  practice_mismatch: 0.80     # tone_mismatch = 1 - tone_match
+
+  unstable_pitch_quality_factor: 0.75   # pitch track still suspicious after all retries: caps quality below practice_quality
+
+  quality_weights:
+    ac_cc_agreement: 0.35
+    voiced_coverage: 0.25
+    octave_stability: 0.25
+    alignment_quality: 0.15
+
+# Acoustic F0 profile (not sex/gender), by calibrated median F0.
+profiles:
+  low_max_median_hz: 140
+  mid_max_median_hz: 200
+  high_max_median_hz: 270     # above this: very_high
+
+feedback:
+  likely_correct: "Tone looks good."
+  insufficient_evidence: "Not enough reliable pitch information. Try again."
+  audio_quality:
+    clipped: "The recording is distorted. Move back from the microphone and try again."
+    too_quiet: "The recording is too quiet. Speak louder or move closer to the microphone."
+    noisy: "There is too much background noise. Try again somewhere quieter."
+    too_short: "The recording is too short. Try again."
+    too_long: "The recording is too long. Record only the practice phrase."
+    no_speech: "No speech was detected. Try again."
+    no_voicing: "No clear voice pitch was detected. Speak aloud rather than whispering."
+  practice:
+    1: "Practice keeping this syllable high and level."
+    2: "Practice the rising movement on this syllable."
+    3: "Practice the low dipping movement on this syllable."
+    4: "Practice the falling movement on this syllable."

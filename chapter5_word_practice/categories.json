@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "categories": [
+    {
+      "id": "locations_directions",
+      "labels": {
+        "en": "Locations & Directions",
+        "zh": "位置與方向",
+        "vi": "Vị trí & phương hướng"
+      },
+      "subcategories": [
+        {
+          "id": "relative_positions",
+          "labels": {
+            "en": "Relative Positions",
+            "zh": "相對位置",
+            "vi": "Vị trí tương đối"
+          }
+        },
+        {
+          "id": "place_existence",
+          "labels": {
+            "en": "Place & Existence",
+            "zh": "地點與存在",
+            "vi": "Địa điểm & sự tồn tại"
+          }
+        }
+      ]
+    },
+    {
+      "id": "house_living_spaces",
+      "labels": {
+        "en": "House & Living Spaces",
+        "zh": "房屋與居家空間",
+        "vi": "Nhà cửa & không gian sống"
+      },
+      "subcategories": [
+        {
+          "id": "room_areas_openings",
+          "labels": {
+            "en": "Room Areas & Openings",
+            "zh": "房間與門窗",
+            "vi": "Phòng ốc & cửa ra vào"
+          }
+        },
+        {
+          "id": "building_units",
+          "labels": {
+            "en": "Building & Units",
+            "zh": "建築與量詞",
+            "vi": "Tòa nhà & lượng từ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "furniture_objects",
+      "labels": {
+        "en": "Furniture & Objects",
+        "zh": "?????",
+        "vi": "?? n?i th?t & v?t d?ng"
+      },
+      "subcategories": [
+        {
+          "id": "living_items",
+          "labels": {
+            "en": "Living Items",
+            "zh": "居家用品",
+            "vi": "Đồ dùng trong nhà"
+          }
+        },
+        {
+          "id": "seating_bedding",
+          "labels": {
+            "en": "Seating & Bedding",
+            "zh": "座椅與寢具",
+            "vi": "Chỗ ngồi & giường ngủ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "actions_connectors",
+      "labels": {
+        "en": "Actions & Connectors",
+        "zh": "動作與連接詞",
+        "vi": "Hành động & từ nối"
+      },
+      "subcategories": [
+        {
+          "id": "grammar_connectors",
+          "labels": {
+            "en": "Grammar & Connectors",
+            "zh": "文法與連接詞",
+            "vi": "Ngữ pháp & từ nối"
+          }
+        },
+        {
+          "id": "search_help_actions",
+          "labels": {
+            "en": "Search & Help Actions",
+            "zh": "尋找與求助",
+            "vi": "Tìm kiếm & giúp đỡ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "family_pets",
+      "labels": {
+        "en": "Family & Pets",
+        "zh": "家庭與寵物",
+        "vi": "Gia đình & thú cưng"
+      },
+      "subcategories": [
+        {
+          "id": "siblings",
+          "labels": {
+            "en": "Siblings",
+            "zh": "兄弟姊妹",
+            "vi": "Anh chị em"
+          }
+        },
+        {
+          "id": "pets_outdoors",
+          "labels": {
+            "en": "Pets & Outdoors",
+            "zh": "寵物與戶外活動",
+            "vi": "Thú cưng & ngoài trời"
+          }
+        }
+      ]
+    },
+    {
+      "id": "leisure_social",
+      "labels": {
+        "en": "Leisure & Social",
+        "zh": "休閒與社交",
+        "vi": "Giải trí & giao tiếp"
+      },
+      "subcategories": [
+        {
+          "id": "cafe_afternoon_tea",
+          "labels": {
+            "en": "Cafe & Afternoon Tea",
+            "zh": "咖啡廳與下午茶",
+            "vi": "Quán cà phê & trà chiều"
+          }
+        },
+        {
+          "id": "desserts_evaluation",
+          "labels": {
+            "en": "Desserts & Evaluation",
+            "zh": "甜點與評價",
+            "vi": "Món tráng miệng & nhận xét"
+          }
+        }
+      ]
+    }
+  ],
+  "items": {
+    "W001": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "living_items"
+    },
+    "W002": {
+      "category_id": "locations_directions",
+      "subcategory_id": "place_existence"
+    },
+    "W003": {
+      "category_id": "locations_directions",
+      "subcategory_id": "place_existence"
+    },
+    "W004": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    },
+    "W005": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    },
+    "W006": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    },
+    "W007": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    },
+    "W008": {
+      "category_id": "leisure_social",
+      "subcategory_id": "desserts_evaluation"
+    },
+    "W009": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    },
+    "W010": {
+      "category_id": "locations_directions",
+      "subcategory_id": "place_existence"
+    },
+    "W011": {
+      "category_id": "locations_directions",
+      "subcategory_id": "place_existence"
+    },
+    "W012": {
+      "category_id": "leisure_social",
+      "subcategory_id": "desserts_evaluation"
+    },
+    "W013": {
+      "category_id": "leisure_social",
+      "subcategory_id": "desserts_evaluation"
+    },
+    "W014": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "grammar_connectors"
+    },
+    "W015": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "grammar_connectors"
+    },
+    "W016": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "grammar_connectors"
+    },
+    "W017": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "grammar_connectors"
+    },
+    "W018": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "building_units"
+    },
+    "W019": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "building_units"
+    },
+    "W020": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "building_units"
+    },
+    "W021": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W022": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W023": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "room_areas_openings"
+    },
+    "W024": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "seating_bedding"
+    },
+    "W025": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "seating_bedding"
+    },
+    "W026": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "seating_bedding"
+    },
+    "W027": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W028": {
+      "category_id": "locations_directions",
+      "subcategory_id": "place_existence"
+    },
+    "W029": {
+      "category_id": "family_pets",
+      "subcategory_id": "siblings"
+    },
+    "W030": {
+      "category_id": "family_pets",
+      "subcategory_id": "siblings"
+    },
+    "W031": {
+      "category_id": "family_pets",
+      "subcategory_id": "siblings"
+    },
+    "W032": {
+      "category_id": "family_pets",
+      "subcategory_id": "siblings"
+    },
+    "W033": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "seating_bedding"
+    },
+    "W034": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W035": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W036": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W037": {
+      "category_id": "locations_directions",
+      "subcategory_id": "relative_positions"
+    },
+    "W038": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "search_help_actions"
+    },
+    "W039": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "search_help_actions"
+    },
+    "W040": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "room_areas_openings"
+    },
+    "W041": {
+      "category_id": "actions_connectors",
+      "subcategory_id": "search_help_actions"
+    },
+    "W042": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "seating_bedding"
+    },
+    "W043": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "living_items"
+    },
+    "W044": {
+      "category_id": "furniture_objects",
+      "subcategory_id": "living_items"
+    },
+    "W045": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "room_areas_openings"
+    },
+    "W046": {
+      "category_id": "house_living_spaces",
+      "subcategory_id": "room_areas_openings"
+    },
+    "W047": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W048": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W049": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W050": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W210": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W211": {
+      "category_id": "family_pets",
+      "subcategory_id": "pets_outdoors"
+    },
+    "W217": {
+      "category_id": "leisure_social",
+      "subcategory_id": "cafe_afternoon_tea"
+    }
+  }
+}

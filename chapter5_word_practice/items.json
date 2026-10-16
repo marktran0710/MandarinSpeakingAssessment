@@ -1,0 +1,976 @@
+{
+  "schema_version": 1,
+  "chapter": 5,
+  "item_count": 53,
+  "source_workbook": "modern_chinese_ch5_to_ch8_question_bank_FINAL_v4_AUDIT_ITEM_FIXED_overview.xlsx",
+  "source_sheet": "Questions",
+  "source_zip": "chapter5_to_8_audio_by_word_id_NO_ITEM-finallllllllllllll.zip",
+  "items": [
+    {
+      "word_key": "C5-5-1-I1-W001",
+      "word_id": "W001",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "錢包",
+      "script": "錢包",
+      "script_variants": [
+        "錢包"
+      ],
+      "pinyin": "qiánbāo",
+      "pos": "N",
+      "english_meaning": "wallet; purse",
+      "audio_file": "C5-5-1-W001.mp3",
+      "audio_sha256": "fe24a3902b5829f3edcb31cdd408a4b9dcd48c6e805813fa8cb62ec827bbd0aa",
+      "audio_size_bytes": 38636
+    },
+    {
+      "word_key": "C5-5-1-I2-W002",
+      "word_id": "W002",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "在",
+      "script": "在",
+      "script_variants": [
+        "在"
+      ],
+      "pinyin": "zài",
+      "pos": "Vst/Prep",
+      "english_meaning": "(to be located) at; in; on",
+      "audio_file": "C5-5-1-W002.mp3",
+      "audio_sha256": "531b2f5d4bdc92c13d53647ae87bad6ce4feb1029e6aad4544ff2d16fa321be7",
+      "audio_size_bytes": 24236
+    },
+    {
+      "word_key": "C5-5-1-I3-W003",
+      "word_id": "W003",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "哪裡/哪兒",
+      "script": "哪裡",
+      "script_variants": [
+        "哪裡",
+        "哪兒"
+      ],
+      "pinyin": "nǎlǐ/nǎr",
+      "pos": "N",
+      "english_meaning": "where",
+      "audio_file": "C5-5-1-W003.mp3",
+      "audio_sha256": "c5d52bb3b8a794e6e566b61ce95cd28ecfc23ba7104a77aabd67e873bf47994c",
+      "audio_size_bytes": 70316
+    },
+    {
+      "word_key": "C5-5-1-I4-W004",
+      "word_id": "W004",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "聽",
+      "script": "聽",
+      "script_variants": [
+        "聽"
+      ],
+      "pinyin": "tīng",
+      "pos": "V",
+      "english_meaning": "to listen",
+      "audio_file": "C5-5-1-W004.mp3",
+      "audio_sha256": "18f10154235d9539f3a6ce81a39c4e0fabf3a55193bb4fb4f3a753c316f6e801",
+      "audio_size_bytes": 28268
+    },
+    {
+      "word_key": "C5-5-1-I5-W005",
+      "word_id": "W005",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "音樂",
+      "script": "音樂",
+      "script_variants": [
+        "音樂"
+      ],
+      "pinyin": "yīnyuè",
+      "pos": "N",
+      "english_meaning": "music",
+      "audio_file": "C5-5-1-W005.mp3",
+      "audio_sha256": "9b0b04882e725df2af1b4627b175b2ddc59e8077c4983131dd1fb627b883382e",
+      "audio_size_bytes": 33452
+    },
+    {
+      "word_key": "C5-5-1-I14-W006",
+      "word_id": "W006",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Phrase",
+      "traditional_chinese": "有空",
+      "script": "有空",
+      "script_variants": [
+        "有空"
+      ],
+      "pinyin": "yǒukòng",
+      "pos": "Phrase",
+      "english_meaning": "to be free; available",
+      "audio_file": "C5-5-1-W006.mp3",
+      "audio_sha256": "919d39a8c4bec3e6795f34207403fb25763c497df66279aaf1c97ebe5e27a4f5",
+      "audio_size_bytes": 35180
+    },
+    {
+      "word_key": "C5-5-1-I6-W007",
+      "word_id": "W007",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "下午茶",
+      "script": "下午茶",
+      "script_variants": [
+        "下午茶"
+      ],
+      "pinyin": "xiàwǔ chá",
+      "pos": "N",
+      "english_meaning": "afternoon tea",
+      "audio_file": "C5-5-1-W007.mp3",
+      "audio_sha256": "ee6fc58fbd93ee1a4c8fde1288475bd398bc9756003d730779ab3ab3e8f8b5b1",
+      "audio_size_bytes": 46124
+    },
+    {
+      "word_key": "C5-5-1-I7-W008",
+      "word_id": "W008",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "不錯",
+      "script": "不錯",
+      "script_variants": [
+        "不錯"
+      ],
+      "pinyin": "búcuò",
+      "pos": "Vs",
+      "english_meaning": "not bad",
+      "audio_file": "C5-5-1-W008.mp3",
+      "audio_sha256": "397347456bdc405f0cf193e675ad1aa62dfc9d9b352a32f799c07b5338ed6c8b",
+      "audio_size_bytes": 32300
+    },
+    {
+      "word_key": "C5-5-1-I8-W009",
+      "word_id": "W009",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "咖啡廳",
+      "script": "咖啡廳",
+      "script_variants": [
+        "咖啡廳"
+      ],
+      "pinyin": "kāfēitīng",
+      "pos": "N",
+      "english_meaning": "café",
+      "audio_file": "C5-5-1-W009.mp3",
+      "audio_sha256": "456bb7b8a097fcde64a9b5c0f3e7f081f35ac20c33370ca04f831f00eef04f3b",
+      "audio_size_bytes": 43244
+    },
+    {
+      "word_key": "C5-5-1-I9-W010",
+      "word_id": "W010",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "那裡/那兒",
+      "script": "那裡",
+      "script_variants": [
+        "那裡",
+        "那兒"
+      ],
+      "pinyin": "nàlǐ/nàr",
+      "pos": "N",
+      "english_meaning": "there",
+      "audio_file": "C5-5-1-W010.mp3",
+      "audio_sha256": "e0330294ea801d3b80c789aa0460ea84d20de630abaf82700a16ef4f5cd39b7e",
+      "audio_size_bytes": 72044
+    },
+    {
+      "word_key": "C5-5-1-I9-W011",
+      "word_id": "W011",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "這裡/這兒",
+      "script": "這裡",
+      "script_variants": [
+        "這裡",
+        "這兒"
+      ],
+      "pinyin": "zhèlǐ/zhèr",
+      "pos": "N",
+      "english_meaning": "here",
+      "audio_file": "C5-5-1-W011.mp3",
+      "audio_sha256": "b6da063803882f19660702d0640a07e402a40c3e7bec1f870a4a0298f258d4d5",
+      "audio_size_bytes": 70892
+    },
+    {
+      "word_key": "C5-5-1-I10-W012",
+      "word_id": "W012",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "冰淇淋",
+      "script": "冰淇淋",
+      "script_variants": [
+        "冰淇淋"
+      ],
+      "pinyin": "bīngqílín",
+      "pos": "N",
+      "english_meaning": "ice cream",
+      "audio_file": "C5-5-1-W012.mp3",
+      "audio_sha256": "8e428a0781bdbc4f8799000a9e9b247286e3fb83c4fc73e5883207d592fb9648",
+      "audio_size_bytes": 40940
+    },
+    {
+      "word_key": "C5-5-1-I11-W013",
+      "word_id": "W013",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "巧克力",
+      "script": "巧克力",
+      "script_variants": [
+        "巧克力"
+      ],
+      "pinyin": "qiǎokèlì",
+      "pos": "N",
+      "english_meaning": "chocolate",
+      "audio_file": "C5-5-1-W013.mp3",
+      "audio_sha256": "b77371b7796a41f5a67912f223d483827a629a3e83cb59df657c84a73c5be843",
+      "audio_size_bytes": 40940
+    },
+    {
+      "word_key": "C5-5-1-I12-W014",
+      "word_id": "W014",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "半",
+      "script": "半",
+      "script_variants": [
+        "半"
+      ],
+      "pinyin": "bàn",
+      "pos": "N",
+      "english_meaning": "half",
+      "audio_file": "C5-5-1-W014.mp3",
+      "audio_sha256": "96a78546347d77eff6325377b86b59a1cee0ae16cce462b9b6fa38fd8a32ae5f",
+      "audio_size_bytes": 23084
+    },
+    {
+      "word_key": "C5-5-1-I13-W015",
+      "word_id": "W015",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "吧",
+      "script": "吧",
+      "script_variants": [
+        "吧"
+      ],
+      "pinyin": "ba",
+      "pos": "Ptc",
+      "english_meaning": "final particle for suggestion",
+      "audio_file": "C5-5-1-W015.mp3",
+      "audio_sha256": "322e6e9f1b964ee4a5bd9640b231a68158faf5c6de8a4ebeb06aeadbdeb169e3",
+      "audio_size_bytes": 19628
+    },
+    {
+      "word_key": "C5-5-2-I1-W016",
+      "word_id": "W016",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "跟",
+      "script": "跟",
+      "script_variants": [
+        "跟"
+      ],
+      "pinyin": "gēn",
+      "pos": "Conj",
+      "english_meaning": "and",
+      "audio_file": "C5-5-2-W016.mp3",
+      "audio_sha256": "41da3deb67934b09572c4e4a331b17be466d66fc41b5072aa109145ca1020ef9",
+      "audio_size_bytes": 22508
+    },
+    {
+      "word_key": "C5-5-2-I2-W017",
+      "word_id": "W017",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "可是",
+      "script": "可是",
+      "script_variants": [
+        "可是"
+      ],
+      "pinyin": "kěshì",
+      "pos": "Conj",
+      "english_meaning": "but",
+      "audio_file": "C5-5-2-W017.mp3",
+      "audio_sha256": "6ed322630637fe9d322453b3c9afb6f21c453054ee404cc3a902861ee982f637",
+      "audio_size_bytes": 32876
+    },
+    {
+      "word_key": "C5-5-2-I3-W018",
+      "word_id": "W018",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "房間",
+      "script": "房間",
+      "script_variants": [
+        "房間"
+      ],
+      "pinyin": "fángjiān",
+      "pos": "N",
+      "english_meaning": "room",
+      "audio_file": "C5-5-2-W018.mp3",
+      "audio_sha256": "00ffe11a5600f23b0f9111e7f468dda6393de9c6654b7d15275c60eb4572963c",
+      "audio_size_bytes": 34028
+    },
+    {
+      "word_key": "C5-5-2-I3-W019",
+      "word_id": "W019",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "房子",
+      "script": "房子",
+      "script_variants": [
+        "房子"
+      ],
+      "pinyin": "fángzi",
+      "pos": "N",
+      "english_meaning": "building; house",
+      "audio_file": "C5-5-2-W019.mp3",
+      "audio_sha256": "90eb19dece165534dad4af9f6cc3609eec4aeeb7bcc933bbe3b54d40516ce51b",
+      "audio_size_bytes": 29420
+    },
+    {
+      "word_key": "C5-5-2-I3-W020",
+      "word_id": "W020",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "棟",
+      "script": "棟",
+      "script_variants": [
+        "棟"
+      ],
+      "pinyin": "dòng",
+      "pos": "M",
+      "english_meaning": "measure word for buildings",
+      "audio_file": "C5-5-2-W020.mp3",
+      "audio_sha256": "f224d145797d6b73106d373a9a99b34f3c4a627c62dc1a08bf1dfd2ee6fe9027",
+      "audio_size_bytes": 21356
+    },
+    {
+      "word_key": "C5-5-2-I4-W021",
+      "word_id": "W021",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "裡(面)",
+      "script": "裡",
+      "script_variants": [
+        "裡",
+        "裡面"
+      ],
+      "pinyin": "lǐ(miàn)",
+      "pos": "N",
+      "english_meaning": "inside; in",
+      "audio_file": "C5-5-2-W021.mp3",
+      "audio_sha256": "656c07f95322d9babc11e46ccabdcafd87d120e276dc28b8c316d46f35da24bf",
+      "audio_size_bytes": 91052
+    },
+    {
+      "word_key": "C5-5-2-I4-W022",
+      "word_id": "W022",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "外(面)",
+      "script": "外",
+      "script_variants": [
+        "外",
+        "外面"
+      ],
+      "pinyin": "wài(miàn)",
+      "pos": "N",
+      "english_meaning": "outside",
+      "audio_file": "C5-5-2-W022.mp3",
+      "audio_sha256": "8694d6a5a0b43b38ae2f020eb07a5019e3a752209e9d27af3622b4c10cda1cc9",
+      "audio_size_bytes": 81836
+    },
+    {
+      "word_key": "C5-5-2-I5-W023",
+      "word_id": "W023",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "客廳",
+      "script": "客廳",
+      "script_variants": [
+        "客廳"
+      ],
+      "pinyin": "kètīng",
+      "pos": "N",
+      "english_meaning": "living room",
+      "audio_file": "C5-5-2-W023.mp3",
+      "audio_sha256": "f90f1a40fa782a19f081b23f7ed80eee70538da06c44ea301e38f2fd436858d0",
+      "audio_size_bytes": 32876
+    },
+    {
+      "word_key": "C5-5-2-I6-W024",
+      "word_id": "W024",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "桌子",
+      "script": "桌子",
+      "script_variants": [
+        "桌子"
+      ],
+      "pinyin": "zhuōzi",
+      "pos": "N",
+      "english_meaning": "table",
+      "audio_file": "C5-5-2-W024.mp3",
+      "audio_sha256": "a526de7659309ddff1bb61069aebd705a744a84ed5414cc199229063220b2d40",
+      "audio_size_bytes": 29420
+    },
+    {
+      "word_key": "C5-5-2-I6-W025",
+      "word_id": "W025",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "椅子",
+      "script": "椅子",
+      "script_variants": [
+        "椅子"
+      ],
+      "pinyin": "yǐzi",
+      "pos": "N",
+      "english_meaning": "chair",
+      "audio_file": "C5-5-2-W025.mp3",
+      "audio_sha256": "17021d3e8a2ca8f104c0891bd7afc1ae468c81e5339fc0b28aeded7753809d69",
+      "audio_size_bytes": 29996
+    },
+    {
+      "word_key": "C5-5-2-I6-W026",
+      "word_id": "W026",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "張",
+      "script": "張",
+      "script_variants": [
+        "張"
+      ],
+      "pinyin": "zhāng",
+      "pos": "M",
+      "english_meaning": "measure word for tables and chairs",
+      "audio_file": "C5-5-2-W026.mp3",
+      "audio_sha256": "942927527a1dbb9f6e3c2295b275a5d12d6099647b5107f7daadcab6afb9a29c",
+      "audio_size_bytes": 25388
+    },
+    {
+      "word_key": "C5-5-2-I7-W027",
+      "word_id": "W027",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "上(面)",
+      "script": "上",
+      "script_variants": [
+        "上",
+        "上面"
+      ],
+      "pinyin": "shàng(miàn)",
+      "pos": "N",
+      "english_meaning": "above; over; on top of; on the surface of",
+      "audio_file": "C5-5-2-W027.mp3",
+      "audio_sha256": "bb8ddbd8fe14121f7a5cb20a559492e31fdf3c4a9d3bd60e341b6f9bc045dc80",
+      "audio_size_bytes": 83564
+    },
+    {
+      "word_key": "C5-5-2-I8-W028",
+      "word_id": "W028",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "有",
+      "script": "有",
+      "script_variants": [
+        "有"
+      ],
+      "pinyin": "yǒu",
+      "pos": "Vst",
+      "english_meaning": "there is/are; to exist",
+      "audio_file": "C5-5-2-W028.mp3",
+      "audio_sha256": "bc9f31528e6dfff209cddd72e751c6d1238c5a37a90ace845d31f52910aa0bcc",
+      "audio_size_bytes": 31724
+    },
+    {
+      "word_key": "C5-5-2-I9-W029",
+      "word_id": "W029",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "哥哥",
+      "script": "哥哥",
+      "script_variants": [
+        "哥哥"
+      ],
+      "pinyin": "gēge",
+      "pos": "N",
+      "english_meaning": "elder brother",
+      "audio_file": "C5-5-2-W029.mp3",
+      "audio_sha256": "4219aae1d0c53bb2d22a98a0b64438cc176391f5717ffe39c8e2c6109193aa0b",
+      "audio_size_bytes": 29420
+    },
+    {
+      "word_key": "C5-5-2-I9-W030",
+      "word_id": "W030",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "姐姐/姊姊",
+      "script": "姐姐",
+      "script_variants": [
+        "姐姐",
+        "姊姊"
+      ],
+      "pinyin": "jiějie",
+      "pos": "N",
+      "english_meaning": "elder sister",
+      "audio_file": "C5-5-2-W030.mp3",
+      "audio_sha256": "45fbc40a318715a0f3eddf716217ef45bbc8cc71a84beedbd64deb7f8103afe6",
+      "audio_size_bytes": 32876
+    },
+    {
+      "word_key": "C5-5-2-I9-W031",
+      "word_id": "W031",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "弟弟",
+      "script": "弟弟",
+      "script_variants": [
+        "弟弟"
+      ],
+      "pinyin": "dìdi",
+      "pos": "N",
+      "english_meaning": "younger brother",
+      "audio_file": "C5-5-2-W031.mp3",
+      "audio_sha256": "47f9a680ab151e8d7cc16794327c7ae2f226e3e7c7fefc2967b681274b02bb37",
+      "audio_size_bytes": 28844
+    },
+    {
+      "word_key": "C5-5-2-I9-W032",
+      "word_id": "W032",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "妹妹",
+      "script": "妹妹",
+      "script_variants": [
+        "妹妹"
+      ],
+      "pinyin": "mèimei",
+      "pos": "N",
+      "english_meaning": "younger sister",
+      "audio_file": "C5-5-2-W032.mp3",
+      "audio_sha256": "9178f9454ab3a7c85d88b31d0fb3101d09bbee190d9370b31fda28bf13e558a0",
+      "audio_size_bytes": 29996
+    },
+    {
+      "word_key": "C5-5-2-I10-W033",
+      "word_id": "W033",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "沙發",
+      "script": "沙發",
+      "script_variants": [
+        "沙發"
+      ],
+      "pinyin": "shāfā",
+      "pos": "N",
+      "english_meaning": "sofa",
+      "audio_file": "C5-5-2-W033.mp3",
+      "audio_sha256": "625ef54b45f0f4ec5c0674424fee2604d2e5569de0454108687f991f91969393",
+      "audio_size_bytes": 35756
+    },
+    {
+      "word_key": "C5-5-2-I11-W034",
+      "word_id": "W034",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "下(面)",
+      "script": "下",
+      "script_variants": [
+        "下",
+        "下面"
+      ],
+      "pinyin": "xià(miàn)",
+      "pos": "N",
+      "english_meaning": "below; under; underneath",
+      "audio_file": "C5-5-2-W034.mp3",
+      "audio_sha256": "d07d4278c16f1ce67018704621ffc9ab888c41f2a123f9450630d9951a0ebe03",
+      "audio_size_bytes": 85292
+    },
+    {
+      "word_key": "C5-5-2-I12-W035",
+      "word_id": "W035",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "旁邊",
+      "script": "旁邊",
+      "script_variants": [
+        "旁邊"
+      ],
+      "pinyin": "pángbiān",
+      "pos": "N",
+      "english_meaning": "side; by the side of; next to",
+      "audio_file": "C5-5-2-W035.mp3",
+      "audio_sha256": "9438dffb8fac71375bcb735984a670d0bbc4953ec91d6e8cfddcfa5233a8cc8d",
+      "audio_size_bytes": 33452
+    },
+    {
+      "word_key": "C5-5-2-I12-W036",
+      "word_id": "W036",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "前(面)",
+      "script": "前",
+      "script_variants": [
+        "前",
+        "前面"
+      ],
+      "pinyin": "qián(miàn)",
+      "pos": "N",
+      "english_meaning": "the front; the front side; ahead; in front",
+      "audio_file": "C5-5-2-W036.mp3",
+      "audio_sha256": "43b106db8b92258650bd173e9f0ba5ce8880b7f69544cbd7f7f7f6d529f9ea7f",
+      "audio_size_bytes": 93356
+    },
+    {
+      "word_key": "C5-5-2-I12-W037",
+      "word_id": "W037",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "後(面)",
+      "script": "後",
+      "script_variants": [
+        "後",
+        "後面"
+      ],
+      "pinyin": "hòu(miàn)",
+      "pos": "N",
+      "english_meaning": "at the back; behind",
+      "audio_file": "C5-5-2-W037.mp3",
+      "audio_sha256": "3d2a0ebeccbed1b14be631988c5e7f4f713586b4e597732a5799b6e0f3badb4d",
+      "audio_size_bytes": 84716
+    },
+    {
+      "word_key": "C5-5-2-I13-W038",
+      "word_id": "W038",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "幫",
+      "script": "幫",
+      "script_variants": [
+        "幫"
+      ],
+      "pinyin": "bāng",
+      "pos": "V",
+      "english_meaning": "to help",
+      "audio_file": "C5-5-2-W038.mp3",
+      "audio_sha256": "073211084fbc805913f5fd631444dd0f499ecf18f5621dd4b0e7f8957cce41d0",
+      "audio_size_bytes": 25388
+    },
+    {
+      "word_key": "C5-5-2-I14-W039",
+      "word_id": "W039",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "找",
+      "script": "找",
+      "script_variants": [
+        "找"
+      ],
+      "pinyin": "zhǎo",
+      "pos": "V",
+      "english_meaning": "to look for",
+      "audio_file": "C5-5-2-W039.mp3",
+      "audio_sha256": "69ac8c78b9a0f8c1cc63bed5f6b2241c135086af3fd516c43e1bceda653abe8e",
+      "audio_size_bytes": 30572
+    },
+    {
+      "word_key": "C5-5-2-I15-W040",
+      "word_id": "W040",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "廚房",
+      "script": "廚房",
+      "script_variants": [
+        "廚房"
+      ],
+      "pinyin": "chúfáng",
+      "pos": "N",
+      "english_meaning": "kitchen",
+      "audio_file": "C5-5-2-W040.mp3",
+      "audio_sha256": "f649c324475c71494a6bb41d424b637aba6cf796debac2f432f9c1250b73b2e1",
+      "audio_size_bytes": 38636
+    },
+    {
+      "word_key": "C5-5-2-I16-W041",
+      "word_id": "W041",
+      "chapter": 5,
+      "section": "5-2",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "再",
+      "script": "再",
+      "script_variants": [
+        "再"
+      ],
+      "pinyin": "zài",
+      "pos": "Adv",
+      "english_meaning": "again",
+      "audio_file": "C5-5-2-W041.mp3",
+      "audio_sha256": "acf19def233848a63833a922ac8106d625acdc503bb04d06844f4a78c50d10ea",
+      "audio_size_bytes": 24236
+    },
+    {
+      "word_key": "C5-5-3-I1-W042",
+      "word_id": "W042",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "床",
+      "script": "床",
+      "script_variants": [
+        "床"
+      ],
+      "pinyin": "chuáng",
+      "pos": "N",
+      "english_meaning": "bed",
+      "audio_file": "C5-5-3-W042.mp3",
+      "audio_sha256": "c45acf69ee5c3ee59b17020b34dd6c7c4744bf97d4c032186d98be233f3c6aa0",
+      "audio_size_bytes": 30572
+    },
+    {
+      "word_key": "C5-5-3-I1-W043",
+      "word_id": "W043",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "家具",
+      "script": "家具",
+      "script_variants": [
+        "家具"
+      ],
+      "pinyin": "jiājù",
+      "pos": "N",
+      "english_meaning": "furniture",
+      "audio_file": "C5-5-3-W043.mp3",
+      "audio_sha256": "0b9b05a230549a68c0590a821d880df1f90263de66efb0b9e0cbe77f052fd7db",
+      "audio_size_bytes": 32300
+    },
+    {
+      "word_key": "C5-5-3-I2-W044",
+      "word_id": "W044",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "電視(機)",
+      "script": "電視",
+      "script_variants": [
+        "電視",
+        "電視機"
+      ],
+      "pinyin": "diànshì(jī)",
+      "pos": "N",
+      "english_meaning": "TV (television)",
+      "audio_file": "C5-5-3-W044.mp3",
+      "audio_sha256": "497625c70579e3d49984717735842da85457205898bcdf7380cf6b8a90edb60c",
+      "audio_size_bytes": 102572
+    },
+    {
+      "word_key": "C5-5-3-I3-W045",
+      "word_id": "W045",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "窗戶",
+      "script": "窗戶",
+      "script_variants": [
+        "窗戶"
+      ],
+      "pinyin": "chuānghù",
+      "pos": "N",
+      "english_meaning": "window",
+      "audio_file": "C5-5-3-W045.mp3",
+      "audio_sha256": "501b75abd9206e6bea9fbb7e1838efb517f991dbfcc8cb911f648a542247561e",
+      "audio_size_bytes": 34028
+    },
+    {
+      "word_key": "C5-5-3-I3-W046",
+      "word_id": "W046",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "門",
+      "script": "門",
+      "script_variants": [
+        "門"
+      ],
+      "pinyin": "mén",
+      "pos": "N",
+      "english_meaning": "door",
+      "audio_file": "C5-5-3-W046.mp3",
+      "audio_sha256": "7588abab52573caa7d2321315f84e81be01cb0319eac6f1166fa817e74770c65",
+      "audio_size_bytes": 28844
+    },
+    {
+      "word_key": "C5-5-3-I4-W047",
+      "word_id": "W047",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "貓",
+      "script": "貓",
+      "script_variants": [
+        "貓"
+      ],
+      "pinyin": "māo",
+      "pos": "N",
+      "english_meaning": "cat",
+      "audio_file": "C5-5-3-W047.mp3",
+      "audio_sha256": "843fc85c355f3845aa2a32453c8ae27f2a41b81e65cf5e851edb0e4d07f1f44e",
+      "audio_size_bytes": 25388
+    },
+    {
+      "word_key": "C5-5-3-I4-W048",
+      "word_id": "W048",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "狗",
+      "script": "狗",
+      "script_variants": [
+        "狗"
+      ],
+      "pinyin": "gǒu",
+      "pos": "N",
+      "english_meaning": "dog",
+      "audio_file": "C5-5-3-W048.mp3",
+      "audio_sha256": "ad83e954ca13f764a6c8f2f5730a92b8e57466378501779dac147c73f6d42fea",
+      "audio_size_bytes": 29420
+    },
+    {
+      "word_key": "C5-5-3-I4-W049",
+      "word_id": "W049",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "鳥",
+      "script": "鳥",
+      "script_variants": [
+        "鳥"
+      ],
+      "pinyin": "niǎo",
+      "pos": "N",
+      "english_meaning": "bird",
+      "audio_file": "C5-5-3-W049.mp3",
+      "audio_sha256": "cdd1c5b14726e628c001615f51cc6fa26170b6e770bcf5681dea96b4b9688b85",
+      "audio_size_bytes": 31148
+    },
+    {
+      "word_key": "C5-5-3-I4-W050",
+      "word_id": "W050",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Vocabulary",
+      "traditional_chinese": "隻",
+      "script": "隻",
+      "script_variants": [
+        "隻"
+      ],
+      "pinyin": "zhī",
+      "pos": "M",
+      "english_meaning": "measure word for animals",
+      "audio_file": "C5-5-3-W050.mp3",
+      "audio_sha256": "62f75f2b3375ac5d2c6aefa1266ade3d3295bf559e39721eefe4d6e89bab4bf1",
+      "audio_size_bytes": 27116
+    },
+    {
+      "word_key": "C5-5-3-I6-W210",
+      "word_id": "W210",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Phrase",
+      "traditional_chinese": "曬太陽/晒太陽",
+      "script": "曬太陽",
+      "script_variants": [
+        "曬太陽",
+        "晒太陽"
+      ],
+      "pinyin": "shài tàiyáng",
+      "pos": "Phrase",
+      "english_meaning": "to bask in the sun",
+      "audio_file": "C5-5-3-W210.mp3",
+      "audio_sha256": "24c35e28e152cf040447584e69ba9c10d27d7c056af7c172b20a063500afc4e0",
+      "audio_size_bytes": 44972
+    },
+    {
+      "word_key": "C5-5-3-I6-W211",
+      "word_id": "W211",
+      "chapter": 5,
+      "section": "5-3",
+      "item_type": "Phrase",
+      "traditional_chinese": "太陽",
+      "script": "太陽",
+      "script_variants": [
+        "太陽"
+      ],
+      "pinyin": "tàiyáng",
+      "pos": "Phrase",
+      "english_meaning": "the sun",
+      "audio_file": "C5-5-3-W211.mp3",
+      "audio_sha256": "a397913270e5f7371de0fa2d0ddafb2668772689fcb9862ef0093daecce1e041",
+      "audio_size_bytes": 38060
+    },
+    {
+      "word_key": "C5-5-1-I14-W217",
+      "word_id": "W217",
+      "chapter": 5,
+      "section": "5-1",
+      "item_type": "Phrase",
+      "traditional_chinese": "沒（有）空",
+      "script": "沒（有）空",
+      "script_variants": [
+        "沒（有）空"
+      ],
+      "pinyin": "méi(yǒu) kòng",
+      "pos": "Phrase",
+      "english_meaning": "not free; unavailable",
+      "audio_file": "C5-5-1-W217.mp3",
+      "audio_sha256": "35b4c109c7e78563d5b187fa8e75165a8490a27702a726433e5f3e094d2214cf",
+      "audio_size_bytes": 80684
+    }
+  ]
+}
