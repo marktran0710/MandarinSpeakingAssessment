@@ -238,6 +238,10 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None, cross_word_sandh
                 "previous_tone": surface[index - 1] if index and not starts_phrase else None,
                 "next_char": following_char,
                 "next_tone": surface[index + 1] if index + 1 < len(clause) and not ends_phrase else None,
+                # the tone of the syllable right next to this one in the clause, even across a word end: coarticulation
+                # (a falling tone before another falling tone) does not stop at a word boundary
+                "adjacent_previous_tone": surface[index - 1] if index else None,
+                "adjacent_next_tone": surface[index + 1] if index + 1 < len(clause) else None,
                 "clause_index": clause_index,
                 "index_in_clause": index,
                 "clause_length": len(clause),

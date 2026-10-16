@@ -1,0 +1,6 @@
+# Trial (sentence practice only): the first of two tone 4s in a row may fall less. The second tone 4 and every other
+# tone 4 keep the normal rule; the expected tones stay 4-4 (nothing is re-labelled), and it applies across a word end too.
+sentence:
+  tone:
+    t4_before_t4:
+      min_fall_st: 2.0

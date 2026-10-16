@@ -1,0 +1,12 @@
+# Both tone-4 rules together (sentence practice only): length-dependent fall, and a shallower first tone 4 of a pair.
+sentence:
+  tone:
+    t4_by_duration:
+      short_ms: 180
+      medium_ms: 300
+      min_fall_short_st: 1.5
+      min_fall_medium_st: 2.0
+      min_fall_long_st: 2.5
+      require_end_below_start: true
+    t4_before_t4:
+      min_fall_st: 2.0

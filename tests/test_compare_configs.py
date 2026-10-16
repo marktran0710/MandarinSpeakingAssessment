@@ -34,7 +34,8 @@ class TrialConfigTests(unittest.TestCase):
     def test_the_shipped_trial_files_load(self):
         import yaml
         root = Path(__file__).resolve().parents[1] / "trials"
-        for name in ("user_config_a.yaml", "t4_by_duration_sentence.yaml", "t4_by_duration_proxy.yaml", "half_t3_only.yaml"):
+        for name in ("user_config_a.yaml", "t4_by_duration_sentence.yaml", "t4_by_duration_proxy.yaml", "half_t3_only.yaml",
+                     "t4_before_t4_sentence.yaml", "t4_before_t4_1_5_sentence.yaml", "t4_both_rules_sentence.yaml"):
             self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
 
 

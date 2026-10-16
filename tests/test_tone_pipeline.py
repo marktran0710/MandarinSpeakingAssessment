@@ -1064,6 +1064,87 @@ class ClauseFinalHalfThirdTests(unittest.TestCase):
         self.assertEqual(plain, flagged)
 
 
+class FirstToneFourBeforeToneFourTests(unittest.TestCase):
+    """tone.t4_before_t4: the first of two tone 4s in a row may fall less; the second keeps the normal rule."""
+    RULE = {"min_fall_st": 2.0}
+
+    def config(self, **changes):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        config["tone"]["t4_before_t4"] = {**self.RULE, **changes}
+        return config
+
+    @staticmethod
+    def feats(followed_by_t4, anchors=(1.5, -1.5)):                      # a straight 3 st fall: first-third minus last-third = 2.0 st
+        times = np.linspace(0, 0.3, 60)
+        st = np.interp(times, np.linspace(0, 0.3, len(anchors)), anchors)
+        return tp.syllable_features(times, st, 0.0, 0.3, syllable_ms=300, followed_by_t4=followed_by_t4)
+
+    def test_only_a_tone_four_followed_by_another_tone_four_needs_less_fall(self):
+        config = self.config()
+        first, other = self.feats(True), self.feats(False)
+        self.assertGreaterEqual(tp.tone_scores(first, False, config)[4], 0.9)          # 2.0 st is enough before another T4
+        self.assertLess(tp.tone_scores(other, False, config)[4], 0.6)                  # the same fall elsewhere is not (needs 3.0)
+        self.assertEqual(tp.t4_min_fall(first, config["tone"]), 2.0)
+        self.assertEqual(tp.t4_min_fall(other, config["tone"]), 3.0)
+
+    def test_the_rule_never_makes_the_requirement_stricter(self):
+        generous_elsewhere = self.config(min_fall_st=4.0)                                # a 'first' value above the normal one
+        self.assertEqual(tp.t4_min_fall(self.feats(True), generous_elsewhere["tone"]), 3.0)
+        both = self.config()
+        both["tone"]["t4_by_duration"] = ToneFourByDurationTests.RULE
+        self.assertEqual(tp.t4_min_fall(self.feats(True), both["tone"]), 2.0)           # min(2.5 for a 300 ms syllable, 2.0)
+        short = tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1, syllable_ms=150, followed_by_t4=True)
+        self.assertEqual(tp.t4_min_fall(short, both["tone"]), 1.5)                      # min(1.5 for a short syllable, 2.0)
+
+    def test_without_the_setting_nothing_changes(self):
+        self.assertEqual(tp.tone_scores(self.feats(True), False, CONFIG)[4], tp.tone_scores(self.feats(False), False, CONFIG)[4])
+        import tone_assessment as ta
+        self.assertNotIn("t4_before_t4", ta.get_config()["tone"])
+        self.assertNotIn("t4_before_t4", ta.get_config("sentence")["tone"])
+
+    def test_the_verdict_for_each_tone_four_of_a_pair(self):
+        contexts = capt_core.expected_tone_contexts(["罵罵"])
+        self.assertEqual([c["adjacent_next_tone"] for c in contexts], [4, None])
+        st = np.linspace(1.5, -1.5, 60)
+        extraction, clean = make_track(st)
+        syllable = {"char": "罵", "start": 0.0, "end": 0.3, "phones": [], "nucleus": (0.0, 0.3)}
+
+        def status(context, config):
+            return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True)["status"]
+
+        self.assertEqual(status(contexts[0], CONFIG), "insufficient_evidence")          # today: 2.0 st of fall is not enough
+        self.assertEqual(status(contexts[0], self.config()), "likely_correct")          # the first of a pair, with the rule
+        self.assertEqual(status(contexts[1], self.config()), "insufficient_evidence")   # the second keeps the normal rule
+
+    def test_the_neighbour_is_found_across_a_word_end_and_not_across_a_clause_break(self):
+        across_word = capt_core.expected_tone_contexts(["要做"], phrase_end_indices=[1], cross_word_sandhi=True)
+        self.assertIsNone(across_word[0]["next_tone"])                                  # the word end hides it from the old field
+        self.assertEqual(across_word[0]["adjacent_next_tone"], 4)
+        self.assertEqual(across_word[1]["adjacent_previous_tone"], 4)
+        apart = capt_core.expected_tone_contexts(["要", "做"])                           # two clauses (punctuation between them)
+        self.assertIsNone(apart[0]["adjacent_next_tone"])
+        self.assertIsNone(apart[1]["adjacent_previous_tone"])
+
+    def test_the_boundary_search_never_sees_the_rule(self):
+        tones = capt_core.expected_tone_contexts(["媽罵"])
+        extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)])
+        late = 42 * STEP
+        syllables = [{"char": "媽", "start": 0.0, "end": late, "phones": [], "nucleus": (0.0, late)},
+                     {"char": "罵", "start": late, "end": 90 * STEP, "phones": [], "nucleus": (late, 90 * STEP)}]
+        seen = []
+        original = tp.tone_scores
+
+        def spy(feats, allow_half, config):
+            seen.append("t4_before_t4" in config["tone"] or "t4_by_duration" in config["tone"])
+            return original(feats, allow_half, config)
+
+        with mock.patch.object(tp, "tone_scores", spy):
+            tp.search_boundaries(syllables, tones, clean, self.config())
+        self.assertTrue(seen)
+        self.assertFalse(any(seen))
+
+
 class DurationRuleAndBoundariesTests(unittest.TestCase):
     """A verdict-only rule must change verdicts, never where the boundary search puts the syllable borders."""
 

@@ -863,7 +863,7 @@ def _mark_alignment_sanity(syllables):
 
 # ---------------------------------------------------- features + verifier ----
 
-def syllable_features(times, st, start, end, syllable_ms=None):
+def syllable_features(times, st, start, end, syllable_ms=None, followed_by_t4=False):
     """Per-syllable acoustic features (the 12 core ones plus mean / core range) on a segment [start, end).
 
     `syllable_ms` is the length of the whole aligned syllable (the segment may be only its vowel): rules that depend on
@@ -875,6 +875,8 @@ def syllable_features(times, st, start, end, syllable_ms=None):
              "voiced_frames": n}
     if syllable_ms is not None:
         feats["syllable_ms"] = float(syllable_ms)
+    if followed_by_t4:
+        feats["followed_by_t4"] = True               # the next syllable is also a tone 4 (see tone.t4_before_t4)
     if n == 0:
         return feats
     v_st, v_pos = st[voiced], (times[voiced] - start) / span
@@ -915,6 +917,14 @@ def t4_min_fall(f, tone_config):
     """The fall a tone 4 needs: `t4_min_fall_st`, or, when `tone.t4_by_duration` is configured, a length-dependent value
     (reduced tone 4s in running speech are short and fall less): short / medium / long syllables by `short_ms` and
     `medium_ms`. Without the setting, or without a syllable length, the single value applies."""
+    needed = _t4_fall_by_duration(f, tone_config)
+    before_t4 = tone_config.get("t4_before_t4")
+    if before_t4 and f.get("followed_by_t4"):
+        needed = min(needed, before_t4["min_fall_st"])   # the first of two tone 4s may fall less (the second keeps the normal rule)
+    return needed
+
+
+def _t4_fall_by_duration(f, tone_config):
     rule = tone_config.get("t4_by_duration")
     ms = f.get("syllable_ms")
     if not rule or ms is None:
@@ -1002,7 +1012,8 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
     st, times = clean["st"][mask], clean["times"][mask]
     syllable_sec = syllable["end"] - syllable["start"]
-    feats = syllable_features(times, st, seg_start, seg_end, syllable_ms=syllable_sec * 1000.0)
+    followed_by_t4 = context.get("adjacent_next_tone") == 4
+    feats = syllable_features(times, st, seg_start, seg_end, syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
 
     ac, cc = extraction["ac"][mask], extraction["cc"][mask]
     either, both = np.isfinite(ac) | np.isfinite(cc), np.isfinite(ac) & np.isfinite(cc)
@@ -1081,7 +1092,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
         times, st, seg_start, seg_end, expected, allows_half_third(context, config), status, quality, config,
-        also_accept=accepted[1:], syllable_ms=syllable_sec * 1000.0)
+        also_accept=accepted[1:], syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
     result.update({
         "tone_scores": {str(k): round(scores[k], 3) for k in (1, 2, 3, 4)},
         "tone_match": round(match, 3), "tone_mismatch": round(1.0 - match, 3),
@@ -1128,7 +1139,7 @@ def edge_fragment_mask(times, st, step_st, fragment_sec):
 
 
 def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_half_t3, status, quality, config,
-                              also_accept=(), syllable_ms=None):
+                              also_accept=(), syllable_ms=None, followed_by_t4=False):
     """True when the verdict rests on a short edge fragment behind an implausible pitch step.
 
     The syllable is scored again without that fragment; if the status differs, the evidence is not solid. This can only
@@ -1140,7 +1151,8 @@ def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_hal
     trimmed = np.where(drop, np.nan, st)
     if int(np.isfinite(trimmed).sum()) < config["alignment"]["min_voiced_frames"]:
         return True
-    scores = tone_scores(syllable_features(times, trimmed, seg_start, seg_end, syllable_ms=syllable_ms), allow_half_t3, config)
+    scores = tone_scores(syllable_features(times, trimmed, seg_start, seg_end, syllable_ms=syllable_ms,
+                                           followed_by_t4=followed_by_t4), allow_half_t3, config)
     return decide(quality, max(scores[t] for t in (expected, *also_accept)), config) != status
 
 
@@ -1285,8 +1297,8 @@ def search_boundaries(syllables, contexts, clean, config):
     cfg = config["boundary_search"]
     # Verdict-only rules never move boundaries: a looser tone-4 rule would pull a boundary into the neighbouring syllable
     # (taking the rising tail off a tone 2 beside it) and make the neighbour look wrong. Like the half-third flag below,
-    # `t4_by_duration` therefore applies to verdicts only; boundaries are placed as without it.
-    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k != "t4_by_duration"}}
+    # `t4_by_duration` and `t4_before_t4` therefore apply to verdicts only; boundaries are placed as without them.
+    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k not in ("t4_by_duration", "t4_before_t4")}}
     count = len(syllables)
     info = {"enabled": bool(cfg["enabled"]), "applied": False, "shifts_ms": [0] * max(count - 1, 0),
             "mean_match_before": None, "mean_match_after": None}
