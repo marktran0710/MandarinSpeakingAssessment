@@ -99,7 +99,10 @@ def run_sentence(cache_root, limit=None):
         es.evaluate(es.DEFAULT_SAMPLE_DIR, es.DEFAULT_WORD_JSON, out, cache_dir=str(cache_root / "sentence"), limit=limit)
         read = lambda name: list(csv.DictReader(open(Path(out) / name, newline="", encoding="utf-8-sig")))  # noqa: E731
         syllables, phrases, sentences = read("syllables.csv"), read("phrases.csv"), read("sentences.csv")
+    detail = ("sample_id", "character", "expected_tone", "prev_tone", "next_tone", "status", "tone_match", "acoustic_quality",
+              "syllable_ms", "window_ms", "reasons", "speaker")
     return {"syllables": {f"{r['sample_id']}#{r['index']}": r["status"] for r in syllables},
+            "rows": {f"{r['sample_id']}#{r['index']}": {k: r[k] for k in detail} for r in syllables},
             "phrases": [r["status"] for r in phrases],
             "sentences": sum(int(r["practice"]) > 0 for r in sentences), "n_sentences": len(sentences)}
 
@@ -172,6 +175,15 @@ def transitions(base, trial):
     return dict(sorted(moves.items(), key=lambda kv: -kv[1]))
 
 
+def newly_flagged(base_results, trial_results):
+    """Sentence syllables that are `practice` under the trial but were not under the baseline (teacher audio: new false alarms)."""
+    base, trial = base_results.get("sentence"), trial_results.get("sentence")
+    if not base or not trial:
+        return []
+    return [dict(trial["rows"][k], was=base["syllables"][k]) for k, status in trial["syllables"].items()
+            if status == "practice" and base["syllables"].get(k) != "practice"]
+
+
 def flat_statuses(results):
     flat = {}
     if "word" in results:
@@ -185,7 +197,7 @@ def flat_statuses(results):
 
 # -------------------------------------------------------------------------------------------------- report ----
 
-def render(names, summaries, moves):
+def render(names, summaries, moves, flagged=None):
     lines = []
     cols = " | ".join(names)
     sep = "|---|" + "---|" * len(names)
@@ -233,6 +245,13 @@ def render(names, summaries, moves):
             if move:
                 lines.append(f"- **{name}**: " + ", ".join(f"{k} {v}" for k, v in move.items()))
         lines.append("")
+    for name, rows in (flagged or {}).items():
+        if rows:
+            lines += [f"### New false alarms under {name} (teacher sentences that became Practice)", "",
+                      "| sample | char | tone | prev/next | syllable ms | window ms | match | quality | was | reasons (before) |", "|---|---|---|---|---|---|---|---|---|---|"]
+            lines += [f"| {r['sample_id']} | {r['character']} | T{r['expected_tone']} | {r['prev_tone'] or '-'}/{r['next_tone'] or '-'} | {r['syllable_ms']} | "
+                      f"{r['window_ms']} | {r['tone_match']} | {r['acoustic_quality']} | {SHORT.get(r['was'], r['was'])} | {r['reasons'] or '-'} |" for r in rows]
+            lines.append("")
     return "\n".join(lines)
 
 
@@ -259,22 +278,26 @@ def main():
     cache_root = Path(args.cache_root)
     runners = {"word": run_word, "sentence": run_sentence, "synthetic": run_synthetic}
 
-    names, summaries, flats = [], [], []
+    names, summaries, flats, flagged, base_results = [], [], [], {}, None
     for name, overrides in configs:
         started = time.time()
         print(f"[{name}] running {', '.join(args.suite)} ...", flush=True)
         with trial_config(overrides):
             results = {suite: runners[suite](cache_root, args.limit) for suite in args.suite}
         summary = summarize(results)
+        if base_results is None:
+            base_results = results
+        else:
+            flagged[name] = newly_flagged(base_results, results)
         names.append(name)
         summaries.append(summary)
         flats.append(flat_statuses(results))
         print(f"[{name}] done in {time.time() - started:.0f}s", flush=True)
         moves = [{}] + [transitions(flats[0], f) for f in flats[1:]]
-        report = {"configs": dict(configs), "names": names, "summaries": summaries, "moves": moves}
+        report = {"configs": dict(configs), "names": names, "summaries": summaries, "moves": moves, "new_false_alarms": flagged}
         (out / "report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-        (out / "report.md").write_text(render(names, summaries, moves), encoding="utf-8")   # written after every config: nothing is lost
-    print("\n" + render(names, summaries, moves))
+        (out / "report.md").write_text(render(names, summaries, moves, flagged), encoding="utf-8")   # written after every config: nothing is lost
+    print("\n" + render(names, summaries, moves, flagged))
     print(f"\nreport: {out / 'report.md'}")
 
 

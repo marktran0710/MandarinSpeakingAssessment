@@ -1200,6 +1200,10 @@ def search_boundaries(syllables, contexts, clean, config):
     syllable is then only called `practice` if NO plausible segmentation makes its expected tone fit.
     Returns (syllables, info); the syllables are unchanged when the search is off or not applicable."""
     cfg = config["boundary_search"]
+    # Verdict-only rules never move boundaries: a looser tone-4 rule would pull a boundary into the neighbouring syllable
+    # (taking the rising tail off a tone 2 beside it) and make the neighbour look wrong. Like the half-third flag below,
+    # `t4_by_duration` therefore applies to verdicts only; boundaries are placed as without it.
+    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k != "t4_by_duration"}}
     count = len(syllables)
     info = {"enabled": bool(cfg["enabled"]), "applied": False, "shifts_ms": [0] * max(count - 1, 0),
             "mean_match_before": None, "mean_match_after": None}
@@ -1228,7 +1232,7 @@ def search_boundaries(syllables, contexts, clean, config):
             return 0.0
         # The boundary search keeps the strict reading (no clause-final half-third): `clause_final_half_t3` changes
         # verdicts only, never where the syllable boundaries are put.
-        return tone_scores(feats, allows_half_third(context), config)[context["target_tone"]]
+        return tone_scores(feats, allows_half_third(context), search_config)[context["target_tone"]]
 
     best = {zero: (0.0, [zero])}                        # outer boundaries stay where the aligner put them
     for index in range(count):

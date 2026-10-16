@@ -1064,5 +1064,38 @@ class ClauseFinalHalfThirdTests(unittest.TestCase):
         self.assertEqual(plain, flagged)
 
 
+class DurationRuleAndBoundariesTests(unittest.TestCase):
+    """A verdict-only rule must change verdicts, never where the boundary search puts the syllable borders."""
+
+    def setUp(self):
+        self.tones = capt_core.expected_tone_contexts(["媽罵"])
+        self.st = np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)]       # T1, then a small-fall T4
+        late = 42 * STEP
+        self.syllables = [{"char": "媽", "start": 0.0, "end": late, "phones": [], "nucleus": (0.0, late)},
+                          {"char": "罵", "start": late, "end": 90 * STEP, "phones": [], "nucleus": (late, 90 * STEP)}]
+        rule = ToneFourByDurationTests.RULE
+        self.with_rule = {**CONFIG, "tone": {**CONFIG["tone"], "t4_by_duration": rule}}
+
+    def test_the_search_never_sees_the_rule(self):
+        seen = []
+        original = tp.tone_scores
+
+        def spy(feats, allow_half, config):
+            seen.append("t4_by_duration" in config["tone"])
+            return original(feats, allow_half, config)
+
+        extraction, clean = make_track(self.st)
+        with mock.patch.object(tp, "tone_scores", spy):
+            tp.search_boundaries(self.syllables, self.tones, clean, self.with_rule)
+        self.assertTrue(seen)
+        self.assertFalse(any(seen))
+
+    def test_the_same_boundaries_are_chosen_with_and_without_the_rule(self):
+        extraction, clean = make_track(self.st)
+        plain = tp.search_boundaries(self.syllables, self.tones, clean, CONFIG)[1]["shifts_ms"]
+        ruled = tp.search_boundaries(self.syllables, self.tones, clean, self.with_rule)[1]["shifts_ms"]
+        self.assertEqual(plain, ruled)
+
+
 if __name__ == "__main__":
     unittest.main()
