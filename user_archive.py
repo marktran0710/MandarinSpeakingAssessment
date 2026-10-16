@@ -58,6 +58,7 @@ def build_record(student, attempt, audio_name, original_filename, payload):
         "practice_mode": payload.get("practice_mode"), "sample_id": payload.get("sample_id"),
         "target_script": payload.get("target_script"), "audio_file": audio_name, "original_filename": original_filename,
         "audio_quality": {"passed": quality.get("passed"), "reasons": list(quality.get("reasons") or [])},
+        "alignment_error": (verification.get("alignment") or {}).get("error"),      # why no pitch chart: kept so it can be diagnosed
         "summary": payload.get("summary"),
         "phrases": [{"word": p.get("word"), "status": p.get("status"), "strict_status": p.get("strict_status"),
                      "expected_tones": p.get("expected_tone_sequence"), "advice": p.get("feedback_items")}

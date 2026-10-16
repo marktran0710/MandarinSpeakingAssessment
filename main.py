@@ -1387,6 +1387,7 @@ async def read_index():
                     qualityTooLong: "The recording is too long. Record only the practice phrase.",
                     qualityNoSpeech: "No speech was detected. Try again.",
                     qualityNoVoicing: "No clear voice was detected. Speak aloud rather than whispering.",
+                    alignmentFailed: "We couldn't analyse this recording because of a temporary problem on our side, not because of your voice. Please try again.",
                     busyWait: "This usually takes a few seconds.",
                     notHeard: "Not heard", retryNotHeard: "We couldn’t hear this part. Speak a little louder, read all of it, and try again.",
                     expectedSequence: "Expected", detectedSequence: "Detected", sequenceUnavailable: "Not enough tone evidence",
@@ -1511,6 +1512,7 @@ async def read_index():
                     qualityTooLong: "錄音太長。請只錄練習的句子。",
                     qualityNoSpeech: "沒有偵測到說話聲。請再試一次。",
                     qualityNoVoicing: "沒有偵測到清楚的嗓音。請出聲說話，不要用氣音。",
+                    alignmentFailed: "這次沒能分析這段錄音，是系統暫時出了問題，不是你的聲音有問題。請再試一次。",
                     busyWait: "通常只需要幾秒鐘。",
                     notHeard: "沒聽到", retryNotHeard: "這一段沒有聽到聲音。請稍微大聲一點、完整唸出來，再試一次。",
                     expectedSequence: "預期", detectedSequence: "辨識", sequenceUnavailable: "聲調證據不足",
@@ -1634,6 +1636,7 @@ async def read_index():
                     qualityTooLong: "Bản ghi quá dài. Hãy chỉ ghi câu cần luyện.",
                     qualityNoSpeech: "Không phát hiện giọng nói. Hãy thử lại.",
                     qualityNoVoicing: "Không phát hiện giọng rõ. Hãy nói thành tiếng, đừng thì thầm.",
+                    alignmentFailed: "Lần này hệ thống chưa phân tích được bản ghi do sự cố tạm thời phía chúng tôi, không phải do giọng của bạn. Hãy thử lại.",
                     busyWait: "Thường chỉ mất vài giây.",
                     notHeard: "Chưa nghe rõ", retryNotHeard: "Chưa nghe rõ đoạn này. Hãy nói to hơn một chút, đọc đủ cả đoạn rồi thử lại.",
                     expectedSequence: "Kỳ vọng", detectedSequence: "Nhận diện", sequenceUnavailable: "Chưa đủ bằng chứng thanh điệu",
@@ -1821,6 +1824,7 @@ async def read_index():
                     qualityTooLong: "Rekaman terlalu panjang. Rekam hanya frasa latihan.",
                     qualityNoSpeech: "Tidak ada ucapan terdeteksi. Coba lagi.",
                     qualityNoVoicing: "Suara yang jelas tidak terdeteksi. Bicaralah dengan suara, jangan berbisik.",
+                    alignmentFailed: "Rekaman ini belum bisa dianalisis karena masalah sementara di sisi kami, bukan karena suara Anda. Silakan coba lagi.",
                     busyWait: "Biasanya hanya butuh beberapa detik.",
                     notHeard: "Tidak terdengar",
                     retryNotHeard: "Bagian ini tidak terdengar. Bicaralah sedikit lebih keras, bacalah seluruhnya, lalu coba lagi.",
@@ -2053,6 +2057,7 @@ async def read_index():
                     qualityTooLong: "रिकॉर्डिंग बहुत लंबी है। केवल अभ्यास वाला वाक्यांश रिकॉर्ड करें।",
                     qualityNoSpeech: "कोई आवाज़ नहीं मिली। फिर कोशिश करें।",
                     qualityNoVoicing: "साफ़ आवाज़ नहीं मिली। फुसफुसाने के बजाय आवाज़ के साथ बोलें।",
+                    alignmentFailed: "इस बार रिकॉर्डिंग का विश्लेषण नहीं हो सका। यह हमारी ओर की अस्थायी समस्या है, आपकी आवाज़ की नहीं। कृपया फिर कोशिश करें।",
                     busyWait: "इसमें आम तौर पर कुछ ही सेकंड लगते हैं।",
                     notHeard: "सुनाई नहीं दिया",
                     retryNotHeard: "यह हिस्सा सुनाई नहीं दिया। थोड़ा ज़ोर से बोलें, पूरा पढ़ें और फिर कोशिश करें।",
@@ -3409,6 +3414,8 @@ async def read_index():
 
                 const qualityKeys = { clipped: "qualityClipped", too_quiet: "qualityTooQuiet", noisy: "qualityNoisy", too_short: "qualityTooShort", too_long: "qualityTooLong", no_speech: "qualityNoSpeech", no_voicing: "qualityNoVoicing" };
                 const qualityKey = data.audio_quality && data.audio_quality.passed === false ? qualityKeys[(data.audio_quality.reasons || [])[0]] : null;
+                // The aligner itself failed (not the learner's recording): say so, instead of leaving "Okay" everywhere.
+                const systemFailure = data.tone_verification?.alignment?.error_kind === "system";
                 const retryKeys = { slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard" };
                 const groups = phrases.map((phrase, index) => {
                     const label = escapeHtml(phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`);
@@ -3434,6 +3441,7 @@ async def read_index():
                         <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
                         <p class="results-note">${t("noProbabilityModel")}</p>
                         ${qualityKey ? `<p class="results-advice">${escapeHtml(t(qualityKey))}</p>` : ""}
+                        ${systemFailure ? `<p class="results-advice">${escapeHtml(t("alignmentFailed"))}</p>` : ""}
                         <div class="result-groups">${groups.join("") || `<p>${t("noScores")}</p>`}</div>
                         <details class="json-output">
                             <summary>${t("viewJsonOutput")}</summary>

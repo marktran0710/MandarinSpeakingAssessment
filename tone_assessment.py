@@ -259,6 +259,17 @@ _RETRY_BY_REASON = (
 MAX_TONE_ADVICE = 3
 
 
+_SYSTEM_ALIGNMENT_ERRORS = ("MFA failed", "MFA timed out", "MFA executable not found")
+
+
+def alignment_error_kind(error):
+    """None (no error), "system" (the aligner itself failed or timed out: not the learner's doing) or "reading"
+    (the recording could not be matched to the script: out-of-vocabulary character, words that do not line up...)."""
+    if not error:
+        return None
+    return "system" if str(error).startswith(_SYSTEM_ALIGNMENT_ERRORS) else "reading"
+
+
 def phrase_feedback(group):
     """What to do to improve a word, as codes for the UI to word in the learner's language (no measurements).
 
@@ -380,6 +391,7 @@ def build_payload(result, *, groups, word_annotation_status, boundaries_from, pr
                 "aligner": {"mfa": "MFA (fixed transcript, no ASR)", "voiced_run": "voiced run (one syllable, no aligner)",
                             "injected": "supplied alignment"}.get(result["aligner"], result["aligner"]),
                 "error": result["alignment_error"],
+                "error_kind": alignment_error_kind(result["alignment_error"]),
                 "boundary_search": result["boundary_search"],
             },
             "f0_extraction": result["f0_extraction"],

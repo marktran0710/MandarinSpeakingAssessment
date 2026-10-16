@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 from copy import deepcopy
 from pathlib import Path
 
@@ -42,7 +43,86 @@ TONE_LETTERS = set("˥˦˧˨˩")
 SILENCE_LABELS = {"", "<eps>", "sil", "sp"}
 METHOD = "tone_pipeline_v1"
 STATUSES = ("likely_correct", "practice", "insufficient_evidence")
-_MFA_LOCK = threading.Lock()
+
+
+class _MfaExclusive:
+    """One MFA process at a time on the whole machine, not just in this process.
+
+    MFA keeps shared state under MFA_ROOT_DIR (the unpacked acoustic model, command_history.yaml). Two MFA processes
+    starting together, a second server, a batch evaluation next to the app, can find the model half-written or corrupt the
+    history, and the aligner then fails (`alignment_failed`: no pitch chart, every phrase "Okay"). A thread lock cannot see
+    another process, so this also takes an operating-system file lock; the OS drops it if the holder dies, so it cannot go
+    stale. Use as a context manager."""
+
+    POLL_SEC = 0.05
+    COURTESY_SEC = 0.12          # after releasing, give a waiting process a turn (a batch job would otherwise re-take it at once)
+
+    def __init__(self):
+        self._thread_lock = threading.Lock()
+        self._handle = None
+
+    @staticmethod
+    def lock_path():
+        return Path(MFA_ROOT_DIR) / ".tonepipe_mfa.lock"
+
+    def __enter__(self):
+        self._thread_lock.acquire()
+        try:
+            path = self.lock_path()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            handle = open(path, "a+b")
+        except OSError:
+            return self                                  # no lock file possible: the thread lock still serialises this process
+        try:
+            while not self._try_lock(handle):
+                time.sleep(self.POLL_SEC)
+        except BaseException:
+            handle.close()
+            self._thread_lock.release()
+            raise
+        self._handle = handle
+        return self
+
+    def __exit__(self, *exc_info):
+        handle, self._handle = self._handle, None
+        try:
+            if handle is not None:
+                self._unlock(handle)
+                handle.close()
+                time.sleep(self.COURTESY_SEC)
+        finally:
+            self._thread_lock.release()
+        return False
+
+    @staticmethod
+    def _try_lock(handle):
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except OSError:
+            return False
+
+    @staticmethod
+    def _unlock(handle):
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_UN)
+        except OSError:
+            pass
+
+
+_MFA_LOCK = _MfaExclusive()
 
 
 class AlignmentError(ValueError):
@@ -729,15 +809,18 @@ def mfa_align(samples, sample_rate, chars, config=None):
         ]
         command[command.index(align["mfa_dictionary"])] = _dictionary_argument(align["mfa_dictionary"], workdir)
         env = {**os.environ, "MFA_ROOT_DIR": MFA_ROOT_DIR}
-        with _MFA_LOCK:  # concurrent mfa processes interleave writes to command_history.yaml and corrupt it
-            try:
-                result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                                        env=env, timeout=align["mfa_timeout_sec"])
-            except subprocess.TimeoutExpired:
-                raise AlignmentError("MFA timed out.")
-        if result.returncode != 0 or not result_path.exists():
-            raise AlignmentError(f"MFA failed (exit {result.returncode}): {(result.stderr or result.stdout)[-400:]}")
-        return json.loads(result_path.read_text(encoding="utf-8"))["tiers"]
+        for attempt in (1, 2):
+            with _MFA_LOCK:  # one MFA process at a time on this machine (see _MfaExclusive)
+                try:
+                    result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                            env=env, timeout=align["mfa_timeout_sec"])
+                except subprocess.TimeoutExpired:
+                    raise AlignmentError("MFA timed out.")
+            if result.returncode == 0 and result_path.exists():
+                return json.loads(result_path.read_text(encoding="utf-8"))["tiers"]
+            if attempt == 2:
+                raise AlignmentError(f"MFA failed (exit {result.returncode}): {(result.stderr or result.stdout)[-400:]}")
+            time.sleep(0.5)                              # a failed start is usually transient (memory pressure, a racing process): once more
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 

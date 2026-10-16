@@ -258,6 +258,35 @@ class OptionalPartTests(unittest.TestCase):
             self.assertIn("{full}", hint)
 
 
+class AlignmentFailureTests(unittest.TestCase):
+    """When MFA itself fails the learner is told it was not their voice, and the reason is kept for diagnosis."""
+
+    def test_system_failures_are_told_apart_from_reading_problems(self):
+        import tone_assessment as ta
+        self.assertIsNone(ta.alignment_error_kind(None))
+        self.assertIsNone(ta.alignment_error_kind(""))
+        for error in ("MFA failed (exit 1): Could not find final.mdl", "MFA timed out.", "MFA executable not found: x"):
+            self.assertEqual(ta.alignment_error_kind(error), "system", error)
+        for error in ("MFA returned 3 words for 5 characters.", "Character X is out of vocabulary (<unk>); fix the dictionary.",
+                      "MFA word 'a' does not match script character 'b'."):
+            self.assertEqual(ta.alignment_error_kind(error), "reading", error)
+
+    def test_the_page_shows_the_banner_only_for_system_failures_in_every_language(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertIn('data.tone_verification?.alignment?.error_kind === "system"', source)
+        self.assertIn('${systemFailure ? `<p class="results-advice">${escapeHtml(t("alignmentFailed"))}</p>` : ""}', source)
+        self.assertEqual(len(re.findall(r'alignmentFailed: "', source)), 5)
+
+    def test_the_archive_keeps_the_alignment_error(self):
+        import user_archive
+        payload = {"tone_verification": {"alignment": {"error": "MFA failed (exit 1): x"}, "syllables": []}, "phrases": [],
+                   "audio_quality": {"passed": True}}
+        record = user_archive.build_record({"id": "s"}, {"id": "a"}, "f.webm", "r.webm", payload)
+        self.assertEqual(record["alignment_error"], "MFA failed (exit 1): x")
+        ok = user_archive.build_record({"id": "s"}, {"id": "a"}, "f.webm", "r.webm", {"tone_verification": {"alignment": {"error": None}}})
+        self.assertIsNone(ok["alignment_error"])
+
+
 class StatusIconTests(unittest.TestCase):
     def test_okay_is_a_half_filled_circle_not_a_question_mark(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
