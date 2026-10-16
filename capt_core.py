@@ -241,6 +241,8 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None, cross_word_sandh
                 # the tone of the syllable right next to this one in the clause, even across a word end: coarticulation
                 # (a falling tone before another falling tone) does not stop at a word boundary
                 "adjacent_previous_tone": surface[index - 1] if index else None,
+                # the second character of a repeated pair inside one word (看看, 謝謝): read lightly in running speech
+                "is_reduplicated": bool(preceding_char) and preceding_char == char,
                 "adjacent_next_tone": surface[index + 1] if index + 1 < len(clause) else None,
                 "clause_index": clause_index,
                 "index_in_clause": index,

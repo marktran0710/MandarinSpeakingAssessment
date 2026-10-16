@@ -155,6 +155,7 @@ tone:
   # Off by default (the single t4_min_fall_st above applies). When present, the fall a tone 4 needs depends on how long
   # the aligned syllable is: < short_ms, < medium_ms, or longer; and require_end_below_start makes a tone 4 that does not
   # end lower than it starts score 0. Meant for sentence practice (see trials/t4_by_duration_sentence.yaml):
+  # soften_reduplication: true     # the second character of a repeated pair (看看, 謝謝) can never be "Needs practice"
   # final_tail_guard:             # clause-final tones 1/2/3: judge them without the last trim_frac of the syllable (final lowering)
   #   trim_frac: 0.2
   #   tones: [1, 2, 3]

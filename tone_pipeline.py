@@ -1121,6 +1121,10 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     match = max(scores[tone] for tone in accepted)
     others = {tone: scores[tone] for tone in (1, 2, 3, 4) if tone not in accepted}
     status = decide(quality, match, config)
+    # The second character of a repeated pair (看看, 謝謝) is read lightly, often as a near-neutral: it may not be accused.
+    softened = bool(status == "practice" and config["tone"].get("soften_reduplication") and context.get("is_reduplicated"))
+    if softened:
+        status = "insufficient_evidence"
     # A window this short (a reduced function word) cannot support an accusation; 0 = off, as for single words.
     short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < config["confidence"].get("practice_min_window_ms", 0)
     if short_window:
@@ -1141,6 +1145,8 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         result["clause_final_half_t3"] = True                  # this verdict allowed a low fall as a T3
     if edge_step:
         result["reasons"].append("edge_pitch_step")
+    elif softened:
+        result["reasons"].append("reduplicated_second_syllable")
     elif short_window:
         result["reasons"].append("short_analysis_window")
     elif status == "insufficient_evidence":

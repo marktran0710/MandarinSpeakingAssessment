@@ -1231,6 +1231,46 @@ class ScoringWindowRulesTests(unittest.TestCase):
         self.assertFalse(any(seen))
 
 
+class ReduplicationTests(unittest.TestCase):
+    """tone.soften_reduplication: the second character of 看看 / 謝謝 cannot be accused (it is read lightly)."""
+
+    def run_pair(self, text, config):
+        contexts = capt_core.expected_tone_contexts([text])
+        flat = np.linspace(0, 0.3, 60)                                          # no fall at all: a clear mismatch for a tone 4
+        extraction, clean = make_track(np.zeros(60))
+        second = {"char": text[1], "start": 0.0, "end": 0.3, "phones": [], "nucleus": (0.0, 0.3)}
+        first = dict(second)
+        return (tp.verify_syllable(first, contexts[0], extraction, clean, config, SPEAKER, True),
+                tp.verify_syllable(second, contexts[1], extraction, clean, config, SPEAKER, True))
+
+    def softened(self):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        config["tone"]["soften_reduplication"] = True
+        return config
+
+    def test_the_context_marks_only_the_second_character_of_a_repeated_pair(self):
+        for text in ("看看", "謝謝"):
+            contexts = capt_core.expected_tone_contexts([text])
+            self.assertEqual([c["is_reduplicated"] for c in contexts], [False, True])
+        self.assertEqual([c["is_reduplicated"] for c in capt_core.expected_tone_contexts(["看書"])], [False, False])
+        across = capt_core.expected_tone_contexts(["看看"], phrase_end_indices=[1])
+        self.assertEqual([c["is_reduplicated"] for c in across], [False, False])             # two words: not a repeated pair
+
+    def test_only_the_second_character_is_protected_and_only_when_configured(self):
+        first, second = self.run_pair("看看", CONFIG)
+        self.assertEqual((first["status"], second["status"]), ("practice", "practice"))     # today both are accused
+        first, second = self.run_pair("看看", self.softened())
+        self.assertEqual(first["status"], "practice")                                       # the first keeps its full tone
+        self.assertEqual(second["status"], "insufficient_evidence")
+        self.assertIn("reduplicated_second_syllable", second["reasons"])
+
+    def test_production_configs_do_not_set_it(self):
+        import tone_assessment as ta
+        self.assertNotIn("soften_reduplication", ta.get_config()["tone"])
+        self.assertNotIn("soften_reduplication", ta.get_config("sentence")["tone"])
+
+
 class DurationRuleAndBoundariesTests(unittest.TestCase):
     """A verdict-only rule must change verdicts, never where the boundary search puts the syllable borders."""
 
