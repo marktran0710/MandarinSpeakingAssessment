@@ -45,6 +45,16 @@ SHORT = {"likely_correct": "Good", "insufficient_evidence": "Okay", "uncertain":
 
 # --------------------------------------------------------------------------------------------- config switch ----
 
+def deep_update(target, changes):
+    """Merge nested dicts: a trial may change `sentence: tone: x` without having to repeat the sentence section."""
+    for key, value in changes.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            deep_update(target[key], value)
+        else:
+            target[key] = value
+    return target
+
+
 @contextlib.contextmanager
 def trial_config(trial):
     """Every tp.load_config() call (and ta.get_config(), which uses it) sees the trial values on top of the file."""
@@ -52,11 +62,7 @@ def trial_config(trial):
 
     def patched(path=None, overrides=None, **_):             # same signature as tp.load_config (callers use overrides=)
         config = original(path, overrides)
-        for section, values in trial.items():
-            if isinstance(values, dict):
-                config.setdefault(section, {}).update(values)
-            else:
-                config[section] = values
+        deep_update(config, trial)
         return config
 
     tp.load_config = patched

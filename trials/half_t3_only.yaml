@@ -1,0 +1,5 @@
+# Trial: ONLY the half-third switch, nothing else. A tone-3 syllable may then be read as a half-third (a low fall
+# without the final rise) everywhere, including single words and the last syllable of a clause.
+# Sentence practice already has this on; single-word practice does not.
+tone:
+  clause_final_half_t3: true

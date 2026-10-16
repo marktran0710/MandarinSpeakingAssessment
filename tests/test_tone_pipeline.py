@@ -340,6 +340,69 @@ class ToneRuleTests(unittest.TestCase):
         self.assertLess(tp.tone_scores(contour_features([1.0, 0.0, -0.5]), False, CONFIG)[4], 0.3)
 
 
+class ToneFourByDurationTests(unittest.TestCase):
+    """tone.t4_by_duration: a short syllable needs less fall. Off unless configured; sentence trials only."""
+    RULE = {"short_ms": 180, "medium_ms": 300, "min_fall_short_st": 1.5, "min_fall_medium_st": 2.0,
+            "min_fall_long_st": 2.5, "require_end_below_start": True}
+
+    def config(self, **rule):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        config["tone"]["t4_by_duration"] = {**self.RULE, **rule}
+        return config
+
+    @staticmethod
+    def t4(anchors, syllable_ms, config):
+        times = np.linspace(0, 0.2, 40)
+        st = np.interp(times, np.linspace(0, 0.2, len(anchors)), anchors)
+        return tp.tone_scores(tp.syllable_features(times, st, 0.0, 0.2, syllable_ms=syllable_ms), False, config)[4]
+
+    # early-to-late falls of these contours (first-third mean minus last-third mean): 1.8 st and 2.1 st
+    SMALL_FALL = [1.3, 0.0, -1.3]
+    MEDIUM_FALL = [1.5, 0.0, -1.5]
+
+    def test_the_same_small_fall_passes_in_a_short_syllable_and_not_in_a_long_one(self):
+        config = self.config()
+        self.assertGreaterEqual(self.t4(self.SMALL_FALL, 150, config), 0.9)      # < 180 ms needs 1.5 st: 1.8 is plenty
+        self.assertLess(self.t4(self.SMALL_FALL, 250, config), 0.9)              # 180-300 ms needs 2.0 st
+        self.assertLess(self.t4(self.SMALL_FALL, 350, config), 0.6)              # >= 300 ms needs 2.5 st
+        self.assertGreater(self.t4(self.SMALL_FALL, 150, config), self.t4(self.SMALL_FALL, 250, config))
+        self.assertGreater(self.t4(self.SMALL_FALL, 250, config), self.t4(self.SMALL_FALL, 350, config))
+
+    def test_the_three_bands_use_their_own_numbers(self):
+        config = self.config()
+        self.assertGreaterEqual(self.t4(self.MEDIUM_FALL, 250, config), 0.9)     # 2.1 st is enough for a medium syllable
+        self.assertLess(self.t4(self.MEDIUM_FALL, 400, config), 0.9)             # but not for a long one (needs 2.5)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 179.9}, config["tone"]), 1.5)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 180.0}, config["tone"]), 2.0)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 299.9}, config["tone"]), 2.0)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 300.0}, config["tone"]), 2.5)
+
+    def test_a_tone_four_must_end_lower_than_it_starts(self):
+        # high in the middle but the edges end above where they start: the means fall by about 1.1 st, the ends do not
+        recovers = [-5.0, 4.0, 3.0, -1.0, -1.0]
+        self.assertEqual(self.t4(recovers, 150, self.config()), 0.0)
+        self.assertGreater(self.t4(recovers, 150, self.config(require_end_below_start=False)), 0.4)
+        self.assertGreaterEqual(self.t4(self.SMALL_FALL, 150, self.config()), 0.9)    # a normal fall is not affected
+
+    def test_without_the_setting_nothing_changes(self):
+        for anchors in ([5.0, 0.0, -4.0], [1.0, 0.0, -0.5], [1.0, 0.5, 0.0, -0.8], [0.0, -2.0, -3.0, 0.5]):
+            plain = self.t4(anchors, None, CONFIG)
+            for ms in (100, 250, 500):
+                self.assertEqual(self.t4(anchors, ms, CONFIG), plain)             # the length is ignored, as before
+        self.assertEqual(tp.t4_min_fall({}, self.config()["tone"]), 3.0)         # rule set but no length known: single value
+
+    def test_production_config_has_no_rule_in_either_profile(self):
+        import tone_assessment as ta
+        self.assertNotIn("t4_by_duration", ta.get_config()["tone"])
+        self.assertNotIn("t4_by_duration", ta.get_config("sentence")["tone"])
+
+    def test_the_syllable_length_reaches_the_scorer(self):
+        feats = tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1, syllable_ms=250)
+        self.assertEqual(feats["syllable_ms"], 250.0)
+        self.assertNotIn("syllable_ms", tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1))
+
+
 class SurfaceToneTests(unittest.TestCase):
     def tones(self, text):
         contexts = capt_core.expected_tone_contexts([text])

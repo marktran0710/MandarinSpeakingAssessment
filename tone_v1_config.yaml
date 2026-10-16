@@ -152,6 +152,17 @@ tone:
 
   clause_final_half_t3: false  # true = a clause-final T3 may also be a low fall (half-third); sentence practice turns it on
 
+  # Off by default (the single t4_min_fall_st above applies). When present, the fall a tone 4 needs depends on how long
+  # the aligned syllable is: < short_ms, < medium_ms, or longer; and require_end_below_start makes a tone 4 that does not
+  # end lower than it starts score 0. Meant for sentence practice (see trials/t4_by_duration_sentence.yaml):
+  # t4_by_duration:
+  #   short_ms: 180
+  #   medium_ms: 300
+  #   min_fall_short_st: 1.5
+  #   min_fall_medium_st: 2.0
+  #   min_fall_long_st: 2.5
+  #   require_end_below_start: true
+
 # Neutral tone is NOT scored (v1): the script says which syllables are neutral, nothing is classified as T1-T4 and no
 # duration / pitch-range rule is applied. A neutral syllable is likely_correct when its audio is usable (same gates as
 # every syllable) and insufficient_evidence otherwise. It can never be `practice`.

@@ -1,0 +1,16 @@
+# Trial: tone 4 needs less fall in a short syllable (sentence practice only; single words keep t4_min_fall_st = 3.0).
+#   their name                      -> our key (under sentence: tone: t4_by_duration:)
+#   tone4.short_ms / medium_ms      -> short_ms / medium_ms           (length of the aligned syllable, not of the vowel)
+#   tone4.min_fall_short_st         -> min_fall_short_st    syllable < 180 ms
+#   tone4.min_fall_medium_st        -> min_fall_medium_st   180 <= syllable < 300 ms
+#   tone4.min_fall_long_st          -> min_fall_long_st     syllable >= 300 ms
+#   tone4.require_end_below_start   -> require_end_below_start
+sentence:
+  tone:
+    t4_by_duration:
+      short_ms: 180
+      medium_ms: 300
+      min_fall_short_st: 1.5
+      min_fall_medium_st: 2.0
+      min_fall_long_st: 2.5
+      require_end_below_start: true
