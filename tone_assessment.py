@@ -17,13 +17,21 @@ import tone_pipeline as tp
 
 MODE = "tone_pipeline_v1"
 _CONFIG = None
+_SENTENCE_CONFIG = None
 
 
-def get_config():
-    global _CONFIG
+def get_config(profile=None):
+    """The frozen configuration. profile="sentence" layers the `sentence` overrides on top (book / custom practice)."""
+    global _CONFIG, _SENTENCE_CONFIG
     if _CONFIG is None:
         _CONFIG = tp.load_config()
-    return _CONFIG
+    if profile is None:
+        return _CONFIG
+    if profile != "sentence":
+        raise ValueError(f"Unknown config profile: {profile}")
+    if _SENTENCE_CONFIG is None:
+        _SENTENCE_CONFIG = tp.load_config(overrides=_CONFIG["sentence"])
+    return _SENTENCE_CONFIG
 
 
 # ------------------------------------------------------------------ grouping ----
@@ -238,17 +246,24 @@ def build_payload(result, *, groups, word_annotation_status, boundaries_from, pr
 
 # ---------------------------------------------------------------- entry points ----
 
-def _verify(prepared, clauses, contexts, calibration, force_mfa=False):
+def sentence_contexts(clauses, groups, annotation_status):
+    """Expected tones for sentence practice: word ends from the annotation no longer block sandhi (see capt_core)."""
+    return capt_core.expected_tone_contexts(
+        clauses, phrase_end_indices=[end for _, _, end in groups] if annotation_status == "matched" else None,
+        cross_word_sandhi=True)
+
+
+def _verify(prepared, clauses, contexts, calibration, force_mfa=False, config=None):
     """`prepared` is audio_prep.PreparedAudio: a recording that failed the quality check is not analysed."""
     return tp.verify_utterance(prepared.samples, prepared.sample_rate, "".join(clauses), calibration,
-                               contexts=contexts, config=get_config(), rejected_reasons=prepared.rejected_reasons,
+                               contexts=contexts, config=config or get_config(), rejected_reasons=prepared.rejected_reasons,
                                force_mfa=force_mfa)
 
 
 def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_status,
                      calibration, practice_mode, sample_id, target_script):
     """Book / custom practice: one script, grouped into phrases by word annotation or clause."""
-    result = _verify(prepared, clauses, contexts, calibration)
+    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence"))
     return build_payload(
         result, groups=groups, word_annotation_status=word_annotation_status,
         boundaries_from=("word-level JSON grouped over MFA syllable boundaries"

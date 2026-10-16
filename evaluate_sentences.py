@@ -100,12 +100,29 @@ def assess_sample(sample, prepared, profile, annotations, normalize):
     target_script = normalize(sample["script"])
     clauses = [c for c in capt_core.prepare_target(target_script) if c.strip()]
     groups, annotation_status = ta.make_groups(clauses, annotations.get(sample["id"], []), normalize)
-    contexts = capt_core.expected_tone_contexts(
-        clauses, phrase_end_indices=[end for _, _, end in groups] if annotation_status == "matched" else None)
-    payload = ta.assess_recording(prepared, clauses=clauses, contexts=contexts, groups=groups,
-                                  word_annotation_status=annotation_status, calibration=profile, practice_mode="book",
-                                  sample_id=sample["id"], target_script=target_script)
-    return payload, groups, annotation_status
+    contexts = ta.sentence_contexts(clauses, groups, annotation_status)
+    captured = {}
+    build_payload = ta.build_payload
+
+    def observe(result, **kwargs):          # read-only tap: the payload is built exactly as before
+        captured["result"] = result
+        return build_payload(result, **kwargs)
+
+    with mock.patch.object(ta, "build_payload", observe):
+        payload = ta.assess_recording(prepared, clauses=clauses, contexts=contexts, groups=groups,
+                                      word_annotation_status=annotation_status, calibration=profile,
+                                      practice_mode="book", sample_id=sample["id"], target_script=target_script)
+    return payload, groups, annotation_status, captured["result"]
+
+
+def contour_record(result):
+    """The sentence F0 in semitones every 10 ms (None = unvoiced), for the review page."""
+    contour = (result or {}).get("contour")
+    if not contour:
+        return None
+    times, st = contour["times"], contour["st"]
+    values = [None if v is None or v != v else round(float(v), 1) for v in st[::2]]
+    return {"t0": round(float(times[0]), 3), "step": round(float(contour["step_sec"]) * 2, 4), "st": values}
 
 
 def window_bucket(window_ms):
@@ -137,6 +154,12 @@ def flatten(sample, payload, groups, annotation_status):
             "status": s["status"], "tone_match": s["tone_match"], "acoustic_quality": s["acoustic_quality"],
             "syllable_ms": s.get("duration_ms"), "window_ms": window, "window_bucket": window_bucket(window),
             "voiced_frames": features.get("voiced_frames"),
+            "start_ms": s.get("start_ms"), "end_ms": s.get("end_ms"),
+            "window_start_ms": segment["start_ms"] if segment else None,
+            "window_end_ms": segment["end_ms"] if segment else None,
+            "also_accepted": "|".join(str(t) for t in s.get("also_accepted_tones", [])),
+            "clause_final_half_t3": bool(s.get("clause_final_half_t3")),
+            "tone_rule": s.get("tone_rule", ""),
             "reasons": "|".join(s["reasons"]),
         })
     phrase_rows = []
@@ -240,12 +263,14 @@ def evaluate(sample_dir, word_json, out_dir, cache_dir=None, group_by="speaker",
         usable = [p for p in members if p.passed] or members
         profiles[key] = tp.pooled_calibration([(p.samples, p.sample_rate) for p in usable], config)
 
-    syllable_rows, phrase_rows, sentence_rows = [], [], []
+    syllable_rows, phrase_rows, sentence_rows, contours = [], [], [], {}
     with alignment_cache(cache_dir):
         for number, sample in enumerate(samples, 1):
-            payload, groups, annotation_status = assess_sample(sample, prepared[sample["id"]], profiles[key_of(sample)],
-                                                               annotations, normalize)
+            payload, groups, annotation_status, raw = assess_sample(sample, prepared[sample["id"]],
+                                                                    profiles[key_of(sample)], annotations, normalize)
             rows, phrases, sentence = flatten(sample, payload, groups, annotation_status)
+            contours[sample["id"]] = {"audio": sample["audio"], "script": sample["script"], "speaker": sample["speaker"],
+                                      "contour": contour_record(raw)}
             syllable_rows += rows
             phrase_rows += phrases
             sentence_rows.append(sentence)
@@ -267,6 +292,7 @@ def evaluate(sample_dir, word_json, out_dir, cache_dir=None, group_by="speaker",
                 writer.writeheader()
                 writer.writerows(data)
     (out / "report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+    (out / "contours.json").write_text(json.dumps(contours, ensure_ascii=False), encoding="utf-8")
     (out / "report.md").write_text(render_markdown(report), encoding="utf-8")
     return report
 

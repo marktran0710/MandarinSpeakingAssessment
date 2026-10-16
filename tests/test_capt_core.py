@@ -133,5 +133,46 @@ class TestNormalizeAudio(unittest.TestCase):
         self.assertEqual(float(np.max(np.abs(core.normalize_audio(np.zeros(8))))), 0.0)
 
 
+class TestCrossWordSandhi(unittest.TestCase):
+    """Sentence practice: word ends from the annotation stop blocking sandhi. Everything else is as before."""
+
+    def contexts(self, text, word_ends, cross=True):
+        return core.expected_tone_contexts([text], phrase_end_indices=word_ends, cross_word_sandhi=cross)
+
+    def test_the_default_is_unchanged_and_adds_no_new_fields(self):
+        default = core.expected_tone_contexts(["你想去哪裡"], phrase_end_indices=[1, 2, 3, 5])
+        self.assertEqual(default, self.contexts("你想去哪裡", [1, 2, 3, 5], cross=False))
+        self.assertTrue(all("also_accept_tones" not in c for c in default))
+        self.assertEqual(default[0]["target_tone"], 3)                 # blocked at the word end, as before
+
+    def test_t3_before_t3_across_a_word_end_keeps_t3_and_also_accepts_t2(self):
+        first = self.contexts("我也好", [1, 2, 3])[0]
+        self.assertEqual((first["target_tone"], first["also_accept_tones"], first["tone_rule"]),
+                         (3, (2,), "third_tone_sandhi_optional"))
+        self.assertNotIn("also_accept_tones", self.contexts("我也好", [1, 2, 3])[2])   # the last syllable has no successor
+
+    def test_bu_and_yi_take_their_sandhi_tone_across_a_word_end(self):
+        self.assertEqual(self.contexts("我不要", [1, 2, 3], cross=False)[1]["target_tone"], 4)
+        bu = self.contexts("我不要", [1, 2, 3])[1]
+        self.assertEqual((bu["target_tone"], bu["tone_rule"]), (2, "bu_sandhi"))
+        yi = self.contexts("一個", [1, 2])[0]
+        self.assertEqual((yi["target_tone"], yi["tone_rule"]), (2, "yi_sandhi"))
+
+    def test_the_previous_and_next_tones_follow_the_sandhi_tone(self):
+        contexts = self.contexts("我不要", [1, 2, 3])
+        self.assertEqual(contexts[2]["previous_tone"], None)           # 要 starts its own word: no neighbour carried over
+        self.assertEqual(contexts[0]["next_tone"], None)
+
+    def test_punctuation_and_the_fixed_phrase_breaks_still_block_sandhi(self):
+        split = core.expected_tone_contexts(["我", "也好"], phrase_end_indices=[1, 2, 3], cross_word_sandhi=True)
+        self.assertNotIn("also_accept_tones", split[0])               # a comma between the words
+        fixed = self.contexts("哪裡很好", [2, 3, 4])[1]               # 哪裡 is a fixed phrase end
+        self.assertNotIn("also_accept_tones", fixed)
+
+    def test_without_word_ends_the_flag_changes_nothing(self):
+        self.assertEqual(core.expected_tone_contexts(["我也好"], cross_word_sandhi=True),
+                         core.expected_tone_contexts(["我也好"]))
+
+
 if __name__ == "__main__":
     unittest.main()

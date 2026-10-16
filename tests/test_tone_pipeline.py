@@ -895,5 +895,111 @@ class BoundarySearchTests(unittest.TestCase):
         self.assertFalse(info["applied"])
 
 
+class SentenceRulesTests(unittest.TestCase):
+    """Sentence-only behaviour: an accepted sandhi alternative and a minimum analysis window for `practice`."""
+
+    @staticmethod
+    def verify_with(config, char, st_values, **context_patch):
+        extraction, clean = make_track(st_values)
+        end = len(st_values) * STEP
+        syllable = {"char": char, "start": 0.0, "end": end, "phones": [], "alignment_ok": True, "nucleus": (0.0, end)}
+        context = {**capt_core.expected_tone_contexts([char])[0], **context_patch}
+        return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True)
+
+    RISING = list(np.linspace(-4, 4, 60))
+
+    def test_a_t2_where_t3_is_expected_is_practice_unless_the_context_also_accepts_t2(self):
+        plain = self.verify_with(CONFIG, "你", self.RISING)
+        self.assertEqual(plain["status"], "practice")
+        accepted = self.verify_with(CONFIG, "你", self.RISING, also_accept_tones=(2,))
+        self.assertEqual(accepted["status"], "likely_correct")
+        self.assertEqual(accepted["also_accepted_tones"], [2])
+        self.assertEqual(accepted["expected_surface_tone"], 3)
+
+    def test_an_alternative_does_not_excuse_a_third_wrong_tone(self):
+        falling = list(np.linspace(6, -6, 60))                        # a clear T4 where T3 / T2 are accepted
+        self.assertEqual(self.verify_with(CONFIG, "你", falling, also_accept_tones=(2,))["status"], "practice")
+
+    FALLING_WRONG = list(np.linspace(4, -4, 16))                      # 80 ms of falling pitch where T2 is expected
+
+    def test_words_are_untouched_the_window_rule_is_off_by_default(self):
+        self.assertEqual(CONFIG["confidence"]["practice_min_window_ms"], 0)
+        self.assertEqual(self.verify_with(CONFIG, "麻", self.FALLING_WRONG)["status"], "practice")
+
+    def test_a_short_window_cannot_be_practice_when_the_rule_is_on(self):
+        config = tp.load_config(overrides={"confidence": {"practice_min_window_ms": 100}})
+        short = self.verify_with(config, "麻", self.FALLING_WRONG)
+        self.assertEqual(short["status"], "insufficient_evidence")
+        self.assertIn("short_analysis_window", short["reasons"])
+        longer = self.verify_with(config, "麻", list(np.linspace(4, -4, 24)))            # 120 ms
+        self.assertEqual(longer["status"], "practice")
+
+    def test_the_window_rule_never_hides_an_accepted_syllable_or_creates_a_practice(self):
+        config = tp.load_config(overrides={"confidence": {"practice_min_window_ms": 100}})
+        ok = self.verify_with(config, "麻", list(np.linspace(-4, 4, 16)))                # correct T2, 80 ms
+        self.assertEqual(ok["status"], "likely_correct")
+
+
+class ClauseFinalHalfThirdTests(unittest.TestCase):
+    """Candidate C: sentence practice lets a clause-final T3 be a low fall. Words keep the full-T3 requirement."""
+    SENTENCE = tp.load_config(overrides={"tone": {"clause_final_half_t3": True}})
+    LOW_FALL = list(np.linspace(2, -12, 60))                           # falls to the lowest point and stops there
+    FULL_T3 = list(np.concatenate([np.linspace(0, -9, 30), np.linspace(-9, 3, 30)]))
+
+    @staticmethod
+    def verify_with(config, st_values, char="買"):
+        extraction, clean = make_track(st_values)
+        end = len(st_values) * STEP
+        syllable = {"char": char, "start": 0.0, "end": end, "phones": [], "alignment_ok": True, "nucleus": (0.0, end)}
+        context = capt_core.expected_tone_contexts([char])[0]            # a one-character clause: clause-final T3
+        return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True), context
+
+    def test_the_default_is_unchanged_a_clause_final_t3_needs_the_full_dip_and_rise(self):
+        self.assertFalse(CONFIG["tone"]["clause_final_half_t3"])
+        result, context = self.verify_with(CONFIG, self.LOW_FALL)
+        self.assertTrue(context["is_clause_final"])
+        self.assertFalse(tp.allows_half_third(context, CONFIG))
+        self.assertEqual(result["status"], "practice")
+        self.assertNotIn("clause_final_half_t3", result)
+
+    def test_with_the_flag_a_low_fall_is_accepted_and_the_verdict_says_why(self):
+        result, context = self.verify_with(self.SENTENCE, self.LOW_FALL)
+        self.assertTrue(tp.allows_half_third(context, self.SENTENCE))
+        self.assertEqual(result["status"], "likely_correct")
+        self.assertTrue(result["clause_final_half_t3"])
+
+    def test_a_full_dip_and_rise_is_still_accepted_with_the_flag(self):
+        self.assertEqual(self.verify_with(self.SENTENCE, self.FULL_T3)[0]["status"], "likely_correct")
+
+    def test_other_tones_are_still_caught_with_the_flag(self):
+        rising = list(np.linspace(-4, 6, 60))                          # T2 where a T3 is expected
+        level_high = [6.0] * 60                                       # T1 where a T3 is expected
+        for contour in (rising, level_high):
+            self.assertEqual(self.verify_with(self.SENTENCE, contour)[0]["status"], "practice")
+
+    def test_known_trade_off_a_t4_falls_to_low_too_and_is_not_told_apart_from_a_half_third(self):
+        t4 = list(np.linspace(8, -8, 60))
+        self.assertEqual(self.verify_with(self.SENTENCE, t4)[0]["status"], "likely_correct")
+        self.assertEqual(self.verify_with(CONFIG, t4)[0]["status"], "practice")       # the word level does tell them apart
+
+    def test_the_flag_changes_nothing_for_other_tones(self):
+        for char in ("媽", "麻", "罵"):
+            contour = list(np.linspace(-4, 6, 60))
+            plain, _ = self.verify_with(CONFIG, contour, char)
+            flagged, _ = self.verify_with(self.SENTENCE, contour, char)
+            self.assertEqual((plain["status"], plain["tone_match"]), (flagged["status"], flagged["tone_match"]))
+
+    def test_the_boundary_search_ignores_the_flag_so_it_changes_verdicts_and_never_boundaries(self):
+        tones = capt_core.expected_tone_contexts(["媽買"])
+        st = np.r_[np.zeros(30), np.linspace(2, -12, 30), np.full(30, -12.0)]
+        extraction, clean = make_track(st)
+        late = 42 * STEP
+        syllables = [{"char": "媽", "start": 0.0, "end": late, "phones": [], "nucleus": (0.0, late)},
+                     {"char": "買", "start": late, "end": 90 * STEP, "phones": [], "nucleus": (late, 90 * STEP)}]
+        plain = tp.search_boundaries(syllables, tones, clean, CONFIG)[1]["shifts_ms"]
+        flagged = tp.search_boundaries(syllables, tones, clean, self.SENTENCE)[1]["shifts_ms"]
+        self.assertEqual(plain, flagged)
+
+
 if __name__ == "__main__":
     unittest.main()

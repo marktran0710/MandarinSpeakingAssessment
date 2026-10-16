@@ -112,8 +112,14 @@ def expected_tones(clauses, *, phrase_end_indices=None):
     ]
 
 
-def expected_tone_contexts(clauses, *, phrase_end_indices=None):
-    """Return lexical/surface tones and context, respecting phrase ends in flattened text."""
+def expected_tone_contexts(clauses, *, phrase_end_indices=None, cross_word_sandhi=False):
+    """Return lexical/surface tones and context, respecting phrase ends in flattened text.
+
+    By default every phrase end blocks tone sandhi. With `cross_word_sandhi` (sentence practice) the ends that come from
+    word annotations stop blocking it: 不 and 一 take their sandhi tone before the next word, and a third tone before
+    another third tone keeps T3 as the target but also accepts T2 (`also_accept_tones`), because a teacher reads
+    我也 / 你想 / 很好 with sandhi even though the words are annotated separately. Punctuation and the fixed phrase
+    breaks (所以, 哪裡) still block sandhi."""
     result = []
     global_index = 0
     phrase_end_indices = {
@@ -134,8 +140,18 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None):
             for phrase_end in phrase_end_indices
             if global_index < phrase_end <= global_index + len(clause)
         }
+        hard_breaks = set(break_after)
         break_after.update(explicit_breaks)
         surface = _clause_tones(clause, additional_phrase_breaks=break_after)
+        crossed, also_accept = set(), {}
+        if cross_word_sandhi and explicit_breaks:
+            across = _clause_tones(clause, additional_phrase_breaks=hard_breaks)
+            for i, ch in enumerate(clause):
+                if ch in "不一" and across[i] != surface[i]:
+                    surface[i] = across[i]
+                    crossed.add(i)
+                elif lexical[i] == 3 and surface[i] == 3 and across[i] == 2:
+                    also_accept[i] = 2
         for word in TAIWAN_WORD_TONES:
             pos = clause.find(word)
             while pos != -1:
@@ -161,6 +177,11 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None):
                 rule = "third_tone_sandhi"
             elif index in break_after and lexical[index] == 3:
                 rule = "phrase_final_third_tone"
+            if index in crossed:
+                rule = ("bu_reduplication_neutral" if surface[index] == 5
+                        else "bu_sandhi" if char == "不" else "yi_sandhi")
+            elif index in also_accept:
+                rule = "third_tone_sandhi_optional"
 
             result.append({
                 "index": global_index,
@@ -184,6 +205,7 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None):
                     and not ends_phrase
                     and following in {1, 2, 4, 5}
                 ),
+                **({"also_accept_tones": (also_accept[index],)} if index in also_accept else {}),
             })
             global_index += 1
     return result

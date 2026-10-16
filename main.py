@@ -2556,10 +2556,7 @@ def _assess_pronunciation(
         else:
             groups, word_annotation_status = tone_assessment.make_groups(
                 clauses, WORD_ANNOTATIONS.get(sample_id, []), converter.convert)
-            contexts = core.expected_tone_contexts(
-                clauses,
-                phrase_end_indices=[end for _, _, end in groups] if word_annotation_status == "matched" else None,
-            )
+            contexts = tone_assessment.sentence_contexts(clauses, groups, word_annotation_status)
             payload = tone_assessment.assess_recording(
                 prepared, clauses=clauses, contexts=contexts, groups=groups,
                 word_annotation_status=word_annotation_status, calibration=voice_calibration,

@@ -920,20 +920,33 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         return result
 
     expected = context["target_tone"]
-    scores = tone_scores(feats, allows_half_third(context), config)
-    match = scores[expected]
-    others = {tone: scores[tone] for tone in (1, 2, 3, 4) if tone != expected}
+    accepted = [expected, *context.get("also_accept_tones", ())]        # sentence practice may accept a sandhi alternative
+    scores = tone_scores(feats, allows_half_third(context, config), config)
+    match = max(scores[tone] for tone in accepted)
+    others = {tone: scores[tone] for tone in (1, 2, 3, 4) if tone not in accepted}
     status = decide(quality, match, config)
+    # A window this short (a reduced function word) cannot support an accusation; 0 = off, as for single words.
+    short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < config["confidence"].get("practice_min_window_ms", 0)
+    if short_window:
+        status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
-        times, st, seg_start, seg_end, expected, allows_half_third(context), status, quality, config)
+        times, st, seg_start, seg_end, expected, allows_half_third(context, config), status, quality, config,
+        also_accept=accepted[1:])
     result.update({
         "tone_scores": {str(k): round(scores[k], 3) for k in (1, 2, 3, 4)},
         "tone_match": round(match, 3), "tone_mismatch": round(1.0 - match, 3),
         "detected_alternative": max(others, key=others.get),   # diagnostic only; never used for gating
         "status": "insufficient_evidence" if edge_step else status,
     })
+    if len(accepted) > 1:
+        result["also_accepted_tones"] = accepted[1:]
+    if (config["tone"].get("clause_final_half_t3") and context["is_clause_final"]
+            and context["lexical_tone"] == 3 and expected == 3):
+        result["clause_final_half_t3"] = True                  # this verdict allowed a low fall as a T3
     if edge_step:
         result["reasons"].append("edge_pitch_step")
+    elif short_window:
+        result["reasons"].append("short_analysis_window")
     elif status == "insufficient_evidence":
         result["reasons"].append(
             "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
@@ -964,7 +977,8 @@ def edge_fragment_mask(times, st, step_st, fragment_sec):
     return drop if drop.any() else None
 
 
-def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_half_t3, status, quality, config):
+def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_half_t3, status, quality, config,
+                              also_accept=()):
     """True when the verdict rests on a short edge fragment behind an implausible pitch step.
 
     The syllable is scored again without that fragment; if the status differs, the evidence is not solid. This can only
@@ -977,11 +991,18 @@ def edge_step_changes_verdict(times, st, seg_start, seg_end, expected, allow_hal
     if int(np.isfinite(trimmed).sum()) < config["alignment"]["min_voiced_frames"]:
         return True
     scores = tone_scores(syllable_features(times, trimmed, seg_start, seg_end), allow_half_t3, config)
-    return decide(quality, scores[expected], config) != status
+    return decide(quality, max(scores[t] for t in (expected, *also_accept)), config) != status
 
 
-def allows_half_third(context):
-    """A surface T3 that is not clause-final may be a half-third (fall -> low), even at a word boundary."""
+def allows_half_third(context, config=None):
+    """A surface T3 that is not clause-final may be a half-third (fall -> low), even at a word boundary.
+
+    Sentence practice (`tone.clause_final_half_t3`) allows it at the end of a clause too: running speech reads that T3
+    as a low fall without the final rise. Known trade-off: a T4 also falls to low, so at that position a T4 where a T3
+    is expected is not told apart from a half-third."""
+    if (config and config["tone"].get("clause_final_half_t3")
+            and context["lexical_tone"] == 3 and context["target_tone"] == 3):
+        return True
     return bool(context["allow_half_t3"]
                 or (context["lexical_tone"] == 3 and context["target_tone"] == 3 and not context["is_clause_final"]))
 
@@ -1137,6 +1158,8 @@ def search_boundaries(syllables, contexts, clean, config):
         feats = syllable_features(clean["times"][mask], clean["st"][mask], seg_start, seg_end)
         if feats["voiced_frames"] < min_frames:
             return 0.0
+        # The boundary search keeps the strict reading (no clause-final half-third): `clause_final_half_t3` changes
+        # verdicts only, never where the syllable boundaries are put.
         return tone_scores(feats, allows_half_third(context), config)[context["target_tone"]]
 
     best = {zero: (0.0, [zero])}                        # outer boundaries stay where the aligner put them

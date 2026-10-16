@@ -199,5 +199,45 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual(payload["phrases"][0]["expected_tone_sequence"], [1, 0])
 
 
+class SentenceProfileTests(unittest.TestCase):
+    def test_words_keep_the_plain_config_and_sentences_get_the_window_rule(self):
+        self.assertEqual(ta.get_config()["confidence"]["practice_min_window_ms"], 0)
+        self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 100)
+
+    def test_the_sentence_profile_changes_nothing_else_and_leaves_the_base_config_alone(self):
+        base, sentence = ta.get_config(), ta.get_config("sentence")
+        changed = {"confidence": {"practice_min_window_ms"}, "tone": {"clause_final_half_t3"}}
+        for section in sorted(set(base) - {"sentence"}):
+            if not isinstance(base[section], dict):
+                self.assertEqual(base[section], sentence[section], section)
+                continue
+            keep = lambda config: {k: v for k, v in config[section].items() if k not in changed.get(section, ())}  # noqa: E731
+            self.assertEqual(keep(base), keep(sentence), section)
+        for section, keys in changed.items():                          # the only two differences, and only in the profile
+            for key in keys:
+                self.assertNotEqual(base[section][key], sentence[section][key])
+        self.assertIsNot(base, sentence)
+        self.assertEqual(base["confidence"]["practice_min_window_ms"], 0)
+        self.assertFalse(base["tone"]["clause_final_half_t3"])
+        self.assertTrue(sentence["tone"]["clause_final_half_t3"])
+
+    def test_an_unknown_profile_is_an_error(self):
+        with self.assertRaises(ValueError):
+            ta.get_config("paragraph")
+
+    def test_sentence_contexts_cross_word_sandhi_only_with_matched_annotations(self):
+        clauses = ["我也好"]
+        groups = [("我", 0, 1), ("也", 1, 2), ("好", 2, 3)]
+        matched = ta.sentence_contexts(clauses, groups, "matched")
+        self.assertEqual(matched[0]["also_accept_tones"], (2,))
+        missing = ta.sentence_contexts(clauses, [("我也好", 0, 3)], "missing")
+        self.assertEqual(missing[0]["target_tone"], 2)                 # plain sandhi inside one clause, as always
+        self.assertNotIn("also_accept_tones", missing[0])
+
+    def test_word_practice_contexts_are_the_plain_ones(self):
+        item = {"pinyin": ""}
+        self.assertEqual(ta.chapter5_contexts(["我也"], item), capt_core.expected_tone_contexts(["我也"]))
+
+
 if __name__ == "__main__":
     unittest.main()
