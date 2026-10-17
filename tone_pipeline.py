@@ -1362,7 +1362,9 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         if half_only:
             status = "insufficient_evidence"
     # A window this short (a reduced function word) cannot support an accusation; 0 = off, as for single words.
-    short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < config["confidence"].get("practice_min_window_ms", 0)
+    # `practice_min_window_ms_by_tone`: a tone with its own floor (tone 4 is the fastest tone, so a flat or rising tone 4 can be accused on a shorter window)
+    floor = (config["confidence"].get("practice_min_window_ms_by_tone") or {}).get(expected, config["confidence"].get("practice_min_window_ms", 0))
+    short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < floor
     if short_window:
         status = "insufficient_evidence"
     # `unstable_scope: syllable` spares a clean syllable of a recording whose track has a jump elsewhere from the quality penalty, so

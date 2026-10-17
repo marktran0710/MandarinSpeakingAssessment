@@ -318,6 +318,11 @@ sentence:
   confidence:
     practice_min_window_ms: 130   # a reduced function word (不, 個, 一, 得) or a fast T2 on <130 ms of voicing cannot support an accusation;
                                   # it gets "say it a bit more slowly" instead (was 100; raised after the 100 teacher sentences: false alarms 15 -> 8)
+    # Tone 4 is the fastest tone, so it may be accused on a shorter window (100 ms analysed = ~165 ms syllable). Of the learners' tone 4 under 130 ms, 15 of 69 were RISING and 8 flat,
+    # yet none could be flagged. Measured 2026-10-17 (trials/t4_floor_100.yaml): 100 teacher sentences false alarms 6 -> 8; learners' tone 4 flagged 14.5 -> 16.7% (LATIC), 4.9 -> 7.0% (archived).
+    practice_min_window_ms_by_tone:
+      4: 100
+
   tone:
     clause_final_half_t3: true    # teachers read a clause-final T3 as a low fall; the final rise is not required
     # Tone 4 in running speech is short and falls less than in a careful word (median fall 4.0 st vs 8.8 st). Verdict-only

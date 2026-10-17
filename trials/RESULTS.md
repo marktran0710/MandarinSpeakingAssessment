@@ -200,3 +200,19 @@ Fall limit for tone 1 (Good at most x st), easy level:
 With the steadiness rule at 0.70: native tone 1 accepted as a tone 4 2.9 -> 2.1% (0.85: 1.7%); learners' tone 4 Good 64.3 -> 63.1% (LATIC; 0.85: 61.1%), 64.9 -> 64.7% (archived).
 Teachers read correctly: tone 1 95.8%, tone 4 96.9%, unchanged; 100 teacher sentences unchanged (Good 95.2%, 6 false alarms).
 Single words keep the symmetrical tone 1 and have no steadiness rule: their tone 1 (median -1.0) and tone 4 (median ~10 st) are ~10 st apart.
+
+## Tone 4 can be accused on a shorter window (2026-10-17)
+
+`confidence.practice_min_window_ms_by_tone: {4: 100}` in the sentence profile (the general floor stays 130 ms): a tone 4 is the fastest tone, and of the learners' tone 4 syllables
+under 130 ms of analysed window (n = 69) 15 were RISING and 8 flat (< 0.5 st), yet none could ever be flagged. Floor for tone 4 vs flagged ("Needs practice" would apply):
+
+| floor | teacher tone 4 flagged (all read correctly, n=391) | learner tone 4 flagged (n=274) |
+|---|---|---|
+| 130 ms (before) | 4 (1.0%) | 51 (18.6%) |
+| 110 ms | 6 (1.5%) | 61 (22.3%) |
+| **100 ms (adopted)** | 6 (1.5%) | 63 (23.0%) |
+| 90 ms | 6 (1.5%) | 64 (23.4%) |
+| 60 ms | 6 (1.5%) | 71 (25.9%) |
+
+Through the real scorer: 100 teacher sentences false alarms 6 -> 8; LATIC tone-4 Needs practice 14.5 -> 16.7%, archived attempts 4.9 -> 7.0% (Okay down by the same, Good unchanged).
+The two extra teacher flags: a "tone 4" that rises 2.2 st and a flat 160 ms syllable.

@@ -206,7 +206,7 @@ class SentenceProfileTests(unittest.TestCase):
 
     def test_the_sentence_profile_changes_nothing_else_and_leaves_the_base_config_alone(self):
         base, sentence = ta.get_config(), ta.get_config("sentence")
-        changed = {"confidence": {"practice_min_window_ms"}, "tone": {"clause_final_half_t3", "t4_by_duration", "t4_before_t4", "left_context", "t3_low_register", "t1_max_fall_st", "t1_fall_width_st", "t4_steady"}}
+        changed = {"confidence": {"practice_min_window_ms", "practice_min_window_ms_by_tone"}, "tone": {"clause_final_half_t3", "t4_by_duration", "t4_before_t4", "left_context", "t3_low_register", "t1_max_fall_st", "t1_fall_width_st", "t4_steady"}}
         for section in sorted(set(base) - {"sentence"}):
             if not isinstance(base[section], dict):
                 self.assertEqual(base[section], sentence[section], section)
