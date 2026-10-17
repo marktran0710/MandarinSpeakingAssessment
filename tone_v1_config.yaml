@@ -253,7 +253,7 @@ feedback:
 # Sentence practice (book / custom) only. tone_assessment.get_config("sentence") layers these over the settings above;
 # single-word practice never sees them.
 # Difficulty levels: the same pipeline asking for a smaller contour movement. A level is layered on top of the config (and of the
-# `sentence:` profile in sentence practice); the request may name one (form field `level`), otherwise the learner's group decides.
+# `sentence:` profile in sentence practice); the request may name one (form field `level`), otherwise `default` (easy) applies.
 #   easy: every contour-size demand of tones 2, 3 and 4 is 0.8 of the standard one; tone 1 and the position limits are unchanged.
 # Why: learners flatten tones 2 and 4 (on 4 learners of Mandarin 121 tone-4 and 68 tone-2 Needs-practice syllables look like tone 1) and
 # their contours are smaller than a teacher's (median tone-4 fall 3.4 st vs 4.1, tone-3 dip 3.1 vs 5.7). Measured 2026-10-17
@@ -269,9 +269,8 @@ pace:
   min_syllables: 3
 
 levels:
-  default_by_group:
-    foreigner: easy
-    taiwanese: standard
+  default: easy                 # what "Automatic" means for everybody (the learner may pick standard on the page)
+  default_by_group: {}          # optional per-group override, e.g. {taiwanese: standard}
   easy:
     tone:
       t2_min_rise_st: 2.0

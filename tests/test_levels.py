@@ -1,3 +1,4 @@
+import copy
 import inspect
 import sys
 import unittest
@@ -58,11 +59,18 @@ class LevelConfigTests(unittest.TestCase):
 
 
 class LevelChoiceTests(unittest.TestCase):
-    def test_learners_get_the_default_of_their_group(self):
-        self.assertEqual(ta.resolve_level("", "foreigner"), "easy")
-        self.assertEqual(ta.resolve_level(None, "foreigner"), "easy")
-        self.assertEqual(ta.resolve_level("", "taiwanese"), "standard")
-        self.assertEqual(ta.resolve_level("", None), "standard")
+    def test_automatic_means_easy_for_everybody(self):
+        for group in ("foreigner", "taiwanese", None):
+            self.assertEqual(ta.resolve_level("", group), "easy", group)
+            self.assertEqual(ta.resolve_level(None, group), "easy", group)
+
+    def test_a_group_can_still_get_its_own_default_from_the_config(self):
+        config = copy.deepcopy(ta.get_config())
+        config["levels"]["default_by_group"] = {"taiwanese": "standard"}
+        self.assertEqual(ta.resolve_level("", "taiwanese", config), "standard")
+        self.assertEqual(ta.resolve_level("", "foreigner", config), "easy")
+        config["levels"]["default_by_group"] = {"taiwanese": "no_such_level"}
+        self.assertEqual(ta.resolve_level("", "taiwanese", config), "standard")             # an unknown name falls back to the safe level
 
     def test_a_request_can_name_a_level(self):
         self.assertEqual(ta.resolve_level("standard", "foreigner"), "standard")

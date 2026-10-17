@@ -1081,7 +1081,7 @@ async def read_index():
                 <button type="button" id="changeProfileBtn" onclick="changeStudentProfile()" data-i18n="changeSpeaker">Change speaker</button>
                 <label id="levelPick" for="levelSelect"><span data-i18n="levelLabel">Difficulty</span>
                     <select id="levelSelect" onchange="saveLevelChoice()" data-i18n-title="levelHint" title="Easy accepts a smaller pitch movement in tones 2, 3 and 4.">
-                        <option value="" data-i18n="levelAuto">Automatic (by group)</option>
+                        <option value="" data-i18n="levelAuto">Default (Easy)</option>
                         <option value="standard" data-i18n="levelStandard">Standard</option>
                         <option value="easy" data-i18n="levelEasy">Easy</option>
                     </select>
@@ -1329,7 +1329,7 @@ async def read_index():
                     calListen: "Listen to this sound", calListenAll: "\u25b6 Listen to the five sounds",
                     calibrationSavedSlower: "Your voice is saved. Tip: next time read a little slower and stretch each sound \u2013 it is easier to recognise.",
                     paceTooFast: "Some sounds were too quick to analyse. Read a little slower, or stretch each sound a bit, so the tones are easier to recognise.",
-                    levelLabel: "Difficulty", levelAuto: "Automatic (by group)", levelStandard: "Standard", levelEasy: "Easy",
+                    levelLabel: "Difficulty", levelAuto: "Default (Easy)", levelStandard: "Standard", levelEasy: "Easy",
                     levelHint: "Easy accepts a smaller pitch movement in tones 2, 3 and 4.",
                     profilePrompt: "Enter your name and participant group before speaking practice.",
                     profileHint: "Use a name that distinguishes you from others in the same group; matching name and group reuse the same practice history.",
@@ -1463,7 +1463,7 @@ async def read_index():
                     calListen: "聽這個音", calListenAll: "\u25b6 聽這五個音",
                     calibrationSavedSlower: "聲音已儲存。小提醒：下次可以唸慢一點、把每個音拉長一點，這樣更容易辨認。",
                     paceTooFast: "有些音太快，無法分析。請唸慢一點，或把每個音稍微拉長，聲調會更容易辨認。",
-                    levelLabel: "難度", levelAuto: "自動（依組別）", levelStandard: "標準", levelEasy: "簡單",
+                    levelLabel: "難度", levelAuto: "預設（簡單）", levelStandard: "標準", levelEasy: "簡單",
                     levelHint: "簡單模式接受二、三、四聲較小的音高變化。",
                     profilePrompt: "請先輸入姓名和參與者類別，再開始口說練習。",
                     profileHint: "請使用能區分同組使用者的姓名；姓名和類別相同時會沿用同一份練習紀錄。",
@@ -1596,7 +1596,7 @@ async def read_index():
                     calListen: "Nghe âm này", calListenAll: "\u25b6 Nghe cả năm âm",
                     calibrationSavedSlower: "Đã lưu giọng của bạn. Mẹo: lần sau hãy đọc chậm hơn một chút và kéo dài từng âm \u2013 sẽ dễ nhận diện hơn.",
                     paceTooFast: "Một số âm quá nhanh nên chưa phân tích được. Hãy đọc chậm hơn, hoặc kéo dài từng âm một chút để dễ nhận diện thanh điệu.",
-                    levelLabel: "Độ khó", levelAuto: "Tự động (theo nhóm)", levelStandard: "Chuẩn", levelEasy: "Dễ",
+                    levelLabel: "Độ khó", levelAuto: "Mặc định (Dễ)", levelStandard: "Chuẩn", levelEasy: "Dễ",
                     levelHint: "Mức Dễ chấp nhận biến thiên cao độ nhỏ hơn ở thanh 2, 3 và 4.",
                     profilePrompt: "Nhập tên và nhóm người tham gia trước khi luyện nói.",
                     profileHint: "Hãy dùng tên giúp phân biệt bạn với người khác trong cùng nhóm; cùng tên và nhóm sẽ dùng chung lịch sử luyện tập.",
@@ -1733,7 +1733,7 @@ async def read_index():
                     calListen: "Dengarkan bunyi ini", calListenAll: "\u25b6 Dengarkan kelima bunyi",
                     calibrationSavedSlower: "Suara Anda tersimpan. Tips: lain kali bacalah sedikit lebih pelan dan panjangkan setiap bunyi \u2013 lebih mudah dikenali.",
                     paceTooFast: "Beberapa bunyi terlalu cepat untuk dianalisis. Bacalah sedikit lebih pelan, atau panjangkan setiap bunyi agar nadanya lebih mudah dikenali.",
-                    levelLabel: "Tingkat kesulitan", levelAuto: "Otomatis (menurut kelompok)", levelStandard: "Standar", levelEasy: "Mudah",
+                    levelLabel: "Tingkat kesulitan", levelAuto: "Bawaan (Mudah)", levelStandard: "Standar", levelEasy: "Mudah",
                     levelHint: "Mode Mudah menerima gerakan nada yang lebih kecil pada nada 2, 3, dan 4.",
                     profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
                     profileHint: "Gunakan nama yang membedakan Anda dari orang lain di kelompok yang sama; nama dan kelompok yang sama akan memakai riwayat latihan yang sama.",
@@ -1975,7 +1975,7 @@ async def read_index():
                     calListen: "यह ध्वनि सुनें", calListenAll: "\u25b6 पाँचों ध्वनियाँ सुनें",
                     calibrationSavedSlower: "आपकी आवाज़ सहेज ली गई। सुझाव: अगली बार थोड़ा धीमे पढ़ें और हर ध्वनि को खींचकर बोलें \u2013 पहचानना आसान होगा।",
                     paceTooFast: "कुछ ध्वनियाँ विश्लेषण के लिए बहुत तेज़ थीं। थोड़ा धीमे पढ़ें, या हर ध्वनि को थोड़ा खींचें ताकि स्वर आसानी से पहचाने जा सकें।",
-                    levelLabel: "कठिनाई", levelAuto: "स्वचालित (समूह के अनुसार)", levelStandard: "मानक", levelEasy: "आसान",
+                    levelLabel: "कठिनाई", levelAuto: "डिफ़ॉल्ट (आसान)", levelStandard: "मानक", levelEasy: "आसान",
                     levelHint: "आसान स्तर में स्वर 2, 3 और 4 में छोटा पिच परिवर्तन स्वीकार किया जाता है।",
                     profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
                     profileHint: "ऐसा नाम चुनें जो आपको उसी समूह के दूसरे लोगों से अलग पहचान दे; एक ही नाम और समूह होने पर वही अभ्यास-इतिहास इस्तेमाल होगा।",

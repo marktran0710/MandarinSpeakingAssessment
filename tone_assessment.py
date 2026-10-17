@@ -71,10 +71,12 @@ def resolve_level(requested, group_type, config=None):
 
 
 def level_for_group(group_type, config=None):
-    """The level a learner of this group gets unless the request names one: `levels.default_by_group` in the config."""
+    """The level used when the request names none ("Automatic" in the page): `levels.default_by_group[group]` if the config has one for this
+    group, else `levels.default` (easy). An unknown name falls back to standard."""
     config = config or get_config()
-    level = ((config.get("levels") or {}).get("default_by_group") or {}).get(group_type, STANDARD)
-    return level if level == STANDARD or level in (config.get("levels") or {}) else STANDARD
+    levels = config.get("levels") or {}
+    level = (levels.get("default_by_group") or {}).get(group_type) or levels.get("default") or STANDARD
+    return level if level == STANDARD or level in levels else STANDARD
 
 
 # ------------------------------------------------------------------ grouping ----
