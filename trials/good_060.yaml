@@ -1,0 +1,5 @@
+# Owner's proposal (2026-10-17), lower end of the range: Good = match >= 0.60 and quality >= 0.60 (today: match 0.70, quality 0.65).
+# Needs practice stays match <= 0.20 and quality >= 0.80. Everything else (thresholds, product scoring) as in production.
+confidence:
+  likely_correct_quality: 0.60
+  likely_correct_match: 0.60

@@ -99,14 +99,14 @@ null,
 "C5-5-1-I3-W003#0": [
 "likely_correct",
 1.0,
-0.75,
-"unstable_pitch_track"
+0.963,
+""
 ],
 "C5-5-1-I3-W003#1": [
 "insufficient_evidence",
-null,
-0.699,
-"unstable_pitch_track|octave_jump_in_segment"
+0.0,
+0.962,
+"half_third_only"
 ],
 "C5-5-1-I4-W004#0": [
 "likely_correct",
@@ -1029,10 +1029,10 @@ null,
 ""
 ],
 "03_female_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.872,
-""
+"half_third_only"
 ],
 "03_female_subtle.wav#0": [
 "practice",
@@ -1149,10 +1149,10 @@ null,
 ""
 ],
 "03_male_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "03_male_subtle.wav#0": [
 "insufficient_evidence",
@@ -1269,16 +1269,16 @@ null,
 ""
 ],
 "04_male_chaotic.wav#0": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "04_male_clear.wav#0": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "04_male_subtle.wav#0": [
 "likely_correct",
@@ -2697,10 +2697,10 @@ null,
 ""
 ],
 "10_female_chaotic.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.889,
-""
+"half_third_only"
 ],
 "10_female_clear.wav#0": [
 "practice",
@@ -2709,10 +2709,10 @@ null,
 ""
 ],
 "10_female_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.889,
-""
+"half_third_only"
 ],
 "10_female_subtle.wav#0": [
 "likely_correct",
@@ -2817,10 +2817,10 @@ null,
 ""
 ],
 "10_male_chaotic.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "10_male_clear.wav#0": [
 "practice",
@@ -2829,10 +2829,10 @@ null,
 ""
 ],
 "10_male_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "10_male_subtle.wav#0": [
 "likely_correct",
@@ -3069,10 +3069,10 @@ null,
 ""
 ],
 "12_female_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.893,
-""
+"half_third_only"
 ],
 "12_female_subtle.wav#0": [
 "likely_correct",
@@ -3189,10 +3189,10 @@ null,
 ""
 ],
 "12_male_clear.wav#1": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "12_male_subtle.wav#0": [
 "likely_correct",
@@ -5247,10 +5247,10 @@ null,
 ""
 ],
 "23_female__direction_reversed.wav#0": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.994,
-""
+"half_third_only"
 ],
 "23_female__irregular_wavy.wav#0": [
 "insufficient_evidence",
@@ -5307,10 +5307,10 @@ null,
 ""
 ],
 "23_male__direction_reversed.wav#0": [
-"practice",
+"insufficient_evidence",
 0.0,
 0.981,
-""
+"half_third_only"
 ],
 "23_male__irregular_wavy.wav#0": [
 "insufficient_evidence",
@@ -5355,10 +5355,10 @@ null,
 ""
 ],
 "23_male_clear.wav#0": [
-"practice",
+"insufficient_evidence",
 0.0,
 1.0,
-""
+"half_third_only"
 ],
 "23_male_subtle.wav#0": [
 "practice",
