@@ -1322,8 +1322,23 @@ class LeftContextTests(unittest.TestCase):
     def test_without_rules_the_config_is_returned_as_is(self):
         self.assertIs(tp.context_config(CONFIG, self.context(2, adjacent_previous_tone=1)), CONFIG)
         import tone_assessment as ta
-        self.assertNotIn("left_context", ta.get_config()["tone"])
-        self.assertNotIn("left_context", ta.get_config("sentence")["tone"])
+        self.assertNotIn("left_context", ta.get_config()["tone"])                    # single words: no neighbour-aware rules
+        rules = ta.get_config("sentence")["tone"]["left_context"]                    # sentences: a tone 2 after a high tone
+        self.assertEqual([rule["when"] for rule in rules],
+                         [{"tone": 2, "previous": [1, 2]}, {"tone": 2, "previous_end_min_st": 3.0}])
+        for rule in rules:
+            self.assertEqual(rule["set"], {"t2_min_rise_st": 2.0, "t2_max_min_position": 0.90})
+
+    def test_the_production_sentence_profile_applies_the_rule_to_a_tone_2_after_a_tone_1_only(self):
+        import tone_assessment as ta
+        sentence = ta.get_config("sentence")
+        after_t1 = tp.context_config(sentence, self.context(2, adjacent_previous_tone=1))
+        after_t3 = tp.context_config(sentence, self.context(2, adjacent_previous_tone=3))
+        after_high_end = tp.context_config(sentence, self.context(2, adjacent_previous_tone=4, previous_end_st=4.0))
+        self.assertEqual(after_t1["tone"]["t2_min_rise_st"], 2.0)
+        self.assertEqual(after_high_end["tone"]["t2_min_rise_st"], 2.0)
+        self.assertEqual(after_t3["tone"]["t2_min_rise_st"], 2.5)
+        self.assertEqual(tp.context_config(sentence, self.context(4, adjacent_previous_tone=1))["tone"]["t4_min_fall_st"], 3.0)
 
     def test_the_previous_end_level_is_where_the_pitch_ended(self):
         extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(0, 5, 30)])

@@ -1,16 +1,17 @@
 # Rule trials - results (2026-10-17)
 
-Everything below is measured against the **current production config**: single words unchanged from the golden snapshot;
-sentence profile = 130 ms floor for "Needs practice" + the two tone-4 rules (`t4_by_duration`, `t4_before_t4`).
+Everything below was measured against the production config of that moment: single words unchanged from the golden snapshot;
+sentence profile = 130 ms floor for "Needs practice" + the two tone-4 rules (`t4_by_duration`, `t4_before_t4`). The left-context
+rule for tone 2 (best variant, "either 2.0 st") was added afterwards: sentences now 91.8% Good / 7 false alarms.
 Teacher audio is all correct, so every "Needs practice" on it is a **false alarm**. Reproduce with
 `python compare_configs.py trials/<file>.yaml` (alignments are cached after the first run).
 
 ## Where production stands
 | | before the tone-4 rules + 130 ms | now |
 |---|---|---|
-| 100 teacher sentences, 1329 syllables: Good | 89.8% | **91.3%** |
-| false alarms (syllables) | 15 | **8** |
-| sentences with a "Needs practice" phrase | 13% | **8%** |
+| 100 teacher sentences, 1329 syllables: Good | 89.8% | **91.3%** (91.8% with the left-context rule) |
+| false alarms (syllables) | 15 | **8** (7 with the left-context rule) |
+| sentences with a "Needs practice" phrase | 13% | **8%** (7%) |
 | single words (237 syllables): Good / false alarms | 93.7% / 0 | 93.7% / 0 (golden gate: 237 identical) |
 
 ## Sentence practice, each trial vs production (Good % / false alarms of 1329 syllables)
@@ -60,3 +61,20 @@ ended mid 88%; ended low 90% (rise 4.8 st). The rule helps several speakers (友
 
 ## Not done (no evidence of need)
 Rule 11 (T3 chains): 3 of 88 chain syllables are not Good. Rule 12 (declination): median drift 0.04 st per 300 ms syllable vs 2-3 st thresholds.
+
+## The 12 rules: status
+| # | Rule | Status |
+|---|---|---|
+| 1 | T3 + T3 -> T2 + T3 | applied (long-standing; also accepts T2 across word ends) |
+| 2 | T3 before T1/T2/T4 may be a half third | applied (long-standing) |
+| 3 | T3 at the end of a phrase may be low | applied in sentences; NOT for single words (+1 syllable Good, stress-test recall -2.8 points) |
+| 4 | 不 / 一 sandhi in the expected-tone layer | applied (long-standing) |
+| 5 | Neutral tone not scored by shape, never "Needs practice" | applied (long-standing) |
+| 6 | T4 before T4 may fall less | applied in sentences (`t4_before_t4`, 2.0 st), plus the length rule `t4_by_duration` |
+| 7 | Phrase-final / declination guard (judge the core, not the tail) | implemented (`final_tail_guard`), OFF: no effect (false alarms 8 -> 7) |
+| 8 | Short syllables cannot be accused | applied: 130 ms floor in sentences (false alarms 15 -> 8) |
+| 9 | Do not trust the start F0 too much | trimming the start was tried (`carryover_trim`): harmful, OFF; done properly as left-context conditioning (below): applied |
+| 10 | Second character of a repeated pair is softer | implemented (`soften_reduplication`), OFF: no effect on teacher audio |
+| 11 | Complex T3 chains: prosodic grouping | not done: 3 of 88 chain syllables are not Good |
+| 12 | Declination / focus: local normalization | not done: median drift 0.04 st per syllable vs 2-3 st thresholds |
+| - | Left context (previous tone / previous F0 endpoint / phrase-final) | applied for tone 2 after a high tone (`left_context`); engine also takes `next`, `phrase_final` |

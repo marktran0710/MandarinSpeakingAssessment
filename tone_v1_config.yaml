@@ -241,3 +241,13 @@ sentence:
       require_end_below_start: true
     t4_before_t4:                 # the first of two tone 4s in a row (also across a word end); the second keeps the normal rule
       min_fall_st: 2.0
+    # Left context: a syllable is judged knowing what came before it. A tone 2 right after a high tone (a tone 1/2, or any
+    # syllable whose pitch ended 3+ st above the speaker's median) has to dip first and rises less: native tone 2 is Good
+    # only 68-82% of the time there (95% elsewhere). Rules apply in order; verdict-only (the boundary search never sees them).
+    # 100 teacher sentences: Good 91.3% -> 91.8%, false alarms 8 -> 7; the cost (native tones 1/3/4 now accepted as a tone 2
+    # in that context) is +12 of 957 (trials/RESULTS.md).
+    left_context:
+      - when: {tone: 2, previous: [1, 2]}
+        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
+      - when: {tone: 2, previous_end_min_st: 3.0}
+        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
