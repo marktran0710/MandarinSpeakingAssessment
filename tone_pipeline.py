@@ -937,7 +937,7 @@ def _t4_fall_by_duration(f, tone_config):
 
 
 # Tone settings that change verdicts only; the boundary search must not see them (it would move boundaries to suit them).
-VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim")
+VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context")
 
 
 def tone_scores(f, allow_half_t3, config):
@@ -1008,6 +1008,59 @@ def _empty_result(context, char, config, speaker, status="insufficient_evidence"
     }
     result["feedback"] = student_feedback(status, context["target_tone"], config)
     return result
+
+
+def _rule_applies(when, context):
+    """Every condition in `when` holds for this syllable's neighbourhood (all must; an empty `when` always applies)."""
+    tone = when.get("tone")
+    if tone is not None and context["target_tone"] not in ([tone] if isinstance(tone, int) else tone):
+        return False
+    for key, neighbour in (("previous", context.get("adjacent_previous_tone")), ("next", context.get("adjacent_next_tone"))):
+        wanted = when.get(key)
+        if wanted is not None:
+            wanted = [wanted] if not isinstance(wanted, (list, tuple)) else list(wanted)
+            if (neighbour if neighbour is not None else "none") not in wanted:
+                return False
+    if "phrase_final" in when and bool(context.get("is_clause_final")) != bool(when["phrase_final"]):
+        return False
+    end = context.get("previous_end_st")
+    if "previous_end_min_st" in when and (end is None or end < when["previous_end_min_st"]):
+        return False
+    if "previous_end_max_st" in when and (end is None or end > when["previous_end_max_st"]):
+        return False
+    return True
+
+
+def context_config(config, context):
+    """`tone.left_context`: tolerance that depends on the neighbours, as a list of {when: {...}, set: {...}} rules.
+
+    A syllable has no tone shape of its own: the tone before it drags its start (a tone 2 after a high tone dips first and
+    rises less), the tone after it can pull its end, and a clause end lowers it. A matching rule overrides tone
+    thresholds for that syllable only (`set` may only name keys of `tone`); several matching rules apply in order.
+    `when` may name: tone, previous / next (the neighbouring SURFACE tone in the clause, even across a word end; "none"
+    = no neighbour), phrase_final, previous_end_min_st / previous_end_max_st (where the previous syllable's pitch ended,
+    in semitones from the speaker's median). Verdict-only: the boundary search never sees it."""
+    rules = config["tone"].get("left_context")
+    if not rules:
+        return config
+    changes = {}
+    for rule in rules:
+        if _rule_applies(rule.get("when") or {}, context):
+            changes.update(rule["set"])
+    if not changes:
+        return config
+    unknown = set(changes) - set(config["tone"])
+    if unknown:
+        raise ValueError(f"left_context sets unknown tone setting(s): {sorted(unknown)}")
+    return {**config, "tone": {**config["tone"], **changes}}
+
+
+def previous_end_level(syllable, clean, config):
+    """Where a syllable's pitch ended (mean of the last 20% of its voiced frames, semitones), or None if it has none."""
+    seg_start, seg_end, _ = _segment_for(syllable, config)
+    mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
+    feats = syllable_features(clean["times"][mask], clean["st"][mask], seg_start, seg_end)
+    return feats.get("end_ST")
 
 
 def scoring_window(config, context, seg_start, seg_end):
@@ -1106,6 +1159,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
 
     expected = context["target_tone"]
     accepted = [expected, *context.get("also_accept_tones", ())]        # sentence practice may accept a sandhi alternative
+    config = context_config(config, context)                            # tolerance that depends on the neighbours (off by default)
     score_start, score_end = scoring_window(config, context, seg_start, seg_end)
     score_times, score_st, score_feats = times, st, feats
     if (score_start, score_end) != (seg_start, seg_end):
@@ -1506,7 +1560,13 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     extraction["diagnostics"].update({"stable": stable, "octave_jumps_after_cleanup": jumps_left,
                                       "octave_jumps_in_segments": jumps_in_segments,
                                       "octave_frames_corrected": int(clean["octave_corrected"].sum())})
-    raw = [verify_syllable(s, ctx, extraction, clean, config, speaker, stable) for s, ctx in zip(syllables, contexts)]
+    raw = []
+    for index, (s, ctx) in enumerate(zip(syllables, contexts)):
+        if index and ctx.get("adjacent_previous_tone") is not None and config["tone"].get("left_context"):
+            end = previous_end_level(syllables[index - 1], clean, config)
+            if end is not None and np.isfinite(end):
+                ctx = {**ctx, "previous_end_st": float(end)}
+        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, stable))
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
     results = [_public(r) for r in raw]

@@ -1211,7 +1211,8 @@ class ScoringWindowRulesTests(unittest.TestCase):
             self.assertNotIn(rule, ta.get_config()["tone"], rule)                      # single words use none of them
         for rule in ("final_tail_guard", "carryover_trim"):                            # tried, not adopted (no effect / harmful)
             self.assertNotIn(rule, ta.get_config("sentence")["tone"], rule)
-        self.assertEqual(set(tp.VERDICT_ONLY_TONE_RULES), {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim"})
+        self.assertEqual(set(tp.VERDICT_ONLY_TONE_RULES),
+                         {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context"})
         tones = capt_core.expected_tone_contexts(["媽罵"])
         extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)])
         late = 42 * STEP
@@ -1270,6 +1271,92 @@ class ReduplicationTests(unittest.TestCase):
         import tone_assessment as ta
         self.assertNotIn("soften_reduplication", ta.get_config()["tone"])
         self.assertNotIn("soften_reduplication", ta.get_config("sentence")["tone"])
+
+
+class LeftContextTests(unittest.TestCase):
+    """tone.left_context: tolerance that depends on the neighbouring tones (off by default, verdict only)."""
+    RULE = {"when": {"tone": 2, "previous": [1, 2]}, "set": {"t2_min_rise_st": 2.0, "t2_max_min_position": 0.90}}
+
+    def config(self, *rules):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        config["tone"]["left_context"] = list(rules)
+        return config
+
+    @staticmethod
+    def context(tone=2, **fields):
+        return {"target_tone": tone, "adjacent_previous_tone": None, "adjacent_next_tone": None, "is_clause_final": False, **fields}
+
+    def test_conditions_are_all_required_and_none_means_no_neighbour(self):
+        applies = tp._rule_applies
+        self.assertTrue(applies({}, self.context()))
+        self.assertTrue(applies({"tone": 2}, self.context(2)))
+        self.assertTrue(applies({"tone": [2, 3]}, self.context(3)))
+        self.assertFalse(applies({"tone": 2}, self.context(4)))
+        self.assertTrue(applies({"previous": [1, 2]}, self.context(adjacent_previous_tone=1)))
+        self.assertFalse(applies({"previous": [1, 2]}, self.context(adjacent_previous_tone=3)))
+        self.assertTrue(applies({"previous": ["none"]}, self.context()))                      # the first syllable of a clause
+        self.assertFalse(applies({"previous": [1]}, self.context()))
+        self.assertTrue(applies({"next": 4}, self.context(adjacent_next_tone=4)))
+        self.assertTrue(applies({"phrase_final": True}, self.context(is_clause_final=True)))
+        self.assertFalse(applies({"phrase_final": True}, self.context()))
+        self.assertTrue(applies({"previous_end_min_st": 3.0}, self.context(previous_end_st=3.5)))
+        self.assertFalse(applies({"previous_end_min_st": 3.0}, self.context(previous_end_st=2.0)))
+        self.assertFalse(applies({"previous_end_min_st": 3.0}, self.context()))               # no previous pitch known
+        self.assertTrue(applies({"previous_end_max_st": -2.0}, self.context(previous_end_st=-5.0)))
+        self.assertFalse(applies({"tone": 2, "previous": [1]}, self.context(2, adjacent_previous_tone=3)))
+
+    def test_matching_rules_override_only_that_syllable_and_later_rules_win(self):
+        config = self.config(self.RULE)
+        changed = tp.context_config(config, self.context(2, adjacent_previous_tone=1))
+        self.assertEqual(changed["tone"]["t2_min_rise_st"], 2.0)
+        self.assertEqual(config["tone"]["t2_min_rise_st"], 2.5)                               # the shared config is untouched
+        self.assertIs(tp.context_config(config, self.context(2, adjacent_previous_tone=3)), config)
+        later = self.config(self.RULE, {"when": {"tone": 2}, "set": {"t2_min_rise_st": 1.2}})
+        self.assertEqual(tp.context_config(later, self.context(2, adjacent_previous_tone=1))["tone"]["t2_min_rise_st"], 1.2)
+
+    def test_a_rule_can_only_set_known_tone_settings(self):
+        with self.assertRaises(ValueError):
+            tp.context_config(self.config({"when": {}, "set": {"t9_min_rise_st": 1.0}}), self.context())
+
+    def test_without_rules_the_config_is_returned_as_is(self):
+        self.assertIs(tp.context_config(CONFIG, self.context(2, adjacent_previous_tone=1)), CONFIG)
+        import tone_assessment as ta
+        self.assertNotIn("left_context", ta.get_config()["tone"])
+        self.assertNotIn("left_context", ta.get_config("sentence")["tone"])
+
+    def test_the_previous_end_level_is_where_the_pitch_ended(self):
+        extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(0, 5, 30)])
+        syllable = {"char": "媽", "start": 0.0, "end": 60 * STEP, "phones": [], "nucleus": (0.0, 60 * STEP)}
+        self.assertGreater(tp.previous_end_level(syllable, clean, CONFIG), 4.0)
+        silent = {"char": "媽", "start": 90 * STEP, "end": 120 * STEP, "phones": [], "nucleus": (90 * STEP, 120 * STEP)}
+        self.assertIsNone(tp.previous_end_level(silent, clean, CONFIG))                      # nothing voiced: no level to condition on
+
+    def run_pair(self, first, second, script, config):
+        audio, spans = tone_audio([first, second])
+        syllables = [{"char": c, "start": a, "end": b, "phones": [], "nucleus": (a + 0.04, b)} for c, (a, b) in zip(script, spans)]
+        calibration = {"status": "calibrated", "pitch_floor": 90.0, "pitch_ceiling": 450.0, "f0_median": 200.0}
+        return tp.verify_utterance(audio, SR, script, calibration, alignment=syllables, config=config)["syllables"]
+
+    def test_a_small_rise_is_accepted_after_a_high_tone_but_not_after_a_low_one(self):
+        small_rise = [185, 168, 188]                                                         # about 1.9 st up from the low point
+        after_t1 = ([262, 262, 262, 262], small_rise, "媽麻")
+        after_t3 = ([190, 150, 140, 170], small_rise, "馬麻")
+        plain_t1 = self.run_pair(*after_t1, CONFIG)[1]
+        ruled_t1 = self.run_pair(*after_t1, self.config(self.RULE))[1]
+        ruled_t3 = self.run_pair(*after_t3, self.config(self.RULE))[1]
+        self.assertNotEqual(plain_t1["status"], "likely_correct")                            # today: not enough rise
+        self.assertEqual(ruled_t1["status"], "likely_correct")                               # the same contour, after a high tone
+        self.assertGreater(ruled_t1["tone_match"], plain_t1["tone_match"])
+        self.assertNotEqual(ruled_t3["status"], "likely_correct")                            # after a low tone the rule does not apply
+
+    def test_the_previous_end_level_condition_works_through_the_whole_pipeline(self):
+        small_rise = [185, 168, 188]
+        by_end = self.config({"when": {"tone": 2, "previous_end_min_st": 3.0}, "set": {"t2_min_rise_st": 2.0, "t2_max_min_position": 0.90}})
+        high_end = self.run_pair([262, 262, 262, 262], small_rise, "媽麻", by_end)[1]
+        low_end = self.run_pair([190, 190, 190, 190], small_rise, "媽麻", by_end)[1]         # a tone 1 that stayed low
+        self.assertEqual(high_end["status"], "likely_correct")
+        self.assertNotEqual(low_end["status"], "likely_correct")
 
 
 class DurationRuleAndBoundariesTests(unittest.TestCase):

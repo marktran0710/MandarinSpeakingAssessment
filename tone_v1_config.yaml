@@ -156,6 +156,9 @@ tone:
   # When present, the fall a tone 4 needs depends on how long
   # the aligned syllable is: < short_ms, < medium_ms, or longer; and require_end_below_start makes a tone 4 that does not
   # end lower than it starts score 0. Meant for sentence practice (see trials/t4_by_duration_sentence.yaml):
+  # left_context:                # (off) tolerance by neighbour; see trials/left_context_*.yaml. Rules apply in order:
+  #   - when: {tone: 2, previous: [1, 2]}        # also: next, phrase_final, previous_end_min_st / previous_end_max_st
+  #     set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
   # soften_reduplication: true     # the second character of a repeated pair (看看, 謝謝) can never be "Needs practice"
   # final_tail_guard:             # clause-final tones 1/2/3: judge them without the last trim_frac of the syllable (final lowering)
   #   trim_frac: 0.2

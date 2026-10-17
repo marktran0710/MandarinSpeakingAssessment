@@ -1,0 +1,8 @@
+# Both conditions: after a tone 1 or 2, OR after a syllable that ended high.
+sentence:
+  tone:
+    left_context:
+      - when: {tone: 2, previous: [1, 2]}
+        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
+      - when: {tone: 2, previous_end_min_st: 3.0}
+        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
