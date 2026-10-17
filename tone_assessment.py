@@ -354,6 +354,21 @@ def phrase_feedback(group):
     return []
 
 
+def pace_summary(syllables, config=None):
+    """Was the recording read so fast that sounds could not be judged? `pace:` in the config: the typical aligned syllable is shorter than
+    fast_median_syllable_ms (teachers read at 230-360 ms, learners at 240-410 ms), or a large share of the syllables was too short to analyse
+    (syllable_too_short / short_analysis_window). The UI then asks the learner to read slower or to stretch each sound."""
+    pace = (config or get_config()).get("pace") or {}
+    timed = [s for s in syllables if s.get("duration_ms")]
+    if not pace or len(timed) < pace.get("min_syllables", 3):
+        return {"too_fast": False}
+    median = float(np.median([s["duration_ms"] for s in timed]))
+    short = sum(1 for s in timed if {"syllable_too_short", "short_analysis_window"} & set(s.get("reasons") or ()))
+    share = short / len(timed)
+    return {"median_syllable_ms": round(median), "too_short_share": round(share, 2),
+            "too_fast": bool(median < pace["fast_median_syllable_ms"] or share >= pace["too_short_share"])}
+
+
 PARTIAL_CREDIT_SHARE = 0.5
 
 
@@ -508,6 +523,7 @@ def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_sta
         practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
         audio_quality=prepared.report(), partial_credit=True)
     payload["level"] = level or STANDARD
+    payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
     return payload
 
 
@@ -583,6 +599,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
                        ("word_key", "item_type", "traditional_chinese", "script", "pinyin", "section")},
         audio_quality=prepared.report())
     payload["level"] = level or STANDARD
+    payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
     payload["aligned_script_variant"] = candidate["script_variant"]
     payload["tone_verification"]["scored_reading"] = None if window is None else {
         "start_sec": round(window[0], 2), "end_sec": round(window[1], 2),

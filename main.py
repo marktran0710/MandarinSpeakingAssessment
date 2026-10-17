@@ -298,6 +298,18 @@ async def get_student_profile(student_id: str):
     return profile
 
 
+CALIBRATION_SOUND_DIR = Path(__file__).resolve().parent / "assets" / "calibration"
+
+
+@app.get("/api/calibration-sound/{tone}")
+def calibration_sound(tone: int):
+    """The reference sound of one calibration tile: ma1 ... ma5 (tools/make_calibration_audio.py)."""
+    path = CALIBRATION_SOUND_DIR / f"ma{tone}.wav"
+    if tone not in (1, 2, 3, 4, 5) or not path.is_file():
+        raise HTTPException(status_code=404, detail="Calibration sound not found.")
+    return FileResponse(path, media_type="audio/wav", headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.post("/api/students/{student_id}/voice-calibration")
 def calibrate_student_voice(student_id: str, file: UploadFile = File(...)):
     if practice_store.get_student(student_id) is None:
@@ -315,7 +327,7 @@ def calibrate_student_voice(student_id: str, file: UploadFile = File(...)):
         samples, sample_rate = audio_prep.decode_audio(temp_path)
         calibration = tone_pipeline.calibrate_voice(samples, sample_rate, tone_assessment.get_config())
         saved = practice_store.save_voice_calibration(student_id, calibration)
-        return {"voice_calibration": saved}
+        return {"voice_calibration": saved, "pace_hint": tone_pipeline.calibration_pace_hint(calibration, tone_assessment.get_config())}
     except tone_pipeline.CalibrationError as exc:          # the page shows a specific, translated tip for each reason
         return JSONResponse(status_code=422, content={"detail": str(exc), "reason": exc.reason})
     except ValueError as exc:
@@ -796,6 +808,10 @@ async def read_index():
             .cal-hint { margin: 4px 0 0 34px; color: #607386; font-size: 13px; line-height: 1.4; }
             #voiceCalibrationScript { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
             .cal-tile { text-align: center; padding: 8px 2px; border: 1px solid #d9e2ef; border-radius: 9px; background: #f7fafc; min-width: 0; }
+            .cal-tile { position: relative; }
+            .cal-play { display: block; margin: 0 auto 2px; width: 28px; min-width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 12px; line-height: 1; background: #e3edf9; color: #1a4f9c; border: 1px solid #b9cde8; cursor: pointer; }
+            .cal-play[data-playing="true"] { background: #1a4f9c; color: #fff; }
+            .cal-listen-all { margin: 8px 0 0 34px; padding: 6px 12px; font-size: 13px; background: #e3edf9; color: #1a4f9c; border: 1px solid #b9cde8; border-radius: 8px; width: auto; cursor: pointer; }
             .cal-tile .han { display: block; font-size: 24px; line-height: 1.25; font-weight: 600; }
             .cal-tile .py { display: block; font-size: 15px; color: #2d3748; }
             .cal-tile .tone { display: block; font-size: 11px; color: #607386; overflow-wrap: anywhere; }
@@ -1104,12 +1120,13 @@ async def read_index():
                 <li class="cal-step">
                     <div class="cal-head"><span class="cal-num" aria-hidden="true">1</span><span data-i18n="calStep1">Read these five sounds aloud, twice</span></div>
                     <p class="cal-hint" data-i18n="calStep1Hint">Speak calmly and naturally, like talking to a friend.</p>
+                    <button type="button" id="calListenAllBtn" class="cal-listen-all" onclick="playCalibrationSound(0)" data-i18n="calListenAll">&#9654; Listen to the five sounds</button>
                     <div id="voiceCalibrationScript">
-                        <div class="cal-tile"><span class="han" lang="zh-Hant">媽</span><span class="py">mā</span><span class="tone" data-i18n="calToneHigh">high</span></div>
-                        <div class="cal-tile"><span class="han" lang="zh-Hant">麻</span><span class="py">má</span><span class="tone" data-i18n="calToneRising">rising</span></div>
-                        <div class="cal-tile"><span class="han" lang="zh-Hant">馬</span><span class="py">mǎ</span><span class="tone" data-i18n="calToneDip">dip</span></div>
-                        <div class="cal-tile"><span class="han" lang="zh-Hant">罵</span><span class="py">mà</span><span class="tone" data-i18n="calToneFalling">falling</span></div>
-                        <div class="cal-tile"><span class="han" lang="zh-Hant">嗎</span><span class="py">ma</span><span class="tone" data-i18n="calToneLight">light</span></div>
+                        <div class="cal-tile"><button type="button" class="cal-play" data-tone="1" onclick="playCalibrationSound(1)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">媽</span><span class="py">mā</span><span class="tone" data-i18n="calToneHigh">high</span></div>
+                        <div class="cal-tile"><button type="button" class="cal-play" data-tone="2" onclick="playCalibrationSound(2)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">麻</span><span class="py">má</span><span class="tone" data-i18n="calToneRising">rising</span></div>
+                        <div class="cal-tile"><button type="button" class="cal-play" data-tone="3" onclick="playCalibrationSound(3)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">馬</span><span class="py">mǎ</span><span class="tone" data-i18n="calToneDip">dip</span></div>
+                        <div class="cal-tile"><button type="button" class="cal-play" data-tone="4" onclick="playCalibrationSound(4)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">罵</span><span class="py">mà</span><span class="tone" data-i18n="calToneFalling">falling</span></div>
+                        <div class="cal-tile"><button type="button" class="cal-play" data-tone="5" onclick="playCalibrationSound(5)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">嗎</span><span class="py">ma</span><span class="tone" data-i18n="calToneLight">light</span></div>
                     </div>
                 </li>
                 <li class="cal-step">
@@ -1297,6 +1314,7 @@ async def read_index():
             let chapter5WordIndex = 0;
             let lastAssessment = null;
             let activeStudent = null;
+            let calibrationPaceHint = "";
             let customTextDraft = "";
             let customPinyin = { script: "", values: [] };
             let customPinyinTimer = null;
@@ -1308,6 +1326,9 @@ async def read_index():
                 en: {
                     language: "Language", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "Speaker profile", changeSpeaker: "Change speaker",
+                    calListen: "Listen to this sound", calListenAll: "\u25b6 Listen to the five sounds",
+                    calibrationSavedSlower: "Your voice is saved. Tip: next time read a little slower and stretch each sound \u2013 it is easier to recognise.",
+                    paceTooFast: "Some sounds were too quick to analyse. Read a little slower, or stretch each sound a bit, so the tones are easier to recognise.",
                     levelLabel: "Difficulty", levelAuto: "Automatic (by group)", levelStandard: "Standard", levelEasy: "Easy",
                     levelHint: "Easy accepts a smaller pitch movement in tones 2, 3 and 4.",
                     profilePrompt: "Enter your name and participant group before speaking practice.",
@@ -1347,7 +1368,7 @@ async def read_index():
                     calibrationRecording: "Recording… read the five sounds twice.", calibrationProcessing: "Checking your voice…", calibrationSaved: "All set! Your tones will now be judged against your own voice.",
                     calibrationTooShort: "That was too short. Keep reading until the button lets you stop.", calibrationFailed: "We couldn't use that recording. Read all five sounds twice, clearly, then try again.",
                     calStep1: "Read these five sounds aloud, twice",
-                    calStep1Hint: "Speak calmly and naturally, like talking to a friend.",
+                    calStep1Hint: "Listen first (\u25b6). Then say each sound slowly and stretch it a little (m\u0101\u2011\u0101\u2011\u0101), with a short pause between sounds. Speak calmly, like talking to a friend.",
                     calStep2: "Press the button and start reading",
                     calToneHigh: "high",
                     calToneRising: "rising",
@@ -1389,7 +1410,7 @@ async def read_index():
                     adviceTone2: "“{char}” – tone 2: start at a middle pitch and rise clearly, like asking “huh?”.",
                     adviceTone3: "“{char}” – tone 3: let your voice sink low, like a soft “hmm…”, instead of staying high.",
                     adviceTone4: "“{char}” – tone 4: start high and drop quickly, like a firm “No!”.",
-                    retrySlower: "Say this word a little slower and more clearly – don’t rush it.",
+                    retrySlower: "Say this word a little slower and stretch it a little \u2013 don\u2019t rush it, so the tones are easier to hear.",
                     retrySteady: "Keep your voice steady and a little louder. Avoid whispering or a creaky voice.",
                     retryClearer: "Make the tone a bit more distinct so the rise and fall can be heard clearly.",
                     retryReadExactly: "Read this part exactly as written, from start to finish.",
@@ -1439,6 +1460,9 @@ async def read_index():
                 "zh-TW": {
                     language: "語言", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "使用者資料", changeSpeaker: "更換使用者",
+                    calListen: "聽這個音", calListenAll: "\u25b6 聽這五個音",
+                    calibrationSavedSlower: "聲音已儲存。小提醒：下次可以唸慢一點、把每個音拉長一點，這樣更容易辨認。",
+                    paceTooFast: "有些音太快，無法分析。請唸慢一點，或把每個音稍微拉長，聲調會更容易辨認。",
                     levelLabel: "難度", levelAuto: "自動（依組別）", levelStandard: "標準", levelEasy: "簡單",
                     levelHint: "簡單模式接受二、三、四聲較小的音高變化。",
                     profilePrompt: "請先輸入姓名和參與者類別，再開始口說練習。",
@@ -1478,7 +1502,7 @@ async def read_index():
                     calibrationRecording: "錄音中……請把五個音讀兩遍。", calibrationProcessing: "正在檢查你的聲音……", calibrationSaved: "完成！之後的聲調會依你自己的聲音來判斷。",
                     calibrationTooShort: "錄音太短了。請繼續朗讀，等按鈕可以按時再停止。", calibrationFailed: "這段錄音無法使用。請清楚地把五個音讀兩遍，再試一次。",
                     calStep1: "請把這五個音大聲讀兩遍",
-                    calStep1Hint: "像和朋友聊天一樣，自然、放鬆地讀。",
+                    calStep1Hint: "先聽一聽（\u25b6）。再把每個音唸慢一點、拉長一點（mā\u2011ā\u2011ā），音與音之間稍微停一下。像和朋友聊天一樣自然地唸。",
                     calStep2: "按下按鈕，開始朗讀",
                     calToneHigh: "高平",
                     calToneRising: "上升",
@@ -1520,7 +1544,7 @@ async def read_index():
                     adviceTone2: "「{char}」第二聲：從中等高度開始，明顯往上揚，像在問「嗯？」。",
                     adviceTone3: "「{char}」第三聲：讓聲音沉到低處，像輕輕說「嗯……」，不要停在高音。",
                     adviceTone4: "「{char}」第四聲：從高處開始，乾脆地往下降，像堅定地說「不！」。",
-                    retrySlower: "這個詞請唸慢一點、清楚一點，不要趕著唸過去。",
+                    retrySlower: "這個詞請唸慢一點、稍微拉長，不要趕著唸過去，聲調才聽得清楚。",
                     retrySteady: "請讓聲音保持穩定，並稍微大聲一點；避免氣音或沙啞的聲音。",
                     retryClearer: "請把聲調唸得更明顯，讓音高的升降聽得更清楚。",
                     retryReadExactly: "請從頭到尾照著文字完整唸出來。",
@@ -1569,6 +1593,9 @@ async def read_index():
                 vi: {
                     language: "Ngôn ngữ", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "Thông tin người nói", changeSpeaker: "Đổi người dùng",
+                    calListen: "Nghe âm này", calListenAll: "\u25b6 Nghe cả năm âm",
+                    calibrationSavedSlower: "Đã lưu giọng của bạn. Mẹo: lần sau hãy đọc chậm hơn một chút và kéo dài từng âm \u2013 sẽ dễ nhận diện hơn.",
+                    paceTooFast: "Một số âm quá nhanh nên chưa phân tích được. Hãy đọc chậm hơn, hoặc kéo dài từng âm một chút để dễ nhận diện thanh điệu.",
                     levelLabel: "Độ khó", levelAuto: "Tự động (theo nhóm)", levelStandard: "Chuẩn", levelEasy: "Dễ",
                     levelHint: "Mức Dễ chấp nhận biến thiên cao độ nhỏ hơn ở thanh 2, 3 và 4.",
                     profilePrompt: "Nhập tên và nhóm người tham gia trước khi luyện nói.",
@@ -1608,7 +1635,7 @@ async def read_index():
                     calibrationRecording: "Đang ghi… hãy đọc năm âm hai lần.", calibrationProcessing: "Đang kiểm tra giọng của bạn…", calibrationSaved: "Xong rồi! Từ giờ thanh điệu sẽ được chấm theo chính giọng của bạn.",
                     calibrationTooShort: "Bản ghi quá ngắn. Hãy đọc tiếp cho đến khi bấm được nút dừng.", calibrationFailed: "Không dùng được bản ghi này. Hãy đọc rõ cả năm âm, hai lần, rồi thử lại.",
                     calStep1: "Đọc to năm âm này, hai lần",
-                    calStep1Hint: "Đọc nhẹ nhàng, tự nhiên như đang nói chuyện với bạn bè.",
+                    calStep1Hint: "Hãy nghe trước (\u25b6). Sau đó đọc từng âm thật chậm và kéo dài một chút (m\u0101\u2011\u0101\u2011\u0101), nghỉ ngắn giữa các âm. Đọc nhẹ nhàng như đang nói chuyện với bạn bè.",
                     calStep2: "Bấm nút và bắt đầu đọc",
                     calToneHigh: "cao",
                     calToneRising: "lên",
@@ -1650,7 +1677,7 @@ async def read_index():
                     adviceTone2: "“{char}” – thanh 2: bắt đầu ở độ cao vừa rồi lên rõ rệt, như khi hỏi “hả?”.",
                     adviceTone3: "“{char}” – thanh 3: hạ giọng xuống thấp, như khi khẽ nói “ừm…”, đừng giữ ở giọng cao.",
                     adviceTone4: "“{char}” – thanh 4: bắt đầu ở giọng cao rồi hạ nhanh, dứt khoát, như khi nói “Không!”.",
-                    retrySlower: "Hãy đọc từ này chậm và rõ hơn một chút, đừng đọc lướt.",
+                    retrySlower: "Hãy đọc từ này chậm hơn và kéo dài âm một chút, đừng đọc lướt, để dễ nghe rõ thanh điệu.",
                     retrySteady: "Hãy giữ giọng đều và to hơn một chút. Tránh thì thầm hoặc giọng khàn.",
                     retryClearer: "Hãy nhấn thanh điệu rõ hơn một chút để nghe rõ chỗ lên xuống.",
                     retryReadExactly: "Hãy đọc đúng và đủ như chữ đã cho, từ đầu đến cuối.",
@@ -1703,6 +1730,9 @@ async def read_index():
                     languageVi: "Tiếng Việt",
                     speakerProfile: "Profil pembicara",
                     changeSpeaker: "Ganti pembicara",
+                    calListen: "Dengarkan bunyi ini", calListenAll: "\u25b6 Dengarkan kelima bunyi",
+                    calibrationSavedSlower: "Suara Anda tersimpan. Tips: lain kali bacalah sedikit lebih pelan dan panjangkan setiap bunyi \u2013 lebih mudah dikenali.",
+                    paceTooFast: "Beberapa bunyi terlalu cepat untuk dianalisis. Bacalah sedikit lebih pelan, atau panjangkan setiap bunyi agar nadanya lebih mudah dikenali.",
                     levelLabel: "Tingkat kesulitan", levelAuto: "Otomatis (menurut kelompok)", levelStandard: "Standar", levelEasy: "Mudah",
                     levelHint: "Mode Mudah menerima gerakan nada yang lebih kecil pada nada 2, 3, dan 4.",
                     profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
@@ -1783,7 +1813,7 @@ async def read_index():
                     calibrationTooShort: "Rekaman terlalu singkat. Teruslah membaca sampai tombol berhenti bisa ditekan.",
                     calibrationFailed: "Rekaman ini tidak bisa dipakai. Bacalah kelima bunyi dengan jelas, dua kali, lalu coba lagi.",
                     calStep1: "Bacalah lima bunyi ini dengan lantang, dua kali",
-                    calStep1Hint: "Bacalah dengan tenang dan alami, seperti mengobrol dengan teman.",
+                    calStep1Hint: "Dengarkan dulu (\u25b6). Lalu ucapkan setiap bunyi dengan pelan dan panjangkan sedikit (m\u0101\u2011\u0101\u2011\u0101), dengan jeda singkat antarbunyi. Bacalah dengan tenang, seperti mengobrol dengan teman.",
                     calStep2: "Tekan tombol dan mulai membaca",
                     calToneHigh: "tinggi",
                     calToneRising: "naik",
@@ -1844,7 +1874,7 @@ async def read_index():
                     adviceTone2: "“{char}” – nada 2: mulai dari nada sedang lalu naik dengan jelas, seperti bertanya “hah?”.",
                     adviceTone3: "“{char}” – nada 3: biarkan suara turun rendah, seperti “hmm…” pelan, jangan tetap tinggi.",
                     adviceTone4: "“{char}” – nada 4: mulai dari nada tinggi lalu turun cepat, seperti “Tidak!” yang tegas.",
-                    retrySlower: "Ucapkan kata ini sedikit lebih pelan dan jelas – jangan terburu-buru.",
+                    retrySlower: "Ucapkan kata ini sedikit lebih pelan dan panjangkan sedikit \u2013 jangan terburu-buru, agar nadanya terdengar jelas.",
                     retrySteady: "Jaga suara tetap stabil dan sedikit lebih keras. Hindari berbisik atau suara serak.",
                     retryClearer: "Buat nadanya sedikit lebih jelas agar naik-turunnya terdengar.",
                     retryReadExactly: "Bacalah bagian ini persis seperti tertulis, dari awal sampai akhir.",
@@ -1942,6 +1972,9 @@ async def read_index():
                     languageVi: "Tiếng Việt",
                     speakerProfile: "वक्ता प्रोफ़ाइल",
                     changeSpeaker: "वक्ता बदलें",
+                    calListen: "यह ध्वनि सुनें", calListenAll: "\u25b6 पाँचों ध्वनियाँ सुनें",
+                    calibrationSavedSlower: "आपकी आवाज़ सहेज ली गई। सुझाव: अगली बार थोड़ा धीमे पढ़ें और हर ध्वनि को खींचकर बोलें \u2013 पहचानना आसान होगा।",
+                    paceTooFast: "कुछ ध्वनियाँ विश्लेषण के लिए बहुत तेज़ थीं। थोड़ा धीमे पढ़ें, या हर ध्वनि को थोड़ा खींचें ताकि स्वर आसानी से पहचाने जा सकें।",
                     levelLabel: "कठिनाई", levelAuto: "स्वचालित (समूह के अनुसार)", levelStandard: "मानक", levelEasy: "आसान",
                     levelHint: "आसान स्तर में स्वर 2, 3 और 4 में छोटा पिच परिवर्तन स्वीकार किया जाता है।",
                     profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
@@ -2022,7 +2055,7 @@ async def read_index():
                     calibrationTooShort: "रिकॉर्डिंग बहुत छोटी थी। तब तक पढ़ते रहें जब तक बटन दबाने लायक न हो जाए।",
                     calibrationFailed: "यह रिकॉर्डिंग इस्तेमाल नहीं हो सकी। पाँचों ध्वनियाँ साफ़ दो बार पढ़कर फिर कोशिश करें।",
                     calStep1: "इन पाँच ध्वनियों को ज़ोर से, दो बार पढ़ें",
-                    calStep1Hint: "शांत और स्वाभाविक ढंग से पढ़ें, जैसे दोस्त से बात कर रहे हों।",
+                    calStep1Hint: "पहले सुनें (\u25b6)। फिर हर ध्वनि को धीरे बोलें और थोड़ा खींचकर बोलें (m\u0101\u2011\u0101\u2011\u0101), ध्वनियों के बीच छोटा विराम लें। दोस्त से बात करने की तरह शांत होकर पढ़ें।",
                     calStep2: "बटन दबाएँ और पढ़ना शुरू करें",
                     calToneHigh: "ऊँचा",
                     calToneRising: "चढ़ता",
@@ -2083,7 +2116,7 @@ async def read_index():
                     adviceTone2: "“{char}” – टोन 2: बीच की पिच से शुरू करें और साफ़ ऊपर उठाएँ, जैसे “हैं?” पूछ रहे हों।",
                     adviceTone3: "“{char}” – टोन 3: आवाज़ को नीचे उतरने दें, जैसे धीमे से “हम्म…” कहते हैं; ऊँची न रखें।",
                     adviceTone4: "“{char}” – टोन 4: ऊँची आवाज़ से शुरू करें और तेज़ी से नीचे गिराएँ, जैसे दृढ़ता से “नहीं!” कहते हैं।",
-                    retrySlower: "इस शब्द को थोड़ा धीमे और साफ़ बोलें – जल्दबाज़ी न करें।",
+                    retrySlower: "इस शब्द को थोड़ा धीमे और थोड़ा खींचकर बोलें \u2013 जल्दबाज़ी न करें, ताकि स्वर साफ़ सुनाई दें।",
                     retrySteady: "आवाज़ स्थिर और थोड़ी ऊँची रखें। फुसफुसाने या खरखराती आवाज़ से बचें।",
                     retryClearer: "टोन को थोड़ा और स्पष्ट करें ताकि उतार-चढ़ाव साफ़ सुनाई दे।",
                     retryReadExactly: "इस हिस्से को जैसा लिखा है वैसा ही, शुरू से अंत तक पढ़ें।",
@@ -2735,6 +2768,40 @@ async def read_index():
                 }
             }
 
+            let calibrationPlayer = null;
+            let calibrationPlayToken = 0;
+
+            function stopCalibrationSound() {
+                calibrationPlayToken += 1;
+                if (calibrationPlayer) calibrationPlayer.pause();
+                document.querySelectorAll(".cal-play").forEach(button => { button.dataset.playing = "false"; });
+            }
+
+            function playOneCalibrationSound(tone, token) {
+                return new Promise(resolve => {
+                    const button = document.querySelector(`.cal-play[data-tone="${tone}"]`);
+                    const audio = new Audio(`/api/calibration-sound/${tone}`);
+                    calibrationPlayer = audio;
+                    if (button) button.dataset.playing = "true";
+                    const done = () => { if (button) button.dataset.playing = "false"; resolve(token === calibrationPlayToken); };
+                    audio.addEventListener("ended", done);
+                    audio.addEventListener("error", done);
+                    audio.play().catch(done);
+                });
+            }
+
+            async function playCalibrationSound(tone) {
+                stopCalibrationSound();
+                const token = calibrationPlayToken;
+                const tones = tone === 0 ? [1, 2, 3, 4, 5] : [tone];
+                for (const one of tones) {
+                    const stillCurrent = await playOneCalibrationSound(one, token);
+                    if (!stillCurrent) return;
+                    if (tones.length > 1) await new Promise(resolve => setTimeout(resolve, 450));
+                    if (token !== calibrationPlayToken) return;
+                }
+            }
+
             function levelChoiceKey() {
                 return activeStudent ? `mandarinPracticeLevel:${activeStudent.id}` : null;
             }
@@ -2889,6 +2956,7 @@ async def read_index():
             }
 
             async function submitVoiceCalibration(audioBlob, mimeType) {
+                stopCalibrationSound();
                 isVoiceCalibrationProcessing = true;
                 setVoiceCalibrationStatus("calibrationProcessing");
                 syncVoiceCalibrationUI();
@@ -2906,10 +2974,11 @@ async def read_index():
                         throw failure;
                     }
                     activeStudent.voice_calibration = data.voice_calibration;
+                    calibrationPaceHint = data.pace_hint || "";
                     localStorage.setItem("mandarinPracticeStudent", JSON.stringify(activeStudent));
                     updateActiveStudentLabel();
                     sessionStorage.removeItem(calibrationDismissKey(activeStudent.id));
-                    setVoiceCalibrationStatus("calibrationSaved");
+                    setVoiceCalibrationStatus(calibrationPaceHint ? "calibrationSavedSlower" : "calibrationSaved");
                 } catch (error) {
                     setVoiceCalibrationStatus(calibrationReasonKey(error.reason), true);
                 } finally {
@@ -3527,6 +3596,7 @@ async def read_index():
                         <p class="results-note">${t("noProbabilityModel")}</p>
                         ${qualityKey ? `<p class="results-advice">${escapeHtml(t(qualityKey))}</p>` : ""}
                         ${systemFailure ? `<p class="results-advice">${escapeHtml(t("alignmentFailed"))}</p>` : ""}
+                        ${data.pace?.too_fast && !systemFailure ? `<p class="results-advice">${escapeHtml(t("paceTooFast"))}</p>` : ""}
                         <div class="result-groups">${groups.join("") || `<p>${t("noScores")}</p>`}</div>
                         <details class="json-output">
                             <summary>${t("viewJsonOutput")}</summary>

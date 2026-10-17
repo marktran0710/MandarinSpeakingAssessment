@@ -260,6 +260,14 @@ feedback:
 # (trials/easy_80.yaml, 0.65 = trials/easy_65.yaml): 4 learners (LATIC, 1838 syllables) Good 64.3% -> 69.0%, Needs practice 14.3% -> 11.9%;
 # the price is on the other side: 520 wrong-tone clips flagged 48.0% -> 46.1%, wrong tones shown Good 20.0% -> 21.3%, and native tones
 # said as the wrong tone accepted +1.7 points.
+# "You read too fast": the typical aligned syllable shorter than fast_median_syllable_ms (teachers read at 230-360 ms per syllable, the learners
+# on file at 240-410 ms), or at least too_short_share of the syllables too short to analyse. The page then says: read slower, or stretch each
+# sound. Looked at 2026-10-17: the share of too-short syllables does NOT follow the overall speed (short function words 不 個 一), so both are tested.
+pace:
+  fast_median_syllable_ms: 210
+  too_short_share: 0.30
+  min_syllables: 3
+
 levels:
   default_by_group:
     foreigner: easy

@@ -313,6 +313,15 @@ def analyze_calibration_tokens(times, voiced, config):
     return {"tokens": tokens, "warnings": warnings}
 
 
+def calibration_pace_hint(profile, config=None):
+    """"slower" when the calibration reading was rushed (fewer separate voiced stretches than sounds, or at least two of the first sounds shorter
+    than the minimum usable voicing): the learner is told to read slower and stretch each sound. "" when the reading was fine."""
+    cal = (config or load_config())["calibration"]
+    tokens = ((profile.get("quality") or {}).get("tokens")) or []
+    short = sum(1 for token in tokens if not token.get("meets_minimum"))
+    return "slower" if len(tokens) < cal["token_count"] or short >= 2 else ""
+
+
 def calibrate_voice(samples, sample_rate, config=None):
     """Quality-gated speaker F0 profile. Raises CalibrationError instead of creating a poor profile."""
     config = config or load_config()
