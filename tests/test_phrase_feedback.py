@@ -60,7 +60,7 @@ class UiStringsTests(unittest.TestCase):
             + ["retrySlower", "retrySteady", "retryClearer", "retryReadExactly", "retryAgain"]
             + ["qualityClipped", "qualityTooQuiet", "qualityNoisy", "qualityTooShort", "qualityTooLong",
                "qualityNoSpeech", "qualityNoVoicing"]
-            + ["busyWait", "notHeard", "retryNotHeard"])
+            + ["busyWait", "notHeard", "retryNotHeard", "retryFullThird"])
 
     @classmethod
     def setUpClass(cls):
@@ -188,7 +188,7 @@ class NotHeardTests(unittest.TestCase):
     def test_some_voice_somewhere_in_the_phrase_means_it_was_heard(self):
         mixed = [syllable("你", "likely_correct", 3), syllable("好", "insufficient_evidence", 3, ["too_few_voiced_frames"])]
         self.assertFalse(ta.heard_nothing(mixed))
-        self.assertEqual(ta.phrase_feedback(mixed), [{"type": "retry", "code": "slower"}])
+        self.assertEqual(ta.phrase_feedback(mixed), [{"type": "retry", "code": "slower", "char": "好"}])    # names the character
 
     def test_other_reasons_are_not_silence(self):
         for reason in ("ambiguous_contour", "unstable_pitch_track", "bad_alignment", "syllable_too_short"):
@@ -285,6 +285,39 @@ class AlignmentFailureTests(unittest.TestCase):
         self.assertEqual(record["alignment_error"], "MFA failed (exit 1): x")
         ok = user_archive.build_record({"id": "s"}, {"id": "a"}, "f.webm", "r.webm", {"tone_verification": {"alignment": {"error": None}}})
         self.assertIsNone(ok["alignment_error"])
+
+
+class WhichCharacterTests(unittest.TestCase):
+    """In a phrase of several characters the feedback says WHICH character needs work."""
+
+    def test_okay_advice_names_the_unclear_character_only_in_a_multi_character_phrase(self):
+        phrase = [syllable("朋", "likely_correct", 2), syllable("友", "insufficient_evidence", 3, ["ambiguous_contour"])]
+        self.assertEqual(ta.phrase_feedback(phrase), [{"type": "retry", "code": "clearer", "char": "友"}])
+        single = [syllable("友", "insufficient_evidence", 3, ["ambiguous_contour"])]
+        self.assertEqual(ta.phrase_feedback(single), [{"type": "retry", "code": "clearer"}])          # nothing to point at
+
+    def test_the_first_character_that_matches_the_reason_is_named_and_neutral_syllables_are_skipped(self):
+        two_doubtful = [syllable("好", "insufficient_evidence", 3, ["unstable_pitch_track"]),
+                        syllable("看", "insufficient_evidence", 4, ["unstable_pitch_track"])]
+        self.assertEqual(ta.phrase_feedback(two_doubtful)[0]["char"], "好")                              # the first one
+        with_neutral = [syllable("好", "insufficient_evidence", 3, ["unstable_pitch_track"]), syllable("嗎", "insufficient_evidence", 5, ["ambiguous_contour"])]
+        self.assertEqual(ta.phrase_feedback(with_neutral)[0], {"type": "retry", "code": "steady", "char": "好"})
+        neutral_only = [syllable("好", "likely_correct", 3), syllable("嗎", "insufficient_evidence", 5, ["ambiguous_contour"])]
+        self.assertEqual(ta.phrase_feedback(neutral_only), [])                                          # an unclear neutral tone never blocks a Good phrase
+        neutral_reason = [syllable("好", "insufficient_evidence", 3, ["unstable_pitch_track"]), syllable("嗎", "insufficient_evidence", 5, ["too_few_voiced_frames"])]
+        self.assertNotIn("char", ta.phrase_feedback(neutral_reason)[0])                                # the matching reason is the neutral syllable's
+
+    def test_tone_advice_still_names_each_flagged_character(self):
+        phrase = [syllable("朋", "practice", 2), syllable("友", "practice", 3)]
+        self.assertEqual(ta.phrase_feedback(phrase), [{"type": "tone", "char": "朋", "tone": 2}, {"type": "tone", "char": "友", "tone": 3}])
+
+    def test_the_page_marks_the_character_and_names_it_in_the_advice(self):
+        source = (ROOT / "main.py").read_text(encoding="utf-8")
+        self.assertIn('const marked = parts.length > 1 && parts.map(part => part.character).join("") === labelText;', source)
+        self.assertIn('part.status === "practice" ? "char-practice"', source)
+        self.assertIn(".char-practice { text-decoration: underline wavy", source)
+        self.assertIn(".char-doubt { text-decoration: underline dotted", source)
+        self.assertIn('(item.char ? `', source)
 
 
 class StatusIconTests(unittest.TestCase):

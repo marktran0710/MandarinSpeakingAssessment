@@ -1374,6 +1374,61 @@ class LeftContextTests(unittest.TestCase):
         self.assertNotEqual(low_end["status"], "likely_correct")
 
 
+class HalfThirdAtTheEndOfAWordTests(unittest.TestCase):
+    """tone.half_t3_end_as_okay: where a half-third is not accepted as correct, saying it anyway is Okay, not "Needs practice"."""
+
+    def config(self, enabled=True):
+        import copy
+        config = copy.deepcopy(CONFIG)
+        if enabled:
+            config["tone"]["half_t3_end_as_okay"] = True
+        return config
+
+    @staticmethod
+    def verdict(text, index, anchors, config):
+        times = np.linspace(0, 0.3, 60)
+        st = np.interp(times, np.linspace(0, 0.3, len(anchors)), anchors)
+        ctx = capt_core.expected_tone_contexts([text])[index]
+        extraction, clean = make_track(st)
+        syllable = {"char": text[index], "start": 0.0, "end": 0.3, "phones": [], "nucleus": (0.0, 0.3)}
+        return tp.verify_syllable(syllable, ctx, extraction, clean, config, SPEAKER, True)
+
+    HALF = [1.0, -3.0, -3.5]                      # falls to low and stays
+    FULL = [1.0, -3.0, -3.0, 2.0]                 # falls, then rises
+    FLAT = [0.0, 0.0, 0.0]                        # not a tone 3 at all
+    RISING = [-3.0, 0.0, 3.0]
+
+    def test_full_okay_and_needs_practice_at_the_end_of_a_word(self):
+        config = self.config()
+        self.assertEqual(self.verdict("你好", 1, self.FULL, config)["status"], "likely_correct")             # said in full
+        half = self.verdict("你好", 1, self.HALF, config)
+        self.assertEqual(half["status"], "insufficient_evidence")                                            # a low fall: Okay ...
+        self.assertIn("half_third_only", half["reasons"])                                                    # ... with the reason
+        self.assertEqual(self.verdict("你好", 1, self.FLAT, config)["status"], "practice")                   # a wrong tone is still wrong
+        self.assertEqual(self.verdict("你好", 1, self.RISING, config)["status"], "practice")
+
+    def test_today_without_the_setting_the_same_half_third_is_needs_practice(self):
+        self.assertEqual(self.verdict("你好", 1, self.HALF, self.config(False))["status"], "practice")
+
+    def test_before_another_tone_a_half_third_is_still_correct_and_a_single_t3_word_must_be_full(self):
+        config = self.config()
+        self.assertEqual(self.verdict("好人", 0, self.HALF, config)["status"], "likely_correct")              # half-third before a tone 2: standard
+        single = self.verdict("好", 0, self.HALF, config)                                                    # a one-syllable word: the end of the word
+        self.assertEqual(single["status"], "insufficient_evidence")
+        self.assertEqual(self.verdict("好", 0, self.FULL, config)["status"], "likely_correct")
+
+    def test_other_tones_are_untouched(self):
+        for char, anchors in (("媽", self.FLAT), ("罵", self.RISING), ("麻", self.FLAT)):
+            self.assertEqual(self.verdict(char, 0, anchors, self.config())["status"],
+                             self.verdict(char, 0, anchors, self.config(False))["status"], char)
+
+    def test_the_advice_for_this_case_is_say_it_in_full(self):
+        import tone_assessment as ta
+        group = [{"status": "insufficient_evidence", "reasons": ["half_third_only"], "character": "好",
+                  "expected_surface_tone": 3, "lexical_tone": 3}]
+        self.assertEqual(ta.phrase_feedback(group), [{"type": "retry", "code": "full_third"}])
+
+
 class DurationRuleAndBoundariesTests(unittest.TestCase):
     """A verdict-only rule must change verdicts, never where the boundary search puts the syllable borders."""
 

@@ -1,0 +1,4 @@
+# Single words: a tone 3 at the end of the word must be said in full to be Good. A low fall with no rise is Okay (with the
+# advice to say it in full), not 'Needs practice'. Sentences are unaffected: they accept the half-third as Good.
+tone:
+  half_t3_end_as_okay: true

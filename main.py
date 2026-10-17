@@ -882,7 +882,9 @@ async def read_index():
             .word-card.likely-correct { border-color: transparent; background: #eaf6ee; }
             .word-card.practice { border-color: transparent; background: #fae9e9; }
             .word-card.uncertain { border-color: transparent; background: #fbf3e8; }
-            .word-card-label { align-self: center; font-size: 17px; font-weight: 650; }
+            .word-card-label { align-self: center; font-size: 17px; font-weight: 650; padding-bottom: 6px; }       /* room for the line under a marked character */
+            .char-practice { text-decoration: underline wavy #b42318; text-decoration-thickness: 1.5px; text-underline-offset: 5px; }
+            .char-doubt { text-decoration: underline dotted #9a6700; text-decoration-thickness: 2px; text-underline-offset: 5px; }
             .word-card-tone-sequence { color: #607386; font-size: 12px; letter-spacing: 0.02em; text-align: center; }
             .word-card-status { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
             .word-card-advice { display: block; margin-top: 4px; color: #4a5568; font-size: 12.5px; line-height: 1.45; text-align: left; }
@@ -1390,6 +1392,7 @@ async def read_index():
                     alignmentFailed: "We couldn't analyse this recording because of a temporary problem on our side, not because of your voice. Please try again.",
                     busyWait: "This usually takes a few seconds.",
                     notHeard: "Not heard", retryNotHeard: "We couldn’t hear this part. Speak a little louder, read all of it, and try again.",
+                    retryFullThird: "Say this third tone in full: let your voice dip low, then rise a little at the end.",
                     expectedSequence: "Expected", detectedSequence: "Detected", sequenceUnavailable: "Not enough tone evidence",
                     noProbabilityModel: "Tone labels use experimental rules; this system has no trained or calibrated tone probabilities.",
                     pronunciationFeedback: "Tone feedback", phraseScore: "Phrase score {score}", phraseScoreUnavailable: "Phrase score unavailable", viewJsonOutput: "View JSON response", scriptProvidedOnly: "Scored against the script shown above, so please read it exactly as written.",
@@ -1515,6 +1518,7 @@ async def read_index():
                     alignmentFailed: "這次沒能分析這段錄音，是系統暫時出了問題，不是你的聲音有問題。請再試一次。",
                     busyWait: "通常只需要幾秒鐘。",
                     notHeard: "沒聽到", retryNotHeard: "這一段沒有聽到聲音。請稍微大聲一點、完整唸出來，再試一次。",
+                    retryFullThird: "請把這個三聲讀完整：聲音先降到低處，結尾再微微上揚。",
                     expectedSequence: "預期", detectedSequence: "辨識", sequenceUnavailable: "聲調證據不足",
                     noProbabilityModel: "聲調結果使用實驗性規則；目前沒有經訓練或校準的聲調機率模型。",
                     pronunciationFeedback: "聲調回饋", phraseScore: "詞組分數 {score}", phraseScoreUnavailable: "無詞組分數", viewJsonOutput: "\u67e5\u770b JSON \u8f38\u51fa", scriptProvidedOnly: "依上方顯示的文字評分，請照著文字唸。",
@@ -1639,6 +1643,7 @@ async def read_index():
                     alignmentFailed: "Lần này hệ thống chưa phân tích được bản ghi do sự cố tạm thời phía chúng tôi, không phải do giọng của bạn. Hãy thử lại.",
                     busyWait: "Thường chỉ mất vài giây.",
                     notHeard: "Chưa nghe rõ", retryNotHeard: "Chưa nghe rõ đoạn này. Hãy nói to hơn một chút, đọc đủ cả đoạn rồi thử lại.",
+                    retryFullThird: "Hãy đọc trọn thanh 3: hạ giọng xuống thấp rồi nâng nhẹ lên ở cuối.",
                     expectedSequence: "Kỳ vọng", detectedSequence: "Nhận diện", sequenceUnavailable: "Chưa đủ bằng chứng thanh điệu",
                     noProbabilityModel: "Kết quả dùng quy tắc thử nghiệm; hệ thống chưa có mô hình xác suất thanh điệu đã huấn luyện và hiệu chuẩn.",
                     pronunciationFeedback: "Phản hồi thanh điệu", phraseScore: "Điểm cụm từ {score}", phraseScoreUnavailable: "Chưa có điểm cụm từ", viewJsonOutput: "Xem JSON ph\u1ea3n h\u1ed3i", scriptProvidedOnly: "Chấm theo đoạn văn bản hiển thị ở trên, nên hãy đọc đúng như chữ đã cho.",
@@ -1828,6 +1833,7 @@ async def read_index():
                     busyWait: "Biasanya hanya butuh beberapa detik.",
                     notHeard: "Tidak terdengar",
                     retryNotHeard: "Bagian ini tidak terdengar. Bicaralah sedikit lebih keras, bacalah seluruhnya, lalu coba lagi.",
+                    retryFullThird: "Ucapkan nada ketiga ini secara penuh: turunkan suara ke bawah, lalu naikkan sedikit di akhir.",
                     expectedSequence: "Diharapkan",
                     detectedSequence: "Terdeteksi",
                     sequenceUnavailable: "Bukti nada tidak cukup",
@@ -2061,6 +2067,7 @@ async def read_index():
                     busyWait: "इसमें आम तौर पर कुछ ही सेकंड लगते हैं।",
                     notHeard: "सुनाई नहीं दिया",
                     retryNotHeard: "यह हिस्सा सुनाई नहीं दिया। थोड़ा ज़ोर से बोलें, पूरा पढ़ें और फिर कोशिश करें।",
+                    retryFullThird: "इस तीसरे टोन को पूरा बोलें: आवाज़ नीचे गिराएँ, फिर अंत में थोड़ा ऊपर उठाएँ।",
                     expectedSequence: "अपेक्षित",
                     detectedSequence: "पहचाना गया",
                     sequenceUnavailable: "टोन के पर्याप्त प्रमाण नहीं",
@@ -3416,9 +3423,17 @@ async def read_index():
                 const qualityKey = data.audio_quality && data.audio_quality.passed === false ? qualityKeys[(data.audio_quality.reasons || [])[0]] : null;
                 // The aligner itself failed (not the learner's recording): say so, instead of leaving "Okay" everywhere.
                 const systemFailure = data.tone_verification?.alignment?.error_kind === "system";
-                const retryKeys = { slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard" };
+                const retryKeys = { slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard", full_third: "retryFullThird" };
                 const groups = phrases.map((phrase, index) => {
-                    const label = escapeHtml(phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`);
+                    const labelText = phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`;
+                    // In a phrase of several characters, mark the one that needs work (red wavy line) or was unclear (amber dotted line).
+                    const parts = Array.isArray(phrase.syllable_diagnostics) ? phrase.syllable_diagnostics : [];
+                    const marked = parts.length > 1 && parts.map(part => part.character).join("") === labelText;
+                    const label = marked ? parts.map(part => {
+                        const mark = part.status === "practice" ? "char-practice"
+                            : part.status === "insufficient_evidence" && part.expected_surface_tone !== 5 ? "char-doubt" : "";
+                        return mark ? `<span class="${mark}">${escapeHtml(part.character)}</span>` : escapeHtml(part.character);
+                    }).join("") : escapeHtml(labelText);
                     const expected = sequenceText(phrase.expected_tone_sequence);
                     // Good = tick, Needs practice = "again" arrow, Not heard = dash, Okay = a half-filled circle ("partly there"),
                     // drawn with CSS: a "?" read as "something is wrong with the system", and it needs no font glyph.
@@ -3426,7 +3441,8 @@ async def read_index():
                     const iconClass = icon ? "status-icon" : "status-icon half";
                     const advice = (Array.isArray(phrase.feedback_items) ? phrase.feedback_items : []).map(item =>
                         item.type === "tone" && item.tone >= 1 && item.tone <= 4 ? t(`adviceTone${item.tone}`, { char: item.char })
-                        : item.type === "retry" && retryKeys[item.code] ? t(retryKeys[item.code]) : "").filter(Boolean);
+                        : item.type === "retry" && retryKeys[item.code]
+                            ? (item.char ? `\u201c${item.char}\u201d \u2013 ` : "") + t(retryKeys[item.code]) : "").filter(Boolean);
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="phrase-chart-${index}" onclick="openPhraseChart(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>

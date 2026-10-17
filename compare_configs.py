@@ -294,6 +294,10 @@ def main():
             configs += [(f"{Path(file).stem}:{section}", {section: values}) for section, values in trial.items()]
     out = Path(args.out or ROOT / "outputs" / "config_trials" / datetime.now().strftime("%Y%m%d_%H%M%S"))
     out.mkdir(parents=True, exist_ok=True)
+    # If a step ever stalls (a hung subprocess, a lock), the stack of every thread is written here every 4 minutes.
+    import faulthandler
+    stall_log = open(out / "stalls.log", "w")
+    faulthandler.dump_traceback_later(240, repeat=True, file=stall_log)
     cache_root = Path(args.cache_root)
     runners = {"word": run_word, "sentence": run_sentence, "synthetic": run_synthetic}
 

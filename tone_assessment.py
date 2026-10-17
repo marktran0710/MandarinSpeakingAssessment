@@ -251,6 +251,7 @@ def _tone_or_zero(tone):
 
 # Why a word could not be judged -> what the learner can do about it. First match wins; codes only, the UI words them.
 _RETRY_BY_REASON = (
+    ("full_third", {"half_third_only"}),
     ("read_exactly", {"bad_alignment"}),
     ("slower", {"syllable_too_short", "short_analysis_window", "too_few_voiced_frames"}),
     ("steady", {"unstable_pitch_track", "octave_jump_in_segment", "edge_pitch_step", "low_acoustic_quality"}),
@@ -268,6 +269,17 @@ def alignment_error_kind(error):
     if not error:
         return None
     return "system" if str(error).startswith(_SYSTEM_ALIGNMENT_ERRORS) else "reading"
+
+
+def _doubtful_character(group, names=None):
+    """In a phrase of several characters, the first character that was Okay (for the given reasons): the advice names it."""
+    if len(group) < 2:
+        return None
+    for s in group:
+        if (s["status"] == "insufficient_evidence" and s["expected_surface_tone"] != 5
+                and (names is None or set(s["reasons"]) & names)):
+            return s["character"]
+    return None
 
 
 def phrase_feedback(group):
@@ -289,8 +301,10 @@ def phrase_feedback(group):
             return []
         for code, names in _RETRY_BY_REASON:
             if reasons & names:
-                return [{"type": "retry", "code": code}]
-        return [{"type": "retry", "code": "again"}]
+                char = _doubtful_character(group, names)
+                return [{"type": "retry", "code": code, **({"char": char} if char else {})}]
+        char = _doubtful_character(group)
+        return [{"type": "retry", "code": "again", **({"char": char} if char else {})}]
     return []
 
 

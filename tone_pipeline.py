@@ -1179,6 +1179,14 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     softened = bool(status == "practice" and config["tone"].get("soften_reduplication") and context.get("is_reduplicated"))
     if softened:
         status = "insufficient_evidence"
+    # A tone 3 where a half-third is not accepted as correct (the end of a single word) must be said in full. A low fall
+    # with no rise is not a wrong tone though: it is Okay, with the advice to say it in full, never "Needs practice".
+    half_only = False
+    if (status == "practice" and expected == 3 and config["tone"].get("half_t3_end_as_okay")
+            and not allows_half_third(context, config)):
+        half_only = tone_scores(score_feats, True, config)["t3_half"] >= config["confidence"]["likely_correct_match"]
+        if half_only:
+            status = "insufficient_evidence"
     # A window this short (a reduced function word) cannot support an accusation; 0 = off, as for single words.
     short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < config["confidence"].get("practice_min_window_ms", 0)
     if short_window:
@@ -1201,6 +1209,8 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         result["reasons"].append("edge_pitch_step")
     elif softened:
         result["reasons"].append("reduplicated_second_syllable")
+    elif half_only:
+        result["reasons"].append("half_third_only")
     elif short_window:
         result["reasons"].append("short_analysis_window")
     elif status == "insufficient_evidence":
