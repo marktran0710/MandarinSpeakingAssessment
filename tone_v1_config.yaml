@@ -221,6 +221,7 @@ feedback:
 # single-word practice never sees them.
 sentence:
   confidence:
-    practice_min_window_ms: 100   # a reduced function word or a fast T2 on <100 ms of voicing cannot support an accusation
+    practice_min_window_ms: 130   # a reduced function word (不, 個, 一, 得) or a fast T2 on <130 ms of voicing cannot support an accusation;
+                                  # it gets "say it a bit more slowly" instead (was 100; raised after the 100 teacher sentences: false alarms 15 -> 8)
   tone:
     clause_final_half_t3: true    # teachers read a clause-final T3 as a low fall; the final rise is not required

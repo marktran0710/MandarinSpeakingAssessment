@@ -202,7 +202,7 @@ class PayloadTests(unittest.TestCase):
 class SentenceProfileTests(unittest.TestCase):
     def test_words_keep_the_plain_config_and_sentences_get_the_window_rule(self):
         self.assertEqual(ta.get_config()["confidence"]["practice_min_window_ms"], 0)
-        self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 100)
+        self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 130)
 
     def test_the_sentence_profile_changes_nothing_else_and_leaves_the_base_config_alone(self):
         base, sentence = ta.get_config(), ta.get_config("sentence")

@@ -28,7 +28,7 @@ class TrialConfigTests(unittest.TestCase):
             self.assertEqual(ta.get_config()["tone"]["t4_min_fall_st"], 2.5)
             self.assertEqual(ta.get_config("sentence")["tone"]["t4_min_fall_st"], 2.5)
             self.assertEqual(ta.get_config("sentence")["confidence"]["likely_correct_match"], 0.6)
-            self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 100)   # sentence value kept
+            self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 130)   # sentence value kept
         self.assertEqual(ta.get_config()["tone"]["t4_min_fall_st"], 3.0)
 
     def test_the_shipped_trial_files_load(self):
