@@ -69,6 +69,29 @@ class GeneratedDictionaryTests(unittest.TestCase):
         self.assertIn("你", self.entries)
         self.assertGreater(len(self.entries), 15000)
 
+    def test_every_common_character_can_be_aligned(self):
+        """A character missing from the dictionary aligns as <unk> and the whole sentence is refused: 70% of the 5,401 most common
+        characters used to be missing, so most sentences a learner typed (or any text outside the book) could not be assessed."""
+        common = bd.big5_characters()
+        self.assertEqual(len(common), 5401)
+        self.assertEqual(len(set(common)), 5401)
+        self.assertEqual([c for c in common if c not in self.entries], [])
+        for char in "理果然哲殷譯戲境丈捉激":                                   # characters real learner sentences were refused for
+            self.assertIn(char, self.entries)
+
+    def test_every_added_entry_has_phones_with_exactly_one_tone_bearing_phone(self):
+        for char in bd.big5_characters():
+            phones = self.entries[char][0][1].split()
+            self.assertTrue(phones, char)
+            bearing = [p for p in phones if any(c in bd.TONE_LETTERS for c in p)]
+            self.assertLessEqual(len(bearing), 1, (char, phones))
+
+    def test_a_syllable_no_character_has_is_composed_from_an_initial_and_a_final(self):
+        entries = {"人": [(0.99, "ɻ ə˧˥ n")], "日": [(0.99, "ɻ ɻ˥˩")], "山": [(0.99, "ʂ a˥ n")], "班": [(0.99, "p a˥ n")],
+                   "媽": [(0.99, "m a˥")], "麻": [(0.99, "m a˧˥")], "馬": [(0.99, "m a˨˩˦")], "罵": [(0.99, "m a˥˩")]}
+        letters = bd.tone_letter_map(entries)
+        self.assertEqual(bd.compose_pronunciation("然", entries, letters), "ɻ a˧˥ n")          # ran2 = r (人) + an (山 / 班)
+
 
 if __name__ == "__main__":
     unittest.main()

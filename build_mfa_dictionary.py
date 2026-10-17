@@ -8,6 +8,8 @@ a missing one aligns as <unk> and the whole utterance becomes `insufficient_evid
     python build_mfa_dictionary.py            # rebuilds mfa/mandarin_taiwan_catalog.dict from the app's catalog
     python build_mfa_dictionary.py --xlsx question_bank.xlsx   # ... and every word of the question-bank workbook
     python build_mfa_dictionary.py 巧克力 咖啡  # also covers extra characters
+    python build_mfa_dictionary.py --big5      # ... and the 5,401 most common traditional characters (Big5 level 1), so any
+                                              #     ordinary sentence the learner types can be aligned (custom practice)
 
 Pronunciations are borrowed, not invented: for a missing character with pinyin (syllable, tone) we take the
 phones of an existing single-character entry with the same syllable and swap the tone letters for the target
@@ -91,6 +93,34 @@ def pronunciation_for(char, entries, by_syllable, letters):
     return collections.Counter(pool).most_common(1)[0][0] if pool else None
 
 
+def compose_pronunciation(char, entries, letters):
+    """Last resort for a syllable no single character has: the initial's phone from a character with the same initial, the final's
+    phones from a character with the same final, tone letters swapped for the target tone (what MANUAL did by hand for 桌)."""
+    syllable, tone = syllable_and_tone(char)
+    initial = lazy_pinyin(char, style=Style.INITIALS, strict=False)[0]
+    final = lazy_pinyin(char, style=Style.FINALS, strict=False)[0]
+    target = letters.get(tone)
+    if target is None or not final:
+        return None
+    initials, finals = collections.Counter(), collections.Counter()
+    for other, pronunciations in entries.items():
+        if not HAN.match(other):
+            continue
+        other_initial = lazy_pinyin(other, style=Style.INITIALS, strict=False)[0]
+        other_final = lazy_pinyin(other, style=Style.FINALS, strict=False)[0]
+        phones = max(pronunciations)[1].split()
+        if len(phones) < 2:
+            continue
+        if initial and other_initial == initial:
+            initials[phones[0]] += 1
+        if other_final == final and other_initial:
+            finals[" ".join(phones[1:])] += 1
+    if not finals or (initial and not initials):
+        return None
+    head = f"{initials.most_common(1)[0][0]} " if initial else ""         # a syllable with no initial is just its final
+    return swap_tone(head + finals.most_common(1)[0][0], target)
+
+
 def catalog_characters():
     """Every Han character the app can ask to align (lesson samples, Chapter 5 items and their variants)."""
     import capt_core
@@ -130,6 +160,22 @@ def workbook_characters(xlsx_path):
     return chars
 
 
+def big5_characters():
+    """The 5,401 most common traditional characters: Big5 level 1 (lead bytes A4-C6), decoded, no data file needed."""
+    chars = []
+    for lead in range(0xA4, 0xC7):
+        for trail in [*range(0x40, 0x7F), *range(0xA1, 0xFF)]:
+            if lead == 0xC6 and trail > 0x7E:
+                break
+            try:
+                char = bytes([lead, trail]).decode("big5")
+            except UnicodeDecodeError:
+                continue
+            if HAN.match(char):
+                chars.append(char)
+    return chars
+
+
 def build(extra_chars=(), xlsx_path=None):
     entries = read_dictionary(BASE_DICT)
     letters = tone_letter_map(entries)
@@ -143,7 +189,7 @@ def build(extra_chars=(), xlsx_path=None):
     missing = sorted(c for c in wanted if HAN.match(c) and c not in entries)
     added, unresolved = [], []
     for char in missing:
-        phones = MANUAL.get(char) or pronunciation_for(char, entries, by_syllable, letters)
+        phones = MANUAL.get(char) or pronunciation_for(char, entries, by_syllable, letters) or compose_pronunciation(char, entries, letters)
         (added if phones else unresolved).append((char, phones))
     lines = BASE_DICT.read_text(encoding="utf-8").rstrip("\n").split("\n")
     lines += ["\t".join([char, *DEFAULT_COLUMNS, phones]) for char, phones in added]
@@ -155,6 +201,8 @@ def build(extra_chars=(), xlsx_path=None):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     arguments = sys.argv[1:]
+    if "--big5" in arguments:
+        arguments = [a for a in arguments if a != "--big5"] + ["".join(big5_characters())]
     workbook = None
     if "--xlsx" in arguments:
         at = arguments.index("--xlsx")
