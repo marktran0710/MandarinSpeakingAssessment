@@ -1128,7 +1128,7 @@ async def read_index():
             <ol class="cal-steps">
                 <li class="cal-step">
                     <div class="cal-head"><span class="cal-num" aria-hidden="true">1</span><span data-i18n="calStep1">Read these five sounds aloud, twice</span></div>
-                    <p class="cal-hint" data-i18n="calStep1Hint">Speak calmly and naturally, like talking to a friend.</p>
+                    <p class="cal-hint" data-i18n="calStep1Hint">Use your own comfortable, normal voice. No need to strain or to match the sample's pitch.</p>
                     <button type="button" id="calListenAllBtn" class="cal-listen-all" onclick="playCalibrationSound(0)" data-i18n="calListenAll">&#9654; Listen to the five sounds</button>
                     <div id="voiceCalibrationScript">
                         <div class="cal-tile"><button type="button" class="cal-play" data-tone="1" onclick="playCalibrationSound(1)" aria-label="Listen" data-i18n-aria-label="calListen">&#9654;</button><span class="han" lang="zh-Hant">媽</span><span class="py">mā</span><span class="tone" data-i18n="calToneHigh">high</span></div>
@@ -1380,7 +1380,7 @@ async def read_index():
                     calibrationRecording: "Recording… read the five sounds twice.", calibrationProcessing: "Checking your voice…", calibrationSaved: "All set! Your tones will now be judged against your own voice.",
                     calibrationTooShort: "That was too short. Keep reading until the button lets you stop.", calibrationFailed: "We couldn't use that recording. Read all five sounds twice, clearly, then try again.",
                     calStep1: "Read these five sounds aloud, twice",
-                    calStep1Hint: "Listen first (\u25b6). Then say each sound slowly and stretch it a little (m\u0101\u2011\u0101\u2011\u0101), with a short pause between sounds. Speak calmly, like talking to a friend. Tone 4 (m\u00e0) stays short and sharp.",
+                    calStep1Hint: "Listen first (\u25b6). Then say each sound slowly and stretch it a little (m\u0101\u2011\u0101\u2011\u0101), with a short pause between sounds. Use your own comfortable, normal voice: no need to match the sample\u2019s pitch or to push or strain. A relaxed voice gives the most natural tones. Tone 4 (m\u00e0) stays short and sharp.",
                     calStep2: "Press the button and start reading",
                     calToneHigh: "high",
                     calToneRising: "rising",
@@ -1518,7 +1518,7 @@ async def read_index():
                     calibrationRecording: "錄音中……請把五個音讀兩遍。", calibrationProcessing: "正在檢查你的聲音……", calibrationSaved: "完成！之後的聲調會依你自己的聲音來判斷。",
                     calibrationTooShort: "錄音太短了。請繼續朗讀，等按鈕可以按時再停止。", calibrationFailed: "這段錄音無法使用。請清楚地把五個音讀兩遍，再試一次。",
                     calStep1: "請把這五個音大聲讀兩遍",
-                    calStep1Hint: "先聽一聽（\u25b6）。再把每個音唸慢一點、拉長一點（mā\u2011ā\u2011ā），音與音之間稍微停一下。像和朋友聊天一樣自然地唸。第四聲（mà）要保持短而有力。",
+                    calStep1Hint: "先聽一聽（\u25b6）。再把每個音唸慢一點、拉長一點（mā\u2011ā\u2011ā），音與音之間稍微停一下。用自己最舒服的平常聲音就好：不用模仿示範音的高低，也不必用力或硬撐，放鬆的聲音聲調最自然。第四聲（mà）要保持短而有力。",
                     calStep2: "按下按鈕，開始朗讀",
                     calToneHigh: "高平",
                     calToneRising: "上升",
@@ -1655,7 +1655,7 @@ async def read_index():
                     calibrationRecording: "Đang ghi… hãy đọc năm âm hai lần.", calibrationProcessing: "Đang kiểm tra giọng của bạn…", calibrationSaved: "Xong rồi! Từ giờ thanh điệu sẽ được chấm theo chính giọng của bạn.",
                     calibrationTooShort: "Bản ghi quá ngắn. Hãy đọc tiếp cho đến khi bấm được nút dừng.", calibrationFailed: "Không dùng được bản ghi này. Hãy đọc rõ cả năm âm, hai lần, rồi thử lại.",
                     calStep1: "Đọc to năm âm này, hai lần",
-                    calStep1Hint: "Hãy nghe trước (\u25b6). Sau đó đọc từng âm thật chậm và kéo dài một chút (m\u0101\u2011\u0101\u2011\u0101), nghỉ ngắn giữa các âm. Đọc nhẹ nhàng như đang nói chuyện với bạn bè. Riêng thanh 4 (m\u00e0) vẫn đọc ngắn và dứt khoát.",
+                    calStep1Hint: "Hãy nghe trước (\u25b6). Sau đó đọc từng âm thật chậm và kéo dài một chút (m\u0101\u2011\u0101\u2011\u0101), nghỉ ngắn giữa các âm. Cứ dùng giọng bình thường, thoải mái của bạn: không cần bắt chước độ cao của âm mẫu, cũng không cần gồng hay ép giọng. Giọng thả lỏng cho thanh điệu tự nhiên nhất. Riêng thanh 4 (m\u00e0) vẫn đọc ngắn và dứt khoát.",
                     calStep2: "Bấm nút và bắt đầu đọc",
                     calToneHigh: "cao",
                     calToneRising: "lên",
@@ -1837,7 +1837,7 @@ async def read_index():
                     calibrationTooShort: "Rekaman terlalu singkat. Teruslah membaca sampai tombol berhenti bisa ditekan.",
                     calibrationFailed: "Rekaman ini tidak bisa dipakai. Bacalah kelima bunyi dengan jelas, dua kali, lalu coba lagi.",
                     calStep1: "Bacalah lima bunyi ini dengan lantang, dua kali",
-                    calStep1Hint: "Dengarkan dulu (\u25b6). Lalu ucapkan setiap bunyi dengan pelan dan panjangkan sedikit (m\u0101\u2011\u0101\u2011\u0101), dengan jeda singkat antarbunyi. Bacalah dengan tenang, seperti mengobrol dengan teman. Nada 4 (m\u00e0) tetap pendek dan tegas.",
+                    calStep1Hint: "Dengarkan dulu (\u25b6). Lalu ucapkan setiap bunyi dengan pelan dan panjangkan sedikit (m\u0101\u2011\u0101\u2011\u0101), dengan jeda singkat antarbunyi. Gunakan suara normal Anda yang paling nyaman: tidak perlu meniru tinggi nada contoh dan tidak perlu memaksa atau menegangkan suara. Suara yang santai menghasilkan nada paling alami. Nada 4 (m\u00e0) tetap pendek dan tegas.",
                     calStep2: "Tekan tombol dan mulai membaca",
                     calToneHigh: "tinggi",
                     calToneRising: "naik",
@@ -2083,7 +2083,7 @@ async def read_index():
                     calibrationTooShort: "रिकॉर्डिंग बहुत छोटी थी। तब तक पढ़ते रहें जब तक बटन दबाने लायक न हो जाए।",
                     calibrationFailed: "यह रिकॉर्डिंग इस्तेमाल नहीं हो सकी। पाँचों ध्वनियाँ साफ़ दो बार पढ़कर फिर कोशिश करें।",
                     calStep1: "इन पाँच ध्वनियों को ज़ोर से, दो बार पढ़ें",
-                    calStep1Hint: "पहले सुनें (\u25b6)। फिर हर ध्वनि को धीरे बोलें और थोड़ा खींचकर बोलें (m\u0101\u2011\u0101\u2011\u0101), ध्वनियों के बीच छोटा विराम लें। दोस्त से बात करने की तरह शांत होकर पढ़ें। स्वर 4 (m\u00e0) छोटा और तीखा ही रहता है।",
+                    calStep1Hint: "पहले सुनें (\u25b6)। फिर हर ध्वनि को धीरे बोलें और थोड़ा खींचकर बोलें (m\u0101\u2011\u0101\u2011\u0101), ध्वनियों के बीच छोटा विराम लें। अपनी सामान्य, आरामदायक आवाज़ में बोलें: नमूने की ऊँचाई की नकल करने या आवाज़ पर ज़ोर लगाने की ज़रूरत नहीं है। सहज आवाज़ में स्वर सबसे स्वाभाविक निकलते हैं। स्वर 4 (m\u00e0) छोटा और तीखा ही रहता है।",
                     calStep2: "बटन दबाएँ और पढ़ना शुरू करें",
                     calToneHigh: "ऊँचा",
                     calToneRising: "चढ़ता",

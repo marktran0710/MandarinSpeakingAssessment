@@ -77,6 +77,15 @@ class PageTests(unittest.TestCase):
             chunk = re.search(r'\n {16}(?:%s|"%s"): \{.*?calStep1Hint: "([^"]*)"' % (code, code), self.source, re.S).group(1)
             self.assertTrue(chr(0x2011) in chunk or '\\u2011' in chunk, code)    # the stretched-sound example 'ma-a-a' with non-breaking hyphens (the source holds the escape text)
 
+    def test_the_step_asks_for_a_comfortable_normal_voice_not_a_strained_copy_of_the_sample_in_every_language(self):
+        comfortable = {"en": ("comfortable", "strain"), "zh-TW": ("舒服", "硬撐"), "vi": ("thoải mái", "gồng"),
+                       "id": ("nyaman", "memaksa"), "hi": ("आरामदायक", "ज़ोर")}
+        for code, words in comfortable.items():
+            chunk = re.search(r'\n {16}(?:%s|"%s"): \{.*?calStep1Hint: "([^"]*)"' % (code, code), self.source, re.S).group(1)
+            for word in words:
+                self.assertIn(word, chunk, (code, word))
+        self.assertIn("comfortable, normal voice", self.source[self.source.index('class="cal-hint"'):][:200])    # the page's own fallback text
+
     def test_a_rushed_recording_gets_a_tip_in_the_dialog_and_in_the_results(self):
         self.assertIn('calibrationPaceHint ? "calibrationSavedSlower" : "calibrationSaved"', self.source)
         self.assertIn('data.pace?.too_fast && !systemFailure', self.source)
