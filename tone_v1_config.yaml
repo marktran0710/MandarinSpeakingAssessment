@@ -72,6 +72,12 @@ audio_quality:
 sanity:
   ac_cc_tolerance_st: 1.0
   octave_jump_st: 7.0
+  # A jump that big between adjacent frames is a tracking error (an octave slip, mostly on a creaky syllable tail). The syllable is
+  # gated as octave_jump_in_segment unless the voiced fragment BEHIND the jump sits at an end of the syllable and lasts at most this
+  # many ms: then the fragment is dropped and the rest is judged. 0 = off.
+  jump_fragment_trim_ms: 40
+  # Measured 2026-10-17 (trials/jump_trim_40.yaml): words Good 93.7 -> 95.4%, teacher sentences 93.0 -> 94.1%, learners +18 Good of 888,
+  # the 520-clip stress test identical. A syllable (or recording) that needed a cut can be Good but never Needs practice.
   boundary_hit_rate: 0.05
   min_agreement: 0.80         # what "AC ~ CC" means as a ratio of co-voiced frames
   boundary_margin: 0.02       # a frame within 2% of floor/ceiling counts as touching it
@@ -240,6 +246,41 @@ feedback:
 
 # Sentence practice (book / custom) only. tone_assessment.get_config("sentence") layers these over the settings above;
 # single-word practice never sees them.
+# Difficulty levels: the same pipeline asking for a smaller contour movement. A level is layered on top of the config (and of the
+# `sentence:` profile in sentence practice); the request may name one (form field `level`), otherwise the learner's group decides.
+#   easy: every contour-size demand of tones 2, 3 and 4 is 0.8 of the standard one; tone 1 and the position limits are unchanged.
+# Why: learners flatten tones 2 and 4 (on 4 learners of Mandarin 121 tone-4 and 68 tone-2 Needs-practice syllables look like tone 1) and
+# their contours are smaller than a teacher's (median tone-4 fall 3.4 st vs 4.1, tone-3 dip 3.1 vs 5.7). Measured 2026-10-17
+# (trials/easy_80.yaml, 0.65 = trials/easy_65.yaml): 4 learners (LATIC, 1838 syllables) Good 64.3% -> 69.0%, Needs practice 14.3% -> 11.9%;
+# the price is on the other side: 520 wrong-tone clips flagged 48.0% -> 46.1%, wrong tones shown Good 20.0% -> 21.3%, and native tones
+# said as the wrong tone accepted +1.7 points.
+levels:
+  default_by_group:
+    foreigner: easy
+    taiwanese: standard
+  easy:
+    tone:
+      t2_min_rise_st: 2.0
+      t3_min_fall_st: 1.6
+      t3_min_full_rise_st: 1.6
+      t4_min_fall_st: 2.4
+    sentence:
+      tone:
+        t4_by_duration:
+          short_ms: 180
+          medium_ms: 300
+          min_fall_short_st: 1.2
+          min_fall_medium_st: 1.6
+          min_fall_long_st: 2.0
+          require_end_below_start: true
+        t4_before_t4:
+          min_fall_st: 1.6
+        left_context:
+          - when: {tone: 2, previous: [1, 2]}
+            set: {t2_min_rise_st: 1.6, t2_max_min_position: 0.90}
+          - when: {tone: 2, previous_end_min_st: 3.0}
+            set: {t2_min_rise_st: 1.6, t2_max_min_position: 0.90}
+
 sentence:
   confidence:
     practice_min_window_ms: 130   # a reduced function word (不, 個, 一, 得) or a fast T2 on <130 ms of voicing cannot support an accusation;

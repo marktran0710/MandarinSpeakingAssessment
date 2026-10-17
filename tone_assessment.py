@@ -18,20 +18,63 @@ import tone_pipeline as tp
 MODE = "tone_pipeline_v1"
 _CONFIG = None
 _SENTENCE_CONFIG = None
+_LEVEL_CONFIGS = {}
+STANDARD = "standard"
 
 
-def get_config(profile=None):
-    """The frozen configuration. profile="sentence" layers the `sentence` overrides on top (book / custom practice)."""
+def _layer(*layers):
+    """Overrides for tp.load_config: section by section, later layers win key by key."""
+    merged = {}
+    for layer in layers:
+        for section, values in (layer or {}).items():
+            merged.setdefault(section, {}).update(values)
+    return merged
+
+
+def get_config(profile=None, level=None):
+    """The frozen configuration. profile="sentence" layers the `sentence` overrides on top (book / custom practice).
+
+    `level` ("easy", ...) layers the matching `levels:` section of the config on top of that: the same pipeline asking for a
+    smaller contour movement (see `levels` in tone_v1_config.yaml). None / "standard" is the config as it is."""
     global _CONFIG, _SENTENCE_CONFIG
     if _CONFIG is None:
         _CONFIG = tp.load_config()
-    if profile is None:
-        return _CONFIG
-    if profile != "sentence":
+    if profile not in (None, "sentence"):
         raise ValueError(f"Unknown config profile: {profile}")
-    if _SENTENCE_CONFIG is None:
-        _SENTENCE_CONFIG = tp.load_config(overrides=_CONFIG["sentence"])
-    return _SENTENCE_CONFIG
+    if level in (None, STANDARD):
+        if profile is None:
+            return _CONFIG
+        if _SENTENCE_CONFIG is None:
+            _SENTENCE_CONFIG = tp.load_config(overrides=_CONFIG["sentence"])
+        return _SENTENCE_CONFIG
+    levels = _CONFIG.get("levels") or {}
+    if level not in levels:
+        raise ValueError(f"Unknown difficulty level: {level}")
+    key = (profile, level)
+    if key not in _LEVEL_CONFIGS:
+        mine = levels[level]
+        shared = {section: values for section, values in mine.items() if section != "sentence"}
+        layers = [_CONFIG["sentence"], shared, mine.get("sentence")] if profile == "sentence" else [shared]
+        _LEVEL_CONFIGS[key] = tp.load_config(overrides=_layer(*layers))
+    return _LEVEL_CONFIGS[key]
+
+
+def resolve_level(requested, group_type, config=None):
+    """The level to assess with: the one the request names ("" / None = the learner group's default); ValueError if unknown."""
+    config = config or get_config()
+    requested = str(requested or "").strip().lower()
+    if not requested:
+        return level_for_group(group_type, config)
+    if requested != STANDARD and requested not in (config.get("levels") or {}):
+        raise ValueError(f"Unknown difficulty level: {requested}")
+    return requested
+
+
+def level_for_group(group_type, config=None):
+    """The level a learner of this group gets unless the request names one: `levels.default_by_group` in the config."""
+    config = config or get_config()
+    level = ((config.get("levels") or {}).get("default_by_group") or {}).get(group_type, STANDARD)
+    return level if level == STANDARD or level in (config.get("levels") or {}) else STANDARD
 
 
 # ------------------------------------------------------------------ grouping ----
@@ -455,15 +498,17 @@ def _verify(prepared, clauses, contexts, calibration, force_mfa=False, config=No
 
 
 def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_status,
-                     calibration, practice_mode, sample_id, target_script):
+                     calibration, practice_mode, sample_id, target_script, level=None):
     """Book / custom practice: one script, grouped into phrases by word annotation or clause."""
-    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence"))
-    return build_payload(
+    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence", level))
+    payload = build_payload(
         result, groups=groups, word_annotation_status=word_annotation_status,
         boundaries_from=("word-level JSON grouped over MFA syllable boundaries"
                          if word_annotation_status == "matched" else "punctuation clauses"),
         practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
         audio_quality=prepared.report(), partial_credit=True)
+    payload["level"] = level or STANDARD
+    return payload
 
 
 def _decided_fraction(result):
@@ -514,7 +559,7 @@ def best_variant(prepared, candidates, verify, config=None):
     return candidate, window, result, tried
 
 
-def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibration, normalize):
+def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibration, normalize, level=None):
     """Chapter 5 word: score the reading in the recording that matches one of the allowed variants."""
     candidates = [c for c in chapter5_candidates(item, target_script, normalize)
                   if len(chapter5_contexts(c["clauses"], item)) == len(c["chars"])]
@@ -526,7 +571,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
     def verify(audio, candidate):
         # With several variants every one is force-aligned so they compare fairly.
         return _verify(audio, candidate["clauses"], chapter5_contexts(candidate["clauses"], item), calibration,
-                       force_mfa=len(candidates) > 1)
+                       force_mfa=len(candidates) > 1, config=get_config(None, level))
 
     candidate, window, result, tried = best_variant(prepared, candidates, verify)
     payload = build_payload(
@@ -537,6 +582,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
         practice_item={key: item[key] for key in
                        ("word_key", "item_type", "traditional_chinese", "script", "pinyin", "section")},
         audio_quality=prepared.report())
+    payload["level"] = level or STANDARD
     payload["aligned_script_variant"] = candidate["script_variant"]
     payload["tone_verification"]["scored_reading"] = None if window is None else {
         "start_sec": round(window[0], 2), "end_sec": round(window[1], 2),

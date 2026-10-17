@@ -1,0 +1,3 @@
+# Drop the short voiced fragment behind a tracking jump at a syllable end (<= 40 ms) instead of gating the whole syllable (2026-10-17).
+sanity:
+  jump_fragment_trim_ms: 40

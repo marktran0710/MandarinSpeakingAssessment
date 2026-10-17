@@ -1,0 +1,4 @@
+# Common base for A/B runs that do not depend on the dictionary (jump trim, thresholds...): the dictionary of before 2026-10-17
+# (1,828 single characters), so the existing alignment caches stay valid. Used with: compare_configs.py --base trials/_legacy_dict_base.yaml
+alignment:
+  mfa_dictionary: outputs/config_trials/legacy_catalog.dict

@@ -107,3 +107,32 @@ and a recording with a jump anywhere cannot produce a Needs practice (`held_back
 Teachers: sentences Good 91.8 -> 93.0%, words unchanged, false alarms 7 -> 7. Production adopts it; Good thresholds stay 0.65 quality / 0.70 match.
 Not adopted: lower Good quality or match bars, the tone 1/2/3 shape loosening (small gain, tone 3 lost two correct syllables at the half-third boundary).
 Listening list: `outputs/config_trials/learner_flips_unstable_scope.csv` (the syllables the adopted setting changes; file + from/to ms).
+
+## Learners, second pass: LATIC corpus, the dictionary, tail jumps, difficulty levels (2026-10-17)
+
+Data found under `Recorded Data/audio test` and `mandarin-speaking data` (none has tone-error labels): `user data/` (4 learners: Hau tran, Huu nghia, M, Kien;
+104 attempts), the LATIC corpus (4 learners of Chinese reading mainland texts: Korean M30, Chadian M26, Russian F22 and F19; 637 sentences each; 40
+short sentences each were used = 160 utterances, 1838 syllables) and `Audio/` (TTS and recordings of unknown origin, not used).
+
+1. **Dictionary.** 103 of the 160 LATIC sentences were refused (`alignment_failed`): the dictionary held 1,828 single characters, so 70% of the 5,401 most
+   common characters were missing and one of them in a sentence refuses the whole sentence (this also broke custom practice). `build_mfa_dictionary.py
+   --big5` adds them (borrowed phones; 133 syllables composed from an initial and a final). Refused sentences 103 -> 1. The 237 single-word teacher syllables
+   re-aligned from scratch are identical to the golden snapshot.
+2. **LATIC under production** (Good / Okay / Needs practice): Korean 78.8 / 12.3 / 9.0, Chadian 63.4 / 25.3 / 11.2, Russian F22 53.9 / 24.8 / 21.3,
+   Russian F19 61.1 / 23.5 / 15.3. Tone 1 is Good 85-100% for all four; the Needs-practice syllables are tone 4 (121 look like tone 1) and tone 2 (68 look like
+   tone 1): flattened tones, as in monotone text reading. These look like real deviations, so making the system "easier" here is a choice, not a bug fix.
+3. **Tail jumps.** 49 syllables of the archived attempts were gated by a pitch jump (`octave_jump_in_segment`): 63% have the shorter side of the jump <= 30 ms,
+   92% <= 60 ms, 29 are tone 4 (a creaky end of a fall). `sanity.jump_fragment_trim_ms: 40` drops that fragment and judges the rest; a recording that needed a cut
+   can be Good but never Needs practice (without that guard Needs practice went 2.9% -> 5.9% on the archived attempts). Words Good 93.7 -> 95.4%, teacher
+   sentences 93.0 -> 94.1%, archived attempts +18 Good of 888, 520 clips identical.
+4. **Levels** (`levels:` in the config; the learner's group picks one unless the request names one: foreigner -> easy). easy = every contour-size demand of tones 2/3/4
+   x0.8 (tone 1 and position limits unchanged). Cost/benefit versus standard:
+
+| | LATIC Good | LATIC Needs practice | archived sentences Good | 520 clips: wrong flagged | wrong shown Good | native replay: wrong tones accepted |
+|---|---|---|---|---|---|---|
+| standard | 64.3% | 14.3% | 63.0% | 48.0% | 20.0% | 22.7% |
+| easy (x0.8) | 69.0% | 11.9% | 65.1% | 46.1% | 21.3% | 24.4% |
+| x0.65 (`trials/easy_65.yaml`) | 72.5% | 9.8% | 66.6% | 44.6% | 21.5% | 26.0% |
+
+Teacher sentences Good 93.0 -> 94.0% (x0.8), false alarms 7 -> 8; single words unchanged. The price of any easier level is the same: a weak or flat
+tone is accepted as that tone. Not measurable with this data: how many of the extra Good syllables are really right (no labels).

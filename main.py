@@ -1026,6 +1026,8 @@ async def read_index():
                 .student-heading { flex-wrap: nowrap; }
                 .language-picker > span { display: none; }
                 #activeStudentLabel, #voiceCalibrationLabel { flex: 1 1 100%; }
+                #levelPick { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+                #levelPick select { width: auto; min-width: 0; }
                 #activeStudentLabel { font-weight: 600; }
                 #activeStudentPanel > button { flex: 1 1 calc(50% - 6px); }
                 #calibrateVoiceBtn { margin-left: 0; }
@@ -1061,6 +1063,13 @@ async def read_index():
                 <span id="voiceCalibrationLabel" class="upload-hint"></span>
                 <button type="button" id="calibrateVoiceBtn" onclick="openVoiceCalibrationDialog(true)" data-i18n="calibrateVoice">Calibrate voice</button>
                 <button type="button" id="changeProfileBtn" onclick="changeStudentProfile()" data-i18n="changeSpeaker">Change speaker</button>
+                <label id="levelPick" for="levelSelect"><span data-i18n="levelLabel">Difficulty</span>
+                    <select id="levelSelect" onchange="saveLevelChoice()" data-i18n-title="levelHint" title="Easy accepts a smaller pitch movement in tones 2, 3 and 4.">
+                        <option value="" data-i18n="levelAuto">Automatic (by group)</option>
+                        <option value="standard" data-i18n="levelStandard">Standard</option>
+                        <option value="easy" data-i18n="levelEasy">Easy</option>
+                    </select>
+                </label>
             </div>
         </div>
 
@@ -1299,6 +1308,8 @@ async def read_index():
                 en: {
                     language: "Language", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "Speaker profile", changeSpeaker: "Change speaker",
+                    levelLabel: "Difficulty", levelAuto: "Automatic (by group)", levelStandard: "Standard", levelEasy: "Easy",
+                    levelHint: "Easy accepts a smaller pitch movement in tones 2, 3 and 4.",
                     profilePrompt: "Enter your name and participant group before speaking practice.",
                     profileHint: "Use a name that distinguishes you from others in the same group; matching name and group reuse the same practice history.",
                     name: "Name", participantGroup: "Participant group", chooseOne: "Choose one...", taiwanese: "Taiwanese", foreigner: "Foreigner",
@@ -1428,6 +1439,8 @@ async def read_index():
                 "zh-TW": {
                     language: "語言", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "使用者資料", changeSpeaker: "更換使用者",
+                    levelLabel: "難度", levelAuto: "自動（依組別）", levelStandard: "標準", levelEasy: "簡單",
+                    levelHint: "簡單模式接受二、三、四聲較小的音高變化。",
                     profilePrompt: "請先輸入姓名和參與者類別，再開始口說練習。",
                     profileHint: "請使用能區分同組使用者的姓名；姓名和類別相同時會沿用同一份練習紀錄。",
                     name: "姓名", participantGroup: "參與者類別", chooseOne: "請選擇…", taiwanese: "台灣人", foreigner: "外國人",
@@ -1556,6 +1569,8 @@ async def read_index():
                 vi: {
                     language: "Ngôn ngữ", languageEn: "English", languageZh: "中文（繁體）", languageVi: "Tiếng Việt",
                     speakerProfile: "Thông tin người nói", changeSpeaker: "Đổi người dùng",
+                    levelLabel: "Độ khó", levelAuto: "Tự động (theo nhóm)", levelStandard: "Chuẩn", levelEasy: "Dễ",
+                    levelHint: "Mức Dễ chấp nhận biến thiên cao độ nhỏ hơn ở thanh 2, 3 và 4.",
                     profilePrompt: "Nhập tên và nhóm người tham gia trước khi luyện nói.",
                     profileHint: "Hãy dùng tên giúp phân biệt bạn với người khác trong cùng nhóm; cùng tên và nhóm sẽ dùng chung lịch sử luyện tập.",
                     name: "Tên", participantGroup: "Nhóm người tham gia", chooseOne: "Chọn một mục...", taiwanese: "Người Đài Loan", foreigner: "Người nước ngoài",
@@ -1688,6 +1703,8 @@ async def read_index():
                     languageVi: "Tiếng Việt",
                     speakerProfile: "Profil pembicara",
                     changeSpeaker: "Ganti pembicara",
+                    levelLabel: "Tingkat kesulitan", levelAuto: "Otomatis (menurut kelompok)", levelStandard: "Standar", levelEasy: "Mudah",
+                    levelHint: "Mode Mudah menerima gerakan nada yang lebih kecil pada nada 2, 3, dan 4.",
                     profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
                     profileHint: "Gunakan nama yang membedakan Anda dari orang lain di kelompok yang sama; nama dan kelompok yang sama akan memakai riwayat latihan yang sama.",
                     name: "Nama",
@@ -1925,6 +1942,8 @@ async def read_index():
                     languageVi: "Tiếng Việt",
                     speakerProfile: "वक्ता प्रोफ़ाइल",
                     changeSpeaker: "वक्ता बदलें",
+                    levelLabel: "कठिनाई", levelAuto: "स्वचालित (समूह के अनुसार)", levelStandard: "मानक", levelEasy: "आसान",
+                    levelHint: "आसान स्तर में स्वर 2, 3 और 4 में छोटा पिच परिवर्तन स्वीकार किया जाता है।",
                     profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
                     profileHint: "ऐसा नाम चुनें जो आपको उसी समूह के दूसरे लोगों से अलग पहचान दे; एक ही नाम और समूह होने पर वही अभ्यास-इतिहास इस्तेमाल होगा।",
                     name: "नाम",
@@ -2213,6 +2232,9 @@ async def read_index():
                 });
                 document.querySelectorAll("[data-i18n-aria-label]").forEach(element => {
                     element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+                });
+                document.querySelectorAll("[data-i18n-title]").forEach(element => {
+                    element.setAttribute("title", t(element.dataset.i18nTitle));
                 });
                 document.title = t("appTitle");
                 document.getElementById("recordBtn").innerText = isRecording ? t("recordingStop") : t("startRecording");
@@ -2713,9 +2735,34 @@ async def read_index():
                 }
             }
 
+            function levelChoiceKey() {
+                return activeStudent ? `mandarinPracticeLevel:${activeStudent.id}` : null;
+            }
+
+            function savedLevelChoice() {
+                try {
+                    const key = levelChoiceKey();
+                    const value = key ? localStorage.getItem(key) : "";
+                    return value === "standard" || value === "easy" ? value : "";
+                } catch (error) {
+                    return "";
+                }
+            }
+
+            function saveLevelChoice() {
+                const key = levelChoiceKey();
+                if (!key) return;
+                try {
+                    localStorage.setItem(key, document.getElementById("levelSelect").value);
+                } catch (error) {
+                    /* the choice then lasts until the page is reloaded */
+                }
+            }
+
             function setActiveStudent(profile) {
                 activeStudent = profile;
                 document.getElementById("activeStudentPanel").hidden = !profile;
+                document.getElementById("levelSelect").value = savedLevelChoice();
                 if (profile) {
                     updateActiveStudentLabel();
                     localStorage.setItem("mandarinPracticeStudent", JSON.stringify(profile));
@@ -3139,6 +3186,7 @@ async def read_index():
                 formData.append("script", script);
                 formData.append("sample_id", sampleId);
                 formData.append("practice_mode", practiceMode);
+                formData.append("level", document.getElementById("levelSelect").value);
                 formData.append("student_id", activeStudent.id);
                 formData.append("include_transcript", "true");
 
@@ -3508,9 +3556,10 @@ def assess_pronunciation(
     student_id: str = Form(...),
     include_transcript: bool = Form(default=True),   # accepted for older clients; ASR is no longer used
     practice_mode: str = Form(default="book"),
+    level: str = Form(default=""),          # "" = the default of the learner's group (foreigner: easy), or "standard" / "easy"
 ):
     with ASSESSMENT_LOCK:
-        return _assess_pronunciation(file, script, sample_id, student_id, practice_mode)
+        return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level)
 
 
 def _assess_pronunciation(
@@ -3519,6 +3568,7 @@ def _assess_pronunciation(
     sample_id: str,
     student_id: str,
     practice_mode: str = "book",
+    level: str = "",
 ):
     """Verify the learner's tones against the known script (calibrated Praat AC+CC F0, MFA alignment)."""
     allowed_extensions = (".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm")
@@ -3527,9 +3577,14 @@ def _assess_pronunciation(
         raise HTTPException(status_code=400, detail="Invalid audio file format.")
     if not script or not script.strip():
         raise HTTPException(status_code=400, detail="The input script must not be empty.")
-    if practice_store.get_student(student_id) is None:
+    student = practice_store.get_student(student_id)
+    if student is None:
         raise HTTPException(status_code=400, detail="Enter a valid speaker profile before practicing.")
     voice_calibration = practice_store.get_voice_calibration(student_id)
+    try:
+        assessment_level = tone_assessment.resolve_level(level, student.get("group_type"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     practice_mode = str(practice_mode or "book").strip().lower()
     if practice_mode not in {"book", "custom", "chapter5_word"}:
@@ -3593,6 +3648,7 @@ def _assess_pronunciation(
             payload = tone_assessment.assess_chapter5_item(
                 prepared, item=practice_item, sample_id=sample_id,
                 target_script=target_script, calibration=voice_calibration, normalize=converter.convert,
+                level=assessment_level,
             )
         else:
             words = (tone_assessment.segment_words(clauses, SEGMENT_LEXICON) if practice_mode == "custom"
@@ -3603,6 +3659,7 @@ def _assess_pronunciation(
                 prepared, clauses=clauses, contexts=contexts, groups=groups,
                 word_annotation_status=word_annotation_status, calibration=voice_calibration,
                 practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
+                level=assessment_level,
             )
         try:
             payload["saved_attempt"] = practice_store.save_attempt(

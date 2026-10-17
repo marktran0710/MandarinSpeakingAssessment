@@ -103,7 +103,7 @@ class Chapter5AlignmentChoiceTests(unittest.TestCase):
         audio, spans = tone_audio([[200] * 4])
         syllable = [{"char": "媽", "start": spans[0][0], "end": spans[0][1], "phones": [], "nucleus": None}]
 
-        def fake_verify(prepared, clauses, contexts, calibration, force_mfa=False):
+        def fake_verify(prepared, clauses, contexts, calibration, force_mfa=False, config=None):
             flags.append(force_mfa)
             chars = "".join(clauses)
             return tp.verify_utterance(prepared.samples, prepared.sample_rate, chars, calibration, contexts=contexts,

@@ -445,6 +445,47 @@ def count_octave_jumps(values, threshold_st, max_gap_frames=2, in_semitones=Fals
     return int(np.count_nonzero(near & (steps >= threshold_st)))
 
 
+def trim_jump_fragments(st, step_sec, jump_st, max_fragment_ms, max_gap_frames=2):
+    """Blank the short voiced fragment that lies behind an adjacent-frame jump >= `jump_st` at either END of `st`.
+
+    A jump that size is a tracking error (an octave slip on a creaky tail), never a tone movement, and in learner speech it is mostly a
+    fragment of a few frames at the very end of the syllable. When that fragment lasts at most `max_fragment_ms` it is dropped and the
+    rest of the syllable is judged; a jump in the middle, or behind a long fragment, is left alone (the syllable is still gated).
+    Returns (trimmed copy, number of frames dropped)."""
+    out = np.array(st, dtype=float)
+    dropped = 0
+    max_frames = int(max_fragment_ms / 1000.0 / step_sec + 1e-9)
+    for _ in range(4):
+        idx = np.flatnonzero(np.isfinite(out))
+        if len(idx) < 3 or max_frames < 1:
+            break
+        jumps = np.flatnonzero((np.diff(idx) <= max_gap_frames) & (np.abs(out[idx[1:]] - out[idx[:-1]]) >= jump_st))
+        if not len(jumps):
+            break
+        tail, head = idx[jumps[-1] + 1:], idx[: jumps[0] + 1]
+        if len(tail) <= max_frames and len(tail) < len(idx) - len(tail):
+            out[tail] = np.nan
+            dropped += len(tail)
+        elif len(head) <= max_frames and len(head) < len(idx) - len(head):
+            out[head] = np.nan
+            dropped += len(head)
+        else:
+            break
+    return out, dropped
+
+
+def segment_pitch(clean, seg_start, seg_end, config):
+    """(times, st, frames dropped) of one syllable's analysis segment, with the short fragments behind tracking jumps dropped when
+    `sanity.jump_fragment_trim_ms` asks for it (0 = off), and how many frames were dropped."""
+    mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
+    times, st = clean["times"][mask], clean["st"][mask]
+    limit = config["sanity"].get("jump_fragment_trim_ms", 0)
+    dropped = 0
+    if limit:
+        st, dropped = trim_jump_fragments(st, clean.get("step") or config["pitch"]["time_step"], config["sanity"]["octave_jump_st"], limit)
+    return times, st, dropped
+
+
 def sanity_metrics(merged, ac, cc, floor, ceiling, config):
     san = config["sanity"]
     both = np.isfinite(ac) & np.isfinite(cc)
@@ -1126,7 +1167,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     align = config["alignment"]
     seg_start, seg_end, source = _segment_for(syllable, config)
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
-    st, times = clean["st"][mask], clean["times"][mask]
+    times, st, trimmed_frames = segment_pitch(clean, seg_start, seg_end, config)
     syllable_sec = syllable["end"] - syllable["start"]
     followed_by_t4 = context.get("adjacent_next_tone") == 4
     feats = syllable_features(times, st, seg_start, seg_end, syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
@@ -1236,7 +1277,9 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         status = "insufficient_evidence"
     # `unstable_scope: syllable` spares a clean syllable of a recording whose track has a jump elsewhere from the quality penalty, so
     # it can be Good; but accusing needs more certainty than accepting: that recording may not produce a "Needs practice".
-    held_back = status == "practice" and not accuse_ok
+    # The same goes for a syllable whose tail had to be cut off behind a tracking jump (`sanity.jump_fragment_trim_ms`): judged on what
+    # is left, it can be accepted but not accused.
+    held_back = status == "practice" and (not accuse_ok or trimmed_frames > 0)
     if held_back:
         status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
@@ -1248,6 +1291,8 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         "detected_alternative": max(others, key=others.get),   # diagnostic only; never used for gating
         "status": "insufficient_evidence" if edge_step else status,
     })
+    if trimmed_frames:
+        result["jump_fragment_trimmed_ms"] = round(trimmed_frames * float(clean.get("step") or config["pitch"]["time_step"]) * 1000)
     if len(accepted) > 1:
         result["also_accepted_tones"] = accepted[1:]
     if (config["tone"].get("clause_final_half_t3") and context["is_clause_final"]
@@ -1262,7 +1307,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     elif short_window:
         result["reasons"].append("short_analysis_window")
     elif held_back:
-        result["reasons"].append("unstable_pitch_track")
+        result["reasons"].append("unstable_pitch_track" if not accuse_ok else "octave_jump_in_segment")
     elif status == "insufficient_evidence":
         result["reasons"].append(
             "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
@@ -1615,9 +1660,11 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     jumps_left = count_octave_jumps(clean["st"], jump_st, in_semitones=True)
     jumps_in_segments = 0
     jumps_by_syllable = []
+    trimmed_anywhere = False
     for syllable in syllables:
         seg_start, seg_end, _ = _segment_for(syllable, config)
-        window = clean["st"][(clean["times"] >= seg_start) & (clean["times"] < seg_end)]
+        _, window, dropped = segment_pitch(clean, seg_start, seg_end, config)
+        trimmed_anywhere = trimmed_anywhere or dropped > 0
         jumps_by_syllable.append(count_octave_jumps(window, jump_st, in_semitones=True))
         jumps_in_segments += jumps_by_syllable[-1]
     # False: AC and CC still disagree / coverage collapsed (the whole track)
@@ -1632,7 +1679,8 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
             end = previous_end_level(syllables[index - 1], clean, config)
             if end is not None and np.isfinite(end):
                 ctx = {**ctx, "previous_end_st": float(end)}
-        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index], accuse_ok=stable))
+        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index],
+                                  accuse_ok=stable and not trimmed_anywhere))   # a recording that needed a cut cannot accuse anyone
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
     results = [_public(r) for r in raw]

@@ -75,7 +75,7 @@ class OnePathIsChosenTests(unittest.TestCase):
         audio, _ = tone_audio([[200] * 4])
         prepared = audio_prep.prepare_samples(audio, SR, CONFIG)
 
-        def fake_verify(prepared_audio, clauses, contexts, calibration, force_mfa=False):
+        def fake_verify(prepared_audio, clauses, contexts, calibration, force_mfa=False, config=None):
             seen.append(["".join(clauses), force_mfa])
             return tp.verify_utterance(prepared_audio.samples, prepared_audio.sample_rate, "".join(clauses),
                                        calibration, contexts=contexts, alignment=[], config=CONFIG)
@@ -176,7 +176,7 @@ class ScoreTheReadingThatMatchesTests(unittest.TestCase):
         prepared = self.prepared(0.25)
         calls = []
 
-        def fake_verify(audio, clauses, contexts, calibration, force_mfa=False):
+        def fake_verify(audio, clauses, contexts, calibration, force_mfa=False, config=None):
             calls.append(force_mfa)
             return tp.verify_utterance(audio.samples, audio.sample_rate, "".join(clauses), calibration,
                                        contexts=contexts, alignment=[], config=CONFIG)

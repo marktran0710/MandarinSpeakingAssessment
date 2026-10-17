@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import copy
 import csv
 import io
 import json
@@ -72,11 +73,13 @@ def trial_config(trial):
 
     tp.load_config = patched
     ta._CONFIG = ta._SENTENCE_CONFIG = None
+    ta._LEVEL_CONFIGS.clear()
     try:
         yield
     finally:
         tp.load_config = original
         ta._CONFIG = ta._SENTENCE_CONFIG = None
+        ta._LEVEL_CONFIGS.clear()
 
 
 # ---------------------------------------------------------------------------------------------------- suites ----
@@ -282,16 +285,20 @@ def main():
     parser.add_argument("--suite", nargs="+", choices=SUITES, default=list(SUITES))
     parser.add_argument("--split", action="store_true", help="also run each top-level section of each trial on its own")
     parser.add_argument("--limit", type=int, default=None, help="first N recordings of the sentence and synthetic suites (smoke test)")
+    parser.add_argument("--base", default=None, help="YAML merged into EVERY config, the baseline included (e.g. trials/_legacy_dict_base.yaml: "
+                                                      "the older dictionary, so alignment caches made before a dictionary change stay valid)")
     parser.add_argument("--cache-root", default=str(DEFAULT_CACHE_ROOT))
     parser.add_argument("--out", default=None, help="folder for report.json / report.md (default outputs/config_trials/<time>)")
     args = parser.parse_args()
 
-    configs = [("baseline", {})]
+    base = (yaml.safe_load(Path(args.base).read_text(encoding="utf-8")) or {}) if args.base else {}
+    with_base = lambda trial: deep_update(copy.deepcopy(base), copy.deepcopy(trial))      # noqa: E731
+    configs = [("baseline", with_base({}))]
     for file in args.trials:
         trial = yaml.safe_load(Path(file).read_text(encoding="utf-8")) or {}
-        configs.append((Path(file).stem, trial))
+        configs.append((Path(file).stem, with_base(trial)))
         if args.split:
-            configs += [(f"{Path(file).stem}:{section}", {section: values}) for section, values in trial.items()]
+            configs += [(f"{Path(file).stem}:{section}", with_base({section: values})) for section, values in trial.items()]
     out = Path(args.out or ROOT / "outputs" / "config_trials" / datetime.now().strftime("%Y%m%d_%H%M%S"))
     out.mkdir(parents=True, exist_ok=True)
     # If a step ever stalls (a hung subprocess, a lock), the stack of every thread is written here every 4 minutes.
