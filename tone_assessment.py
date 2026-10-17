@@ -228,9 +228,11 @@ def phrase_f0(contour, start_sec, end_sec, baseline_hz):
         return None
     selected = np.arange(voiced[0], voiced[-1] + 1)
     origin, step = float(times[selected[0]]), float(contour["step_sec"])
+    baseline_midi = float(tp.hz_to_midi(baseline_hz))
     points = [{
         "offset_sec": round(float(times[i]) - origin, 3),
         "relative_semitone": None if not np.isfinite(st[i]) else round(float(st[i]), 2),
+        "midi": None if not np.isfinite(st[i]) else round(baseline_midi + float(st[i]), 2),     # 69 + 12*log2(F0/440)
         "hz": None if not np.isfinite(st[i]) else round(float(baseline_hz * 2 ** (st[i] / 12)), 1),
     } for i in selected]
     window_voiced = int(np.isfinite(st[window]).sum())
@@ -241,6 +243,7 @@ def phrase_f0(contour, start_sec, end_sec, baseline_hz):
         "voiced_frame_count": int(np.isfinite(st[selected]).sum()),
         "aligned_voiced_coverage": round(window_voiced / len(window), 3),
         "pitch_reference_hz": round(float(baseline_hz), 1),
+        "pitch_reference_midi": round(baseline_midi, 2),
         "contour": points,
     }
 

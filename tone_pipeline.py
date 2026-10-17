@@ -150,7 +150,21 @@ def _round_to(value, step, mode):
     return step * {"nearest": round, "ceil": math.ceil}[mode](ratio)
 
 
+A4_HZ, A4_MIDI = 440.0, 69.0
+
+
+def hz_to_midi(f0):
+    """MIDI note number: 69 + 12 * log2(F0 / 440). One unit is one semitone; A4 (440 Hz) is 69."""
+    return A4_MIDI + 12.0 * np.log2(np.asarray(f0, dtype=float) / A4_HZ)
+
+
 def hz_to_st(f0, reference_hz):
+    """Semitones above a reference pitch (the speaker's median) = MIDI(F0) - MIDI(reference) = 12 * log2(F0 / reference).
+
+    The 69 and the 440 of the MIDI formula cancel, and every rule measures differences (a fall, a rise, a range), so the
+    rules are the same on the MIDI scale and on this speaker-relative scale. It is computed as the ratio, not as two MIDI
+    numbers: adding and cancelling the offsets leaves rounding noise of about 1e-14, which flipped a tie between two
+    equally good boundaries in the boundary search on one native syllable. Absolute pitch is reported with hz_to_midi."""
     return 12.0 * np.log2(np.asarray(f0, dtype=float) / float(reference_hz))
 
 
@@ -1127,6 +1141,10 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         "_syllable_sec": syllable_sec, "_feats": feats,
     })
     if feats["voiced_frames"]:
+        if speaker.get("baseline_hz"):                                 # the same points on the absolute MIDI scale
+            reference = float(hz_to_midi(speaker["baseline_hz"]))
+            result.update({"start_midi": round(reference + feats["start_ST"], 2), "end_midi": round(reference + feats["end_ST"], 2),
+                           "min_midi": round(reference + feats["min_ST"], 2), "max_midi": round(reference + feats["max_ST"], 2)})
         result.update({
             "start_st": round(feats["start_ST"], 2), "end_st": round(feats["end_ST"], 2),
             "min_st": round(feats["min_ST"], 2), "max_st": round(feats["max_ST"], 2),
@@ -1592,11 +1610,12 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
         "alignment_error": None,
         "audio_quality_failed": None,
         "f0_extraction": {"pitch_floor": extraction["pitch_floor"], "pitch_ceiling": extraction["pitch_ceiling"],
-                          "speaker_f0_median": round(baseline, 1), **extraction["diagnostics"]},
+                          "speaker_f0_median": round(baseline, 1), "speaker_f0_median_midi": round(float(hz_to_midi(baseline)), 2),
+                          **extraction["diagnostics"]},
         "syllables": results,
         "summary": counts,
         "feedback": overall,
-        "contour": _contour_payload(clean),
+        "contour": {**_contour_payload(clean), "baseline_midi": round(float(hz_to_midi(baseline)), 2)},
         "boundary_search": boundary_search,
         "config": deepcopy(config),
     }

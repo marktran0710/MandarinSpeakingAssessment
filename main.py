@@ -1229,6 +1229,7 @@ async def read_index():
                     <select id="pitchScale" onchange="refreshPitchPlots()">
                         <option value="relative" data-i18n="relativePitch">Relative pitch</option>
                         <option value="hz" data-i18n="f0Hz">F0 (Hz)</option>
+                        <option value="midi" data-i18n="midiNote">MIDI note</option>
                     </select>
                     <div class="pitch-legend">
                         <span class="pitch-key"><i class="pitch-swatch learner" aria-hidden="true"></i><span data-i18n="recordingLine">Your pitch contour</span></span>
@@ -1410,7 +1411,10 @@ async def read_index():
                     pinyinMismatch: "The recognized syllable differs from the script.", transcriptNotChecked: "Speech recognition was not checked.",
                     phraseNeedsPractice: "One or more syllables need practice.", phraseUncertain: "One or more syllables are uncertain.",
                     otherSyllables: "Other syllables", phrase: "Phrase", sentence: "Sentence {number}", scriptLabel: "Script: {script}", noScores: "No pronunciation scores are available.",
-                    noPitch: "No measurable pitch in this phrase.", f0Title: "F0 in Hz", relativeTitle: "Relative pitch", relativeSemitone: "Semitones from your pitch median", halfThirdTone: "Half-T3", clause: "sentence {number}",
+                    noPitch: "No measurable pitch in this phrase.", f0Title: "F0 in Hz", relativeTitle: "Relative pitch", relativeSemitone: "Semitones from your pitch median",
+                    midiNote: "MIDI note",
+                    midiTitle: "Pitch as MIDI note",
+                    midiLabel: "MIDI note (A4 = 440 Hz = 69)", halfThirdTone: "Half-T3", clause: "sentence {number}",
                     pitchDescription: "Your pitch contour is shown for the whole phrase. Gaps in measured pitch remain blank.",
                     reference: "Reference", yourRecording: "Your recording", lowConfidence: " (alignment or pitch has low confidence)",
                     relative: "Relative", hz: "Hz", invalidAudio: "Invalid audio file format.", emptyScript: "The input script must not be empty.",
@@ -1536,7 +1540,10 @@ async def read_index():
                     pinyinMismatch: "辨識出的音節與文本不同。", transcriptNotChecked: "尚未檢查語音辨識。",
                     phraseNeedsPractice: "有一個或多個音節需要練習。", phraseUncertain: "有一個或多個音節尚不確定。",
                     otherSyllables: "其他音節", phrase: "詞組", sentence: "句子 {number}", scriptLabel: "文本：{script}", noScores: "目前沒有可用的發音分數。",
-                    noPitch: "這個詞組沒有可測量的音高。", f0Title: "基頻（Hz）", relativeTitle: "相對音高", relativeSemitone: "相對錄音中位數（半音）", halfThirdTone: "半三聲", clause: "句子 {number}",
+                    noPitch: "這個詞組沒有可測量的音高。", f0Title: "基頻（Hz）", relativeTitle: "相對音高", relativeSemitone: "相對錄音中位數（半音）",
+                    midiNote: "MIDI 音符",
+                    midiTitle: "以 MIDI 音符表示的音高",
+                    midiLabel: "MIDI 音符（A4 = 440 Hz = 69）", halfThirdTone: "半三聲", clause: "句子 {number}",
                     pitchDescription: "圖表顯示整個詞組中的音高曲線；未測得的 F0 區段會留白。",
                     reference: "範例語音", yourRecording: "你的錄音", lowConfidence: "（對齊或音高可信度較低）",
                     relative: "相對音高", hz: "Hz", invalidAudio: "音訊檔案格式無效。", emptyScript: "練習文本不能為空。",
@@ -1661,7 +1668,10 @@ async def read_index():
                     pinyinMismatch: "Âm tiết nhận dạng khác nội dung mẫu.", transcriptNotChecked: "Chưa kiểm tra nhận dạng giọng nói.",
                     phraseNeedsPractice: "Có âm tiết cần luyện thêm.", phraseUncertain: "Có âm tiết chưa chắc chắn.",
                     otherSyllables: "Âm tiết khác", phrase: "Cụm", sentence: "Câu {number}", scriptLabel: "Nội dung: {script}", noScores: "Chưa có điểm phát âm.",
-                    noPitch: "Không đo được cao độ trong cụm từ này.", f0Title: "F0 (Hz)", relativeTitle: "Cao độ tương đối", relativeSemitone: "Semitone so với trung vị bản ghi", halfThirdTone: "Thanh 3 nửa", clause: "câu {number}",
+                    noPitch: "Không đo được cao độ trong cụm từ này.", f0Title: "F0 (Hz)", relativeTitle: "Cao độ tương đối", relativeSemitone: "Semitone so với trung vị bản ghi",
+                    midiNote: "Nốt MIDI",
+                    midiTitle: "Cao độ theo nốt MIDI",
+                    midiLabel: "Nốt MIDI (A4 = 440 Hz = 69)", halfThirdTone: "Thanh 3 nửa", clause: "câu {number}",
                     pitchDescription: "Biểu đồ hiển thị contour cao độ của cả cụm từ; các khoảng thiếu F0 sẽ để trống.",
                     reference: "Giọng mẫu", yourRecording: "Bản ghi của bạn", lowConfidence: " (độ tin cậy căn chỉnh hoặc cao độ thấp)",
                     relative: "Tương đối", hz: "Hz", invalidAudio: "Định dạng tệp âm thanh không hợp lệ.", emptyScript: "Nội dung không được để trống.",
@@ -1884,6 +1894,9 @@ async def read_index():
                     f0Title: "F0 dalam Hz",
                     relativeTitle: "Nada relatif",
                     relativeSemitone: "Semiton dari median nada Anda",
+                    midiNote: "Nada MIDI",
+                    midiTitle: "Nada sebagai nada MIDI",
+                    midiLabel: "Nada MIDI (A4 = 440 Hz = 69)",
                     halfThirdTone: "Nada 3 setengah",
                     clause: "kalimat {number}",
                     pitchDescription: "Kontur nada suara Anda ditampilkan untuk seluruh frasa. Celah pada nada yang terukur dibiarkan kosong.",
@@ -2118,6 +2131,9 @@ async def read_index():
                     f0Title: "Hz में F0",
                     relativeTitle: "सापेक्ष पिच",
                     relativeSemitone: "आपकी पिच के माध्यिका से सेमीटोन",
+                    midiNote: "MIDI नोट",
+                    midiTitle: "MIDI नोट के रूप में पिच",
+                    midiLabel: "MIDI नोट (A4 = 440 Hz = 69)",
                     halfThirdTone: "आधा-T3",
                     clause: "वाक्य {number}",
                     pitchDescription: "पूरे वाक्यांश के लिए आपकी पिच रेखा दिखाई गई है। जहाँ पिच नहीं मापी जा सकी वहाँ जगह खाली रहती है।",
@@ -3310,8 +3326,10 @@ async def read_index():
             }
 
             function renderPhrasePitchChart(phrase, index) {
-                const useHz = document.getElementById("pitchScale").value === "hz";
-                const valueKey = useHz ? "hz" : "relative_semitone";
+                const scale = document.getElementById("pitchScale").value;     // "relative" | "hz" | "midi"
+                const useHz = scale === "hz";
+                const useMidi = scale === "midi";
+                const valueKey = useHz ? "hz" : useMidi ? "midi" : "relative_semitone";
                 const contour = Array.isArray(phrase.phrase_f0?.contour) ? phrase.phrase_f0.contour : [];
                 const duration = Number(phrase.phrase_f0?.duration_sec || 0);
                 const values = contour.map(point => point[valueKey]).filter(Number.isFinite);
@@ -3323,6 +3341,9 @@ async def read_index():
                     const padding = Math.max(15, (high - low) * 0.15);
                     yMin = Math.max(0, Math.floor((low - padding) / 25) * 25);
                     yMax = Math.ceil((high + padding) / 25) * 25;
+                } else if (useMidi) {                                              // absolute notes: no zero line to keep in view
+                    yMin = Math.floor(Math.min(...values)) - 1;
+                    yMax = yMin + Math.ceil((Math.ceil(Math.max(...values)) + 1 - yMin) / 4) * 4;    // four equal steps of whole notes
                 } else {
                     yMin = Math.min(-2, Math.floor(Math.min(...values)));
                     yMax = Math.max(2, Math.ceil(Math.max(...values)));
@@ -3334,7 +3355,7 @@ async def read_index():
                     const y = 18 + tick * 26;
                     const value = yMax - (yMax - yMin) * tick / 4;
                     lines += `<line class="pitch-grid" x1="${plotLeft}" y1="${y}" x2="${plotRight}" y2="${y}"></line>`;
-                    lines += `<text class="pitch-label" x="${plotLeft - 6}" y="${y + 4}" text-anchor="end">${useHz ? value.toFixed(0) : value.toFixed(1)}</text>`;
+                    lines += `<text class="pitch-label" x="${plotLeft - 6}" y="${y + 4}" text-anchor="end">${useHz || useMidi ? value.toFixed(0) : value.toFixed(1)}</text>`;
                 }
                 let segment = [];
                 const segments = [];
@@ -3355,9 +3376,9 @@ async def read_index():
                 }
                 return `<div class="pitch-chart">
                     <svg viewBox="0 0 ${width} ${height}" role="img" tabindex="0" aria-labelledby="phrase-pitch-title-${index} phrase-pitch-description-${index}">
-                        <title id="phrase-pitch-title-${index}">${useHz ? t("f0Title") : t("relativeTitle")} ? ${t("phrase")} ${index + 1}</title>
+                        <title id="phrase-pitch-title-${index}">${useHz ? t("f0Title") : useMidi ? t("midiTitle") : t("relativeTitle")} \u2013 ${t("phrase")} ${index + 1}</title>
                         <desc id="phrase-pitch-description-${index}">${t("pitchDescription")}</desc>
-                        <text class="pitch-label" x="8" y="12">${useHz ? t("hz") : t("relativeSemitone")}</text>
+                        <text class="pitch-label" x="8" y="12">${useHz ? t("hz") : useMidi ? t("midiLabel") : t("relativeSemitone")}</text>
                         ${lines}
                     </svg>
                 </div>`;
