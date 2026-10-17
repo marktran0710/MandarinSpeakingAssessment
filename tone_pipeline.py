@@ -934,7 +934,12 @@ def t4_min_fall(f, tone_config):
     needed = _t4_fall_by_duration(f, tone_config)
     before_t4 = tone_config.get("t4_before_t4")
     if before_t4 and f.get("followed_by_t4"):
-        needed = min(needed, before_t4["min_fall_st"])   # the first of two tone 4s may fall less (the second keeps the normal rule)
+        # the first of two tone 4s may fall less (the second keeps the normal rule): `relaxation_st` lower than the length rule
+        # says (a 220 ms syllable: 2.0 -> 1.5), or the absolute `min_fall_st`
+        if "relaxation_st" in before_t4:
+            needed = max(needed - before_t4["relaxation_st"], 0.5)
+        else:
+            needed = min(needed, before_t4["min_fall_st"])
     return needed
 
 
@@ -954,16 +959,25 @@ def _t4_fall_by_duration(f, tone_config):
 VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context")
 
 
+def combine_factors(parts, config):
+    """One tone's factors -> one match score. `scoring.combine_features`: "product" (default) or "geometric_mean" (the n-th
+    root of the product: three factors of 0.85 give 0.85, not 0.61; a factor of 0 still gives 0)."""
+    product = float(np.prod(parts))
+    if (config.get("scoring") or {}).get("combine_features", "product") == "geometric_mean":
+        return product ** (1.0 / len(parts))
+    return product
+
+
 def tone_scores(f, allow_half_t3, config):
     """Soft 0..1 fit of a contour to each of T1-T4 (T3 = max of full and, if the context allows, half)."""
     t = config["tone"]
-    t1 = _le(abs(f["early_to_late_delta"]), t["t1_max_delta_st"]) * _le(
-        f["range_core_ST"], t["t1_max_range_st"], width=2.0)
-    t2 = _ge(f["rise_after_min"], t["t2_min_rise_st"]) * _le(f["min_position"], t["t2_max_min_position"], 0.2)
-    t3_full = (_ge(f["fall_before_min"], t["t3_min_fall_st"]) * _ge(f["rise_after_min"], t["t3_min_full_rise_st"])
-               * _window(f["min_position"], t["t3_min_position"], t["t3_max_position"]))
-    t3_half = (_ge(f["fall_before_min"], t["t3_min_fall_st"]) * _le(f["rise_after_min"], t["t3_min_full_rise_st"], 1.0)
-               * _ge(f["min_position"], 0.5)) if allow_half_t3 else 0.0
+    t1 = combine_factors([_le(abs(f["early_to_late_delta"]), t["t1_max_delta_st"]),
+                          _le(f["range_core_ST"], t["t1_max_range_st"], width=2.0)], config)
+    t2 = combine_factors([_ge(f["rise_after_min"], t["t2_min_rise_st"]), _le(f["min_position"], t["t2_max_min_position"], 0.2)], config)
+    t3_full = combine_factors([_ge(f["fall_before_min"], t["t3_min_fall_st"]), _ge(f["rise_after_min"], t["t3_min_full_rise_st"]),
+                               _window(f["min_position"], t["t3_min_position"], t["t3_max_position"])], config)
+    t3_half = combine_factors([_ge(f["fall_before_min"], t["t3_min_fall_st"]), _le(f["rise_after_min"], t["t3_min_full_rise_st"], 1.0),
+                               _ge(f["min_position"], 0.5)], config) if allow_half_t3 else 0.0
     t4 = _ge(f["early_to_late_delta"], t4_min_fall(f, t))
     rule = t.get("t4_by_duration")
     if rule and rule.get("require_end_below_start") and not f["end_ST"] < f["start_ST"]:
@@ -1421,7 +1435,9 @@ def search_boundaries(syllables, contexts, clean, config):
     # Verdict-only rules never move boundaries: a looser tone-4 rule would pull a boundary into the neighbouring syllable
     # (taking the rising tail off a tone 2 beside it) and make the neighbour look wrong. Like the half-third flag below,
     # The rules in VERDICT_ONLY_TONE_RULES therefore apply to verdicts only; boundaries are placed as without them.
-    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k not in VERDICT_ONLY_TONE_RULES}}
+    # The boundary search also keeps the plain product of factors: how factors are combined is a verdict question.
+    search_config = {**config, "tone": {k: v for k, v in config["tone"].items() if k not in VERDICT_ONLY_TONE_RULES},
+                     "scoring": {"combine_features": "product"}}
     count = len(syllables)
     info = {"enabled": bool(cfg["enabled"]), "applied": False, "shifts_ms": [0] * max(count - 1, 0),
             "mean_match_before": None, "mean_match_after": None}

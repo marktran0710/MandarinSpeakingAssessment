@@ -186,6 +186,12 @@ tone:
 neutral:
   allow_practice: false       # v1 policy; enforced silently by enforce_neutral_policy
 
+# How the factors of ONE tone's fit are combined into its match score (0..1): "product" (today) or "geometric_mean" (the n-th root
+# of the product; three factors of 0.85 give 0.85 instead of 0.61, a factor of 0 still gives 0). The boundary search always uses
+# the product. Benchmarked in trials/final_config_*.yaml.
+scoring:
+  combine_features: product
+
 confidence:
   likely_correct_quality: 0.65
   likely_correct_match: 0.70
