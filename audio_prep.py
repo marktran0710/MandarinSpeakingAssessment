@@ -11,6 +11,7 @@ Functions take the config dict from tone_v1_config.yaml; this module never loads
 from __future__ import annotations
 
 import math
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -24,11 +25,29 @@ REASON_PRIORITY = ("clipped", "too_quiet", "noisy", "too_short", "too_long", "no
 
 
 def decode_audio(path, sample_rate=TARGET_RATE):
-    """Decode any supported container to mono float32 at `sample_rate` (pydub shells out to FFmpeg)."""
-    from pydub import AudioSegment
+    """Decode any supported container to mono float32 at `sample_rate` (pydub shells out to FFmpeg).
 
-    with open(path, "rb") as handle:
-        segment = AudioSegment.from_file(handle).set_channels(1).set_frame_rate(sample_rate)
+    FFmpeg reads the file by its path. Handing pydub an open file instead makes it pipe the bytes through FFmpeg's
+    `cache:pipe:0`, which writes a temp file with a FIXED name (ffcache2...) in the shared temp folder: two decodes at
+    the same moment (the server and a batch job, two requests) collide with "File exists" and one of them fails, so a
+    learner's recording is refused for no reason. The piped way stays as a fallback, retried a few times."""
+    from pydub import AudioSegment
+    from pydub.exceptions import CouldntDecodeError
+
+    try:
+        segment = AudioSegment.from_file(str(path))
+    except (CouldntDecodeError, OSError):
+        segment = None
+        for attempt in range(4):                       # a path FFmpeg cannot open (odd characters): pipe it, and retry a collision
+            try:
+                with open(path, "rb") as handle:
+                    segment = AudioSegment.from_file(handle)
+                break
+            except CouldntDecodeError:
+                if attempt == 3:
+                    raise
+                time.sleep(0.15 * (attempt + 1))
+    segment = segment.set_channels(1).set_frame_rate(sample_rate)
     samples = np.array(segment.get_array_of_samples(), dtype=np.float32)
     return samples / float(2 ** (8 * segment.sample_width - 1)), sample_rate
 
