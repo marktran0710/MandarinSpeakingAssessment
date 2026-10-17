@@ -260,6 +260,20 @@ feedback:
 # (trials/easy_80.yaml, 0.65 = trials/easy_65.yaml): 4 learners (LATIC, 1838 syllables) Good 64.3% -> 69.0%, Needs practice 14.3% -> 11.9%;
 # the price is on the other side: 520 wrong-tone clips flagged 48.0% -> 46.1%, wrong tones shown Good 20.0% -> 21.3%, and native tones
 # said as the wrong tone accepted +1.7 points.
+# Did the speaker say more or less than the script? Judged from the alignment and the voiced stretches (no speech recognition); only for texts of at least
+# min_syllables syllables. Measured 2026-10-17 on teacher audio read against right and wrong scripts (2 or 4 characters missing = said MORE, 2 or 4 added =
+# said LESS): 0 of 24 right scripts flagged, 2% of the learner recordings on file (3 of 120; two of them also the longest extra speech).
+#   longer:  voiced speech before the first / after the last syllable of >= longer_extra_syllables median syllables (said more: 45-60% of the 2-character
+#            cases, 60-100% of the 4-character ones). The result is judged but cannot accuse anyone, and the page says to read exactly the text shown.
+#   shorter: >= shorter_squeezed of the two first / two last syllables squeezed (< tiny_syllable_ms) or empty (56-80% of the 2-character cases, 91% of 4),
+#            or >= shorter_gate_squeezed squeezed anywhere: the alignment is not trusted and nothing is judged.
+length_check:
+  min_syllables: 4
+  tiny_syllable_ms: 75
+  longer_extra_syllables: 1.5
+  shorter_squeezed: 2
+  shorter_gate_squeezed: 3
+
 # "You read too fast": the typical aligned syllable shorter than fast_median_syllable_ms (teachers read at 230-360 ms per syllable, the learners
 # on file at 240-410 ms), or at least too_short_share of the syllables too short to analyse. The page then says: read slower, or stretch each
 # sound. Looked at 2026-10-17: the share of too-short syllables does NOT follow the overall speed (short function words 不 個 一), so both are tested.

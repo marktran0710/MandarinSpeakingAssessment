@@ -526,6 +526,7 @@ def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_sta
         audio_quality=prepared.report(), partial_credit=True)
     payload["level"] = level or STANDARD
     payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
+    payload["length_check"] = (payload["tone_verification"].get("f0_extraction") or {}).get("length_check")
     return payload
 
 
@@ -602,6 +603,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
         audio_quality=prepared.report())
     payload["level"] = level or STANDARD
     payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
+    payload["length_check"] = (payload["tone_verification"].get("f0_extraction") or {}).get("length_check")
     payload["aligned_script_variant"] = candidate["script_variant"]
     payload["tone_verification"]["scored_reading"] = None if window is None else {
         "start_sec": round(window[0], 2), "end_sec": round(window[1], 2),

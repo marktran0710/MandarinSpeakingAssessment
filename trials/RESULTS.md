@@ -136,3 +136,25 @@ short sentences each were used = 160 utterances, 1838 syllables) and `Audio/` (T
 
 Teacher sentences Good 93.0 -> 94.0% (x0.8), false alarms 7 -> 8; single words unchanged. The price of any easier level is the same: a weak or flat
 tone is accepted as that tone. Not measurable with this data: how many of the extra Good syllables are really right (no labels).
+
+## Said more or less than the script (2026-10-17)
+
+`length_check:` in the config; `tone_pipeline.length_mismatch` (alignment spans + voiced stretches, no speech recognition; texts of >= 4 syllables).
+Teacher audio (every 4th of the 100 sentences, 25) against the right script and against wrong ones: 2 or 4 characters missing from the script (the speaker
+said MORE), 2 or 4 added (said LESS), another sentence. Flagged by the check alone (the older "voiced speech outside the syllables > 0.40" guard still
+gates the big cases on top of that):
+
+| script | flagged | direction found |
+|---|---|---|
+| right script | 0% (0 of 25) | - |
+| 2 missing at the start / end | 50% / 60% | longer (8+2 shorter / 12) |
+| 4 missing at the start / end | 30% / 70% | longer |
+| 2 added at the start / end | 52% / 76% | shorter |
+| 4 added at the end | 40% (8 of 25 gated) | shorter |
+| another sentence | 40% | mixed |
+
+Learner recordings (sentences, 121): 6 flagged (5%), 1 gated; with the check on Good 72.5 -> 72.0%, Needs practice 5.7 -> 5.4%. A flagged recording is judged but
+cannot accuse anyone (like a doubtful alignment); 3 squeezed syllables gate it; the page says "you said more / some words were left out / this does not match
+the sentence: read exactly the text on screen". Learner rate of squeezed syllables or extra speech was NOT a clean "false trip" rate: the flagged ones include
+the two with the most extra speech, so some are real mismatches. Not caught: extra words in the middle of the sentence (the rule only looks before the first and
+after the last syllable, because a middle insertion tripped 24-39% of the learner recordings).
