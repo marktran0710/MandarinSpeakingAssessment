@@ -293,7 +293,8 @@ pace:
   min_syllables: 3
 
 levels:
-  default: easy                 # what "Automatic" means for everybody (the learner may pick standard on the page)
+  default: easy                 # what EVERY learner gets, Taiwanese and foreign alike: the page has no strict-mode switch any more (removed 2026-10-18 on request);
+                                # only an API / tool request may still name `level: standard`
   default_by_group: {}          # optional per-group override, e.g. {taiwanese: standard}
   easy:
     tone:

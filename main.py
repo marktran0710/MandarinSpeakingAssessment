@@ -1055,9 +1055,6 @@ async def read_index():
                 .student-heading { flex-wrap: nowrap; }
                 .language-picker > span { display: none; }
                 #activeStudentLabel, #voiceCalibrationLabel { flex: 1 1 100%; }
-                #levelPick { display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-                #levelPick input { width: auto; min-width: 0; margin: 0; }
-                #levelHelp { flex: 1 1 100%; margin: 0; }
                 #activeStudentLabel { font-weight: 600; }
                 #activeStudentPanel > button { flex: 1 1 calc(50% - 6px); }
                 #calibrateVoiceBtn { margin-left: 0; }
@@ -1093,8 +1090,6 @@ async def read_index():
                 <span id="voiceCalibrationLabel" class="upload-hint"></span>
                 <button type="button" id="calibrateVoiceBtn" onclick="openVoiceCalibrationDialog(true)" data-i18n="calibrateVoice">Calibrate voice</button>
                 <button type="button" id="changeProfileBtn" onclick="changeStudentProfile()" data-i18n="changeSpeaker">Change speaker</button>
-                <label id="levelPick" for="strictMode"><input type="checkbox" id="strictMode" onchange="saveLevelChoice()"><span data-i18n="levelLabel">Strict mode</span></label>
-                <span id="levelHelp" class="upload-hint" data-i18n="levelHint">Off: relaxed. Smaller pitch movements in tones 2, 3 and 4 are accepted, which suits learning. On: judged by a native teacher's standard.</span>
             </div>
         </div>
 
@@ -1341,8 +1336,6 @@ async def read_index():
                     lengthLonger: "It sounds like you said more than the sentence shown. Please read exactly the text on screen.",
                     lengthShorter: "It sounds like some words of the sentence were left out. Please read the whole text on screen.",
                     lengthDifferent: "What you said doesn\u2019t seem to match the sentence shown. Please read exactly the text on screen.",
-                    levelLabel: "Strict mode",
-                    levelHint: "Off: relaxed. Smaller pitch movements in tones 2, 3 and 4 are accepted, which suits learning. On: judged by a native teacher\u2019s standard.",
                     profilePrompt: "Enter your name and participant group before speaking practice.",
                     profileHint: "Use a name that distinguishes you from others in the same group; matching name and group reuse the same practice history.",
                     name: "Name", participantGroup: "Participant group", chooseOne: "Choose one...", taiwanese: "Taiwanese", foreigner: "Foreigner",
@@ -1479,8 +1472,6 @@ async def read_index():
                     lengthLonger: "聽起來你唸的比畫面上的句子還多。請照畫面上的文字唸。",
                     lengthShorter: "聽起來句子裡有些字沒有唸到。請把畫面上的整句唸完。",
                     lengthDifferent: "你唸的內容似乎和畫面上的句子不一樣。請照畫面上的文字唸。",
-                    levelLabel: "嚴格模式",
-                    levelHint: "關閉：寬鬆。二、三、四聲較小的音高變化也接受，適合學習中。開啟：以母語老師的標準評分。",
                     profilePrompt: "請先輸入姓名和參與者類別，再開始口說練習。",
                     profileHint: "請使用能區分同組使用者的姓名；姓名和類別相同時會沿用同一份練習紀錄。",
                     name: "姓名", participantGroup: "參與者類別", chooseOne: "請選擇…", taiwanese: "台灣人", foreigner: "外國人",
@@ -1616,8 +1607,6 @@ async def read_index():
                     lengthLonger: "Có vẻ bạn đã đọc dài hơn câu hiển thị. Hãy đọc đúng nội dung trên màn hình.",
                     lengthShorter: "Có vẻ bạn đã bỏ sót một số từ của câu. Hãy đọc đầy đủ nội dung trên màn hình.",
                     lengthDifferent: "Nội dung bạn đọc có vẻ không khớp với câu hiển thị. Hãy đọc đúng nội dung trên màn hình.",
-                    levelLabel: "Chế độ nghiêm ngặt",
-                    levelHint: "Tắt: thoải mái hơn. Chấp nhận biến thiên cao độ nhỏ hơn ở thanh 2, 3, 4, phù hợp khi đang học. Bật: chấm theo chuẩn của giáo viên bản ngữ.",
                     profilePrompt: "Nhập tên và nhóm người tham gia trước khi luyện nói.",
                     profileHint: "Hãy dùng tên giúp phân biệt bạn với người khác trong cùng nhóm; cùng tên và nhóm sẽ dùng chung lịch sử luyện tập.",
                     name: "Tên", participantGroup: "Nhóm người tham gia", chooseOne: "Chọn một mục...", taiwanese: "Người Đài Loan", foreigner: "Người nước ngoài",
@@ -1757,8 +1746,6 @@ async def read_index():
                     lengthLonger: "Sepertinya Anda mengucapkan lebih banyak dari kalimat yang ditampilkan. Bacalah persis teks di layar.",
                     lengthShorter: "Sepertinya ada kata dalam kalimat yang terlewat. Bacalah seluruh teks di layar.",
                     lengthDifferent: "Yang Anda ucapkan tampaknya tidak sesuai dengan kalimat yang ditampilkan. Bacalah persis teks di layar.",
-                    levelLabel: "Mode ketat",
-                    levelHint: "Mati: lebih longgar. Gerakan nada yang lebih kecil pada nada 2, 3, dan 4 diterima, cocok saat belajar. Aktif: dinilai dengan standar guru penutur asli.",
                     profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
                     profileHint: "Gunakan nama yang membedakan Anda dari orang lain di kelompok yang sama; nama dan kelompok yang sama akan memakai riwayat latihan yang sama.",
                     name: "Nama",
@@ -2003,8 +1990,6 @@ async def read_index():
                     lengthLonger: "ऐसा लगता है कि आपने स्क्रीन पर दिए वाक्य से ज़्यादा बोला। कृपया स्क्रीन पर लिखा पाठ ठीक वैसा ही पढ़ें।",
                     lengthShorter: "ऐसा लगता है कि वाक्य के कुछ शब्द छूट गए। कृपया स्क्रीन पर लिखा पूरा पाठ पढ़ें।",
                     lengthDifferent: "आपने जो बोला वह स्क्रीन पर दिए वाक्य से मेल नहीं खाता लगता। कृपया स्क्रीन पर लिखा पाठ ठीक वैसा ही पढ़ें।",
-                    levelLabel: "सख़्त मोड",
-                    levelHint: "बंद: ढीला। स्वर 2, 3, 4 में छोटा पिच परिवर्तन भी स्वीकार किया जाता है, जो सीखने के लिए ठीक है। चालू: मूल वक्ता शिक्षक के मानक से जाँच।",
                     profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
                     profileHint: "ऐसा नाम चुनें जो आपको उसी समूह के दूसरे लोगों से अलग पहचान दे; एक ही नाम और समूह होने पर वही अभ्यास-इतिहास इस्तेमाल होगा।",
                     name: "नाम",
@@ -2831,34 +2816,9 @@ async def read_index():
                 }
             }
 
-            function levelChoiceKey() {
-                return activeStudent ? `mandarinPracticeLevel:${activeStudent.id}` : null;
-            }
-
-            function savedLevelChoice() {
-                try {
-                    const key = levelChoiceKey();
-                    const value = key ? localStorage.getItem(key) : "";
-                    return value === "standard" ? value : "";
-                } catch (error) {
-                    return "";
-                }
-            }
-
-            function saveLevelChoice() {
-                const key = levelChoiceKey();
-                if (!key) return;
-                try {
-                    localStorage.setItem(key, document.getElementById("strictMode").checked ? "standard" : "");
-                } catch (error) {
-                    /* the choice then lasts until the page is reloaded */
-                }
-            }
-
             function setActiveStudent(profile) {
                 activeStudent = profile;
                 document.getElementById("activeStudentPanel").hidden = !profile;
-                document.getElementById("strictMode").checked = savedLevelChoice() === "standard";
                 if (profile) {
                     updateActiveStudentLabel();
                     localStorage.setItem("mandarinPracticeStudent", JSON.stringify(profile));
@@ -3284,7 +3244,6 @@ async def read_index():
                 formData.append("script", script);
                 formData.append("sample_id", sampleId);
                 formData.append("practice_mode", practiceMode);
-                formData.append("level", document.getElementById("strictMode").checked ? "standard" : "");
                 formData.append("student_id", activeStudent.id);
                 formData.append("include_transcript", "true");
 
@@ -3657,7 +3616,7 @@ def assess_pronunciation(
     student_id: str = Form(...),
     include_transcript: bool = Form(default=True),   # accepted for older clients; ASR is no longer used
     practice_mode: str = Form(default="book"),
-    level: str = Form(default=""),          # "" = the default of the learner's group (foreigner: easy), or "standard" / "easy"
+    level: str = Form(default=""),          # API / tools only (the page has no switch and never sends it): "" = the default for the learner's group (easy for everybody), or "standard" / "easy"
 ):
     with ASSESSMENT_LOCK:
         return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level)

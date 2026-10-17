@@ -95,30 +95,27 @@ class LengthCheckTests(unittest.TestCase):
         self.assertEqual(source.count('payload["length_check"]'), 2)                      # sentence practice and the chapter-5 words
 
 
-class StrictModePageTests(unittest.TestCase):
+class EveryoneIsJudgedAtTheEasyLevelTests(unittest.TestCase):
     CODES = ("en", "zh-TW", "vi", "id", "hi")
 
     @classmethod
     def setUpClass(cls):
         cls.source = (ROOT / "main.py").read_text(encoding="utf-8")
 
-    def test_the_difficulty_select_became_a_strict_mode_switch_with_a_visible_explanation(self):
-        self.assertIn('<input type="checkbox" id="strictMode" onchange="saveLevelChoice()">', self.source)
-        self.assertIn('id="levelHelp"', self.source)
-        for gone in ("levelSelect", "levelAuto", "levelStandard", "levelEasy"):
+    def test_the_page_has_no_strict_mode_switch_and_never_asks_for_a_level(self):
+        for gone in ("strictMode", "levelPick", "levelHelp", "saveLevelChoice", "savedLevelChoice", "levelChoiceKey", "levelLabel", "levelHint",
+                     "levelSelect", "levelAuto", "levelStandard", "levelEasy"):
             self.assertNotIn(gone, self.source, gone)
+        self.assertNotIn('formData.append("level"', self.source)
 
-    def test_off_is_the_default_easy_and_on_asks_for_the_standard_level(self):
-        self.assertIn('document.getElementById("strictMode").checked ? "standard" : ""', self.source)
-        self.assertEqual(ta.resolve_level("", "foreigner"), "easy")                       # switch off: the request carries no level
+    def test_without_a_request_every_group_is_judged_at_the_easy_level(self):
+        for group in ("foreigner", "taiwanese", None, "anything"):
+            self.assertEqual(ta.resolve_level("", group), "easy", group)
+        self.assertEqual(ta.get_config()["levels"]["default_by_group"], {})                # no group has a stricter default
 
-    def test_every_language_names_the_switch_and_explains_both_positions(self):
-        names = {"en": "Strict mode", "zh-TW": "嚴格模式", "vi": "Chế độ nghiêm ngặt", "id": "Mode ketat", "hi": "सख़्त मोड"}
-        for code in self.CODES:
-            chunk = re.search(r'\n {16}(?:%s|"%s"): \{(.*?)\n {16}(?:"?[\w-]+"?: \{|\};)' % (code, code), self.source, re.S).group(1)
-            self.assertIn('levelLabel: "%s"' % names[code], chunk, code)
-            hint = re.search(r'levelHint: "([^"]*)"', chunk).group(1)
-            self.assertGreater(len(hint), 40, code)
+    def test_the_endpoint_still_takes_a_level_for_tools_but_the_page_does_not_send_one(self):
+        self.assertIn("level: str = Form(default=\"\")", self.source)
+        self.assertEqual(ta.resolve_level("standard", "foreigner"), "standard")
 
     def test_the_length_messages_exist_in_every_language_and_the_results_show_them(self):
         for key in ("lengthLonger", "lengthShorter", "lengthDifferent"):
