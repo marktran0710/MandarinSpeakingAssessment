@@ -1,0 +1,38 @@
+# Trial B - the rule set pasted by the project owner (2026-10-17), written with this pipeline's key names. It applies to
+# single words AND sentences (nothing in it is sentence-only), except the two practice_min_window_ms values.
+#   tone1.max_delta_st / max_range_st          -> tone.t1_max_delta_st / t1_max_range_st
+#   tone2.min_rise_st / max_min_position       -> tone.t2_min_rise_st / t2_max_min_position
+#   tone3.min_fall_st / min_full_rise_st       -> tone.t3_min_fall_st / t3_min_full_rise_st
+#   tone3.min_position / max_position          -> tone.t3_min_position / t3_max_position
+#   tone3.allow_half_t3: true                  -> nothing to change: a half-third is accepted wherever the context allows it
+#   tone4.short_ms ... min_fall_long_st        -> tone.t4_by_duration (no require_end_below_start in this set)
+#   decision.likely_correct.min_quality/_match -> confidence.likely_correct_quality / likely_correct_match
+#   decision.practice.min_quality / max_match  -> confidence.practice_quality 0.80 / practice_mismatch 0.80 (= 1 - max_match; unchanged)
+#   practice_min_window_ms.word 100            -> confidence.practice_min_window_ms (single words: today 0 = off)
+#   practice_min_window_ms.sentence 130        -> sentence.confidence.practice_min_window_ms (already production)
+tone:
+  t1_max_delta_st: 2.5
+  t1_max_range_st: 5.0
+  t2_min_rise_st: 2.0
+  t2_max_min_position: 0.85
+  t3_min_fall_st: 1.5
+  t3_min_full_rise_st: 1.5
+  t3_min_position: 0.20
+  t3_max_position: 0.85
+  t4_by_duration:
+    short_ms: 180
+    medium_ms: 300
+    min_fall_short_st: 1.5
+    min_fall_medium_st: 2.0
+    min_fall_long_st: 2.5
+
+confidence:
+  likely_correct_quality: 0.60
+  likely_correct_match: 0.60
+  practice_quality: 0.80
+  practice_mismatch: 0.80
+  practice_min_window_ms: 100
+
+sentence:
+  confidence:
+    practice_min_window_ms: 130

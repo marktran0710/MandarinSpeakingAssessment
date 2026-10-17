@@ -16,12 +16,14 @@ class TrialConfigTests(unittest.TestCase):
 
     def test_a_sentence_only_trial_reaches_the_sentence_profile_and_not_the_base(self):
         before = tp.load_config
-        with cc.trial_config({"sentence": {"tone": {"t4_by_duration": {"short_ms": 180}}}}):
-            self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"], {"short_ms": 180})
+        with cc.trial_config({"sentence": {"tone": {"t4_by_duration": {"short_ms": 123}}}}):
+            rule = ta.get_config("sentence")["tone"]["t4_by_duration"]
+            self.assertEqual(rule["short_ms"], 123)                                         # the trial's value ...
+            self.assertEqual(rule["medium_ms"], 300)                                        # ... merged into the production rule
             self.assertTrue(ta.get_config("sentence")["tone"]["clause_final_half_t3"])      # the profile's own setting survives
             self.assertNotIn("t4_by_duration", ta.get_config()["tone"])
         self.assertIs(tp.load_config, before)                                                # restored
-        self.assertNotIn("t4_by_duration", ta.get_config("sentence")["tone"])
+        self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"]["short_ms"], 180)
 
     def test_a_base_trial_changes_both_profiles(self):
         with cc.trial_config({"tone": {"t4_min_fall_st": 2.5}, "confidence": {"likely_correct_match": 0.6}}):
@@ -39,7 +41,7 @@ class TrialConfigTests(unittest.TestCase):
                      "rule7_final_tail_sentence.yaml", "rule7_final_tail_30_sentence.yaml", "rule9_carryover_sentence.yaml",
                      "rule9_carryover_strong_sentence.yaml", "rule8_short_130_sentence.yaml", "rule8_short_180_sentence.yaml",
                      "rules_combined_sentence.yaml", "rule10_reduplication_sentence.yaml",
-                     "rules_recommended_sentence.yaml"):
+                     "rules_recommended_sentence.yaml", "user_ruleset_b.yaml"):
             self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
 
 

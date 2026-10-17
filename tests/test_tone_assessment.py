@@ -206,16 +206,16 @@ class SentenceProfileTests(unittest.TestCase):
 
     def test_the_sentence_profile_changes_nothing_else_and_leaves_the_base_config_alone(self):
         base, sentence = ta.get_config(), ta.get_config("sentence")
-        changed = {"confidence": {"practice_min_window_ms"}, "tone": {"clause_final_half_t3"}}
+        changed = {"confidence": {"practice_min_window_ms"}, "tone": {"clause_final_half_t3", "t4_by_duration", "t4_before_t4"}}
         for section in sorted(set(base) - {"sentence"}):
             if not isinstance(base[section], dict):
                 self.assertEqual(base[section], sentence[section], section)
                 continue
             keep = lambda config: {k: v for k, v in config[section].items() if k not in changed.get(section, ())}  # noqa: E731
             self.assertEqual(keep(base), keep(sentence), section)
-        for section, keys in changed.items():                          # the only two differences, and only in the profile
+        for section, keys in changed.items():                          # the only differences, and only in the profile
             for key in keys:
-                self.assertNotEqual(base[section][key], sentence[section][key])
+                self.assertNotEqual(base[section].get(key), sentence[section].get(key))
         self.assertIsNot(base, sentence)
         self.assertEqual(base["confidence"]["practice_min_window_ms"], 0)
         self.assertFalse(base["tone"]["clause_final_half_t3"])

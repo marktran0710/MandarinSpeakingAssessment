@@ -184,6 +184,15 @@ def newly_flagged(base_results, trial_results):
             if status == "practice" and base["syllables"].get(k) != "practice"]
 
 
+def newly_flagged_words(base_results, trial_results):
+    """Single-word syllables (teacher audio, all correct) that are `practice` under the trial but were not under the baseline."""
+    base, trial = base_results.get("word"), trial_results.get("word")
+    if not base or not trial:
+        return []
+    return [(key, SHORT.get(base.get(key), base.get(key))) for key, status in sorted(trial.items())
+            if status == "practice" and base.get(key) != "practice"]
+
+
 def flat_statuses(results):
     flat = {}
     if "word" in results:
@@ -197,7 +206,7 @@ def flat_statuses(results):
 
 # -------------------------------------------------------------------------------------------------- report ----
 
-def render(names, summaries, moves, flagged=None):
+def render(names, summaries, moves, flagged=None, flagged_words=None):
     lines = []
     cols = " | ".join(names)
     sep = "|---|" + "---|" * len(names)
@@ -245,6 +254,11 @@ def render(names, summaries, moves, flagged=None):
             if move:
                 lines.append(f"- **{name}**: " + ", ".join(f"{k} {v}" for k, v in move.items()))
         lines.append("")
+    for name, keys in (flagged_words or {}).items():
+        if keys:
+            lines += [f"### New false alarms under {name} (single words that became Practice): {len(keys)}", ""]
+            lines += [f"- {key} (was {was})" for key, was in keys[:40]]
+            lines.append("")
     for name, rows in (flagged or {}).items():
         if rows:
             lines += [f"### New false alarms under {name} (teacher sentences that became Practice)", "",
@@ -278,7 +292,7 @@ def main():
     cache_root = Path(args.cache_root)
     runners = {"word": run_word, "sentence": run_sentence, "synthetic": run_synthetic}
 
-    names, summaries, flats, flagged, base_results = [], [], [], {}, None
+    names, summaries, flats, flagged, flagged_words, base_results = [], [], [], {}, {}, None
     for name, overrides in configs:
         started = time.time()
         print(f"[{name}] running {', '.join(args.suite)} ...", flush=True)
@@ -289,15 +303,17 @@ def main():
             base_results = results
         else:
             flagged[name] = newly_flagged(base_results, results)
+            flagged_words[name] = newly_flagged_words(base_results, results)
         names.append(name)
         summaries.append(summary)
         flats.append(flat_statuses(results))
         print(f"[{name}] done in {time.time() - started:.0f}s", flush=True)
         moves = [{}] + [transitions(flats[0], f) for f in flats[1:]]
-        report = {"configs": dict(configs), "names": names, "summaries": summaries, "moves": moves, "new_false_alarms": flagged}
+        report = {"configs": dict(configs), "names": names, "summaries": summaries, "moves": moves, "new_false_alarms": flagged,
+                  "new_false_alarm_words": flagged_words}
         (out / "report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-        (out / "report.md").write_text(render(names, summaries, moves, flagged), encoding="utf-8")   # written after every config: nothing is lost
-    print("\n" + render(names, summaries, moves, flagged))
+        (out / "report.md").write_text(render(names, summaries, moves, flagged, flagged_words), encoding="utf-8")   # written after every config: nothing is lost
+    print("\n" + render(names, summaries, moves, flagged, flagged_words))
     print(f"\nreport: {out / 'report.md'}")
 
 

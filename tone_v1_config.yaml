@@ -152,7 +152,8 @@ tone:
 
   clause_final_half_t3: false  # true = a clause-final T3 may also be a low fall (half-third); sentence practice turns it on
 
-  # Off by default (the single t4_min_fall_st above applies). When present, the fall a tone 4 needs depends on how long
+  # Off in the base config (single-word practice uses the single t4_min_fall_st above); ON in the `sentence:` profile below.
+  # When present, the fall a tone 4 needs depends on how long
   # the aligned syllable is: < short_ms, < medium_ms, or longer; and require_end_below_start makes a tone 4 that does not
   # end lower than it starts score 0. Meant for sentence practice (see trials/t4_by_duration_sentence.yaml):
   # soften_reduplication: true     # the second character of a repeated pair (看看, 謝謝) can never be "Needs practice"
@@ -225,3 +226,15 @@ sentence:
                                   # it gets "say it a bit more slowly" instead (was 100; raised after the 100 teacher sentences: false alarms 15 -> 8)
   tone:
     clause_final_half_t3: true    # teachers read a clause-final T3 as a low fall; the final rise is not required
+    # Tone 4 in running speech is short and falls less than in a careful word (median fall 4.0 st vs 8.8 st). Verdict-only
+    # rules (the boundary search never sees them). On the 100 teacher sentences with the 130 ms floor above:
+    # Good 89.8% -> 91.3%, false alarms 15 -> 8, nothing got worse (trials/rules_recommended_sentence.yaml).
+    t4_by_duration:               # the fall a tone 4 needs depends on how long the aligned syllable is
+      short_ms: 180
+      medium_ms: 300
+      min_fall_short_st: 1.5      # < 180 ms
+      min_fall_medium_st: 2.0     # 180 - 300 ms
+      min_fall_long_st: 2.5       # >= 300 ms
+      require_end_below_start: true
+    t4_before_t4:                 # the first of two tone 4s in a row (also across a word end); the second keeps the normal rule
+      min_fall_st: 2.0

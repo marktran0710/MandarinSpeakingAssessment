@@ -392,10 +392,10 @@ class ToneFourByDurationTests(unittest.TestCase):
                 self.assertEqual(self.t4(anchors, ms, CONFIG), plain)             # the length is ignored, as before
         self.assertEqual(tp.t4_min_fall({}, self.config()["tone"]), 3.0)         # rule set but no length known: single value
 
-    def test_production_config_has_no_rule_in_either_profile(self):
+    def test_production_has_the_rule_in_the_sentence_profile_only(self):
         import tone_assessment as ta
-        self.assertNotIn("t4_by_duration", ta.get_config()["tone"])
-        self.assertNotIn("t4_by_duration", ta.get_config("sentence")["tone"])
+        self.assertNotIn("t4_by_duration", ta.get_config()["tone"])                    # single words: one number, 3.0 st
+        self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"], self.RULE)
 
     def test_the_syllable_length_reaches_the_scorer(self):
         feats = tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1, syllable_ms=250)
@@ -1100,8 +1100,8 @@ class FirstToneFourBeforeToneFourTests(unittest.TestCase):
     def test_without_the_setting_nothing_changes(self):
         self.assertEqual(tp.tone_scores(self.feats(True), False, CONFIG)[4], tp.tone_scores(self.feats(False), False, CONFIG)[4])
         import tone_assessment as ta
-        self.assertNotIn("t4_before_t4", ta.get_config()["tone"])
-        self.assertNotIn("t4_before_t4", ta.get_config("sentence")["tone"])
+        self.assertNotIn("t4_before_t4", ta.get_config()["tone"])                      # single words
+        self.assertEqual(ta.get_config("sentence")["tone"]["t4_before_t4"], {"min_fall_st": 2.0})
 
     def test_the_verdict_for_each_tone_four_of_a_pair(self):
         contexts = capt_core.expected_tone_contexts(["罵罵"])
@@ -1205,11 +1205,12 @@ class ScoringWindowRulesTests(unittest.TestCase):
         result = self.status(context, short, self.config(final_tail_guard=self.TAIL, carryover_trim={"frac": 0.5, "max_ms": 500}))
         self.assertNotIn("scoring_window_ms", result)
 
-    def test_production_configs_have_neither_rule_and_the_boundary_search_never_sees_them(self):
+    def test_production_has_neither_window_rule_and_the_boundary_search_never_sees_them(self):
         import tone_assessment as ta
-        for profile in (None, "sentence"):
-            for rule in tp.VERDICT_ONLY_TONE_RULES:
-                self.assertNotIn(rule, ta.get_config(profile)["tone"], rule)
+        for rule in tp.VERDICT_ONLY_TONE_RULES:
+            self.assertNotIn(rule, ta.get_config()["tone"], rule)                      # single words use none of them
+        for rule in ("final_tail_guard", "carryover_trim"):                            # tried, not adopted (no effect / harmful)
+            self.assertNotIn(rule, ta.get_config("sentence")["tone"], rule)
         self.assertEqual(set(tp.VERDICT_ONLY_TONE_RULES), {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim"})
         tones = capt_core.expected_tone_contexts(["媽罵"])
         extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)])
