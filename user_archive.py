@@ -128,6 +128,25 @@ class UserArchive:
             print(f"Warning: could not archive the attempt for {student.get('name')!r}: {exc}", file=sys.stderr)
             return None
 
+    def archive_calibration(self, student, outcome):
+        """One line per voice-calibration try, no audio: when, what came out and why (calibration_log.jsonl in the user's folder). Calibration
+        keeps nothing else, so without this a failure cannot be explained afterwards. Returns the folder, or None if nothing was written."""
+        if not self.enabled:
+            return None
+        try:
+            folder = self.user_folder(student)
+            if folder.resolve().parent != self.base_dir.resolve():
+                raise ValueError("the user folder would be outside the archive")
+            folder.mkdir(parents=True, exist_ok=True)
+            self._write_profile(folder, student)                     # the folder is found again by this file, also for a user with no attempt yet
+            record = {"created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "student_id": student.get("id"), **outcome}
+            with open(folder / "calibration_log.jsonl", "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+            return folder
+        except Exception as exc:                                     # never let the log break a calibration
+            print(f"Warning: could not log the calibration of {student.get('name')!r}: {exc}", file=sys.stderr)
+            return None
+
     @staticmethod
     def _write_profile(folder, student):
         calibration = student.get("voice_calibration") or {}

@@ -351,7 +351,11 @@ def calibrate_voice(samples, sample_rate, config=None):
         raise CalibrationError(
             "boundary_hits", "Pitch kept hitting the tracker limits; record again in a quieter place.")
 
-    agreement = float(wide["agree"].sum() / wide["both"].sum()) if wide["both"].any() else 0.0
+    if not wide["both"].any():                    # no voiced frame at all (muted or unplugged microphone, silence): say that, not "pitch unclear"
+        raise CalibrationError(
+            "too_little_voicing",
+            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.")
+    agreement = float(wide["agree"].sum() / wide["both"].sum())
     if agreement < cal["hard_min_agreement"]:
         raise CalibrationError(
             "ac_cc_disagree", "Pitch tracking was not reliable. Read the prompt clearly and try again.")
