@@ -17,6 +17,7 @@ from fastapi import UploadFile  # noqa: E402
 
 import main  # noqa: E402
 from user_archive import UserArchive  # noqa: E402
+from practice_store import PracticeStore  # noqa: E402
 
 STUDENT = {"id": "11111111-2222-3333-4444-555555555555", "name": "Cal Log", "group_type": "foreigner"}
 
@@ -43,7 +44,12 @@ class CalibrationLogTests(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.archive = UserArchive(self.folder.name)
-        self.student = main.practice_store.create_or_get_student(f"cal-log-{id(self)}", "foreigner")
+        # A store of its own: the accounts and calibrations these tests make must never land in the real practice_data database
+        self.store = PracticeStore(Path(self.folder.name) / "practice.sqlite3", Path(self.folder.name) / "recordings")
+        patcher = mock.patch.object(main, "practice_store", self.store)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.student = self.store.create_or_get_student(f"cal-log-{id(self)}", "foreigner")
 
     def lines(self):
         files = list(Path(self.folder.name).glob("*/calibration_log.jsonl"))
