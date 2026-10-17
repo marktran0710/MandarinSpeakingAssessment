@@ -299,6 +299,16 @@ sentence:
       require_end_below_start: true
     t4_before_t4:                 # the first of two tone 4s in a row (also across a word end); the second keeps the normal rule
       min_fall_st: 2.0
+    # A tone 3 is first of all LOW: a syllable that starts low (<= -2 st), reaches a point >= 3 st below the speaker's median and never gets high
+    # (max <= 1.5 st) is accepted as a tone 3, with or without a rise. Said at the start of a clause or after a low syllable there is no fall into
+    # the low point, which both other forms require: all 8 tone-3 syllables of the learner recordings that were Needs practice had none, and 5 of
+    # them were correct low-rising tone 3s (verdict-only). Measured 2026-10-17 (trials/t3_low_register.yaml): archived attempts, tone 3 Good
+    # 67.4 -> 78.5%; LATIC 69.8 -> 74.0%; 100 teacher sentences Good 94.1 -> 95.0% with 7 false alarms before and after; native tones said as
+    # the wrong tone accepted 22.7 -> 22.8%.
+    t3_low_register:
+      max_start_st: -2.0
+      min_depth_st: 3.0
+      max_st: 1.5
     # Left context: a syllable is judged knowing what came before it. A tone 2 right after a high tone (a tone 1/2, or any
     # syllable whose pitch ended 3+ st above the speaker's median) has to dip first and rises less: native tone 2 is Good
     # only 68-82% of the time there (95% elsewhere). Rules apply in order; verdict-only (the boundary search never sees them).

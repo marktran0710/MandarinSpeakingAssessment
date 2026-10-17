@@ -997,7 +997,7 @@ def _t4_fall_by_duration(f, tone_config):
 
 
 # Tone settings that change verdicts only; the boundary search must not see them (it would move boundaries to suit them).
-VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context")
+VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context", "t3_low_register")
 
 
 def combine_factors(parts, config):
@@ -1019,11 +1019,17 @@ def tone_scores(f, allow_half_t3, config):
                                _window(f["min_position"], t["t3_min_position"], t["t3_max_position"])], config)
     t3_half = combine_factors([_ge(f["fall_before_min"], t["t3_min_fall_st"]), _le(f["rise_after_min"], t["t3_min_full_rise_st"], 1.0),
                                _ge(f["min_position"], 0.5)], config) if allow_half_t3 else 0.0
+    # A tone 3 is first of all LOW. `t3_low_register` (sentence practice) also accepts a syllable that starts low, reaches a deep low point and never
+    # gets high, with or without a rise at the end: said after a pause or after a low syllable it has no fall to measure, so the two forms above
+    # (a fall into the low point is required by both) scored a correct low-rising tone 3 as 0.
+    low = t.get("t3_low_register")
+    t3_low = combine_factors([_le(f["start_ST"], low["max_start_st"], 2.0), _ge(-f["min_ST"], low["min_depth_st"]),
+                              _le(f["max_ST"], low["max_st"], 2.0)], config) if low and allow_half_t3 else 0.0
     t4 = _ge(f["early_to_late_delta"], t4_min_fall(f, t))
     rule = t.get("t4_by_duration")
     if rule and rule.get("require_end_below_start") and not f["end_ST"] < f["start_ST"]:
         t4 = 0.0                                        # a tone 4 must end lower than it starts
-    return {1: t1, 2: t2, 3: max(t3_full, t3_half), 4: t4, "t3_full": t3_full, "t3_half": t3_half}
+    return {1: t1, 2: t2, 3: max(t3_full, t3_half, t3_low), 4: t4, "t3_full": t3_full, "t3_half": t3_half, "t3_low": t3_low}
 
 
 # ------------------------------------------------------- confidence gating ----

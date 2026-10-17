@@ -1220,7 +1220,7 @@ class ScoringWindowRulesTests(unittest.TestCase):
         for rule in ("final_tail_guard", "carryover_trim"):                            # tried, not adopted (no effect / harmful)
             self.assertNotIn(rule, ta.get_config("sentence")["tone"], rule)
         self.assertEqual(set(tp.VERDICT_ONLY_TONE_RULES),
-                         {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context"})
+                         {"t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context", "t3_low_register"})
         tones = capt_core.expected_tone_contexts(["媽罵"])
         extraction, clean = make_track(np.r_[np.zeros(30), np.linspace(2, -2, 30), np.full(30, -2.0)])
         late = 42 * STEP

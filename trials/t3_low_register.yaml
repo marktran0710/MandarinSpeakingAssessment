@@ -1,0 +1,9 @@
+# Tone 3 is first of all LOW (2026-10-17). Sentence practice also accepts a syllable that starts low (<= -2 st), reaches a deep low point (>= 3 st below the
+# speaker's median) and never gets high (max <= 1.5 st): a low-rising or low-flat tone 3 with no fall into the low point (clause start, after a low syllable).
+# All 8 tone-3 syllables of the learner recordings that were Needs practice had fall_before_min < 1; 5 of them were correct low-rising tone 3s.
+sentence:
+  tone:
+    t3_low_register:
+      max_start_st: -2.0
+      min_depth_st: 3.0
+      max_st: 1.5
