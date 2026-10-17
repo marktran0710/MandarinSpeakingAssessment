@@ -319,15 +319,21 @@ def alignment_error_kind(error):
     return "system" if str(error).startswith(_SYSTEM_ALIGNMENT_ERRORS) else "reading"
 
 
+def _doubtful_syllable(group, names=None):
+    """The first syllable that was Okay (for the given reasons; not a neutral tone)."""
+    for s in group:
+        if (s["status"] == "insufficient_evidence" and s["expected_surface_tone"] != 5
+                and (names is None or set(s["reasons"]) & names)):
+            return s
+    return None
+
+
 def _doubtful_character(group, names=None):
     """In a phrase of several characters, the first character that was Okay (for the given reasons): the advice names it."""
     if len(group) < 2:
         return None
-    for s in group:
-        if (s["status"] == "insufficient_evidence" and s["expected_surface_tone"] != 5
-                and (names is None or set(s["reasons"]) & names)):
-            return s["character"]
-    return None
+    s = _doubtful_syllable(group, names)
+    return s["character"] if s else None
 
 
 def phrase_feedback(group):
@@ -350,6 +356,9 @@ def phrase_feedback(group):
         for code, names in _RETRY_BY_REASON:
             if reasons & names:
                 char = _doubtful_character(group, names)
+                doubtful = _doubtful_syllable(group, names)
+                if code == "slower" and doubtful is not None and doubtful["expected_surface_tone"] == 4:
+                    code = "short_fall"        # tone 4 is the shortest tone: it must never be asked to be drawn out
                 return [{"type": "retry", "code": code, **({"char": char} if char else {})}]
         char = _doubtful_character(group)
         return [{"type": "retry", "code": "again", **({"char": char} if char else {})}]
@@ -361,7 +370,8 @@ def pace_summary(syllables, config=None):
     fast_median_syllable_ms (teachers read at 230-360 ms, learners at 240-410 ms), or a large share of the syllables was too short to analyse
     (syllable_too_short / short_analysis_window). The UI then asks the learner to read slower or to stretch each sound."""
     pace = (config or get_config()).get("pace") or {}
-    timed = [s for s in syllables if s.get("duration_ms")]
+    skipped = set(pace.get("exclude_tones") or ())          # tone 4 and the light tone are naturally short: they never make a reading "too fast"
+    timed = [s for s in syllables if s.get("duration_ms") and s.get("expected_surface_tone") not in skipped]
     if not pace or len(timed) < pace.get("min_syllables", 3):
         return {"too_fast": False}
     median = float(np.median([s["duration_ms"] for s in timed]))

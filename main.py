@@ -1380,7 +1380,7 @@ async def read_index():
                     calibrationRecording: "Recording… read the five sounds twice.", calibrationProcessing: "Checking your voice…", calibrationSaved: "All set! Your tones will now be judged against your own voice.",
                     calibrationTooShort: "That was too short. Keep reading until the button lets you stop.", calibrationFailed: "We couldn't use that recording. Read all five sounds twice, clearly, then try again.",
                     calStep1: "Read these five sounds aloud, twice",
-                    calStep1Hint: "Listen first (\u25b6). Then say each sound slowly and stretch it a little (m\u0101\u2011\u0101\u2011\u0101), with a short pause between sounds. Speak calmly, like talking to a friend.",
+                    calStep1Hint: "Listen first (\u25b6). Then say each sound slowly and stretch it a little (m\u0101\u2011\u0101\u2011\u0101), with a short pause between sounds. Speak calmly, like talking to a friend. Tone 4 (m\u00e0) stays short and sharp.",
                     calStep2: "Press the button and start reading",
                     calToneHigh: "high",
                     calToneRising: "rising",
@@ -1423,6 +1423,7 @@ async def read_index():
                     adviceTone3: "“{char}” – tone 3: let your voice sink low, like a soft “hmm…”, instead of staying high.",
                     adviceTone4: "“{char}” – tone 4: start high and drop quickly, like a firm “No!”.",
                     retrySlower: "Say this word a little slower and stretch it a little \u2013 don\u2019t rush it, so the tones are easier to hear.",
+                    retryShortFall: "Tone 4 is short and sharp: don\u2019t draw it out. Start high and drop firmly in one move.",
                     retrySteady: "Keep your voice steady and a little louder. Avoid whispering or a creaky voice.",
                     retryClearer: "Make the tone a bit more distinct so the rise and fall can be heard clearly.",
                     retryReadExactly: "Read this part exactly as written, from start to finish.",
@@ -1517,7 +1518,7 @@ async def read_index():
                     calibrationRecording: "錄音中……請把五個音讀兩遍。", calibrationProcessing: "正在檢查你的聲音……", calibrationSaved: "完成！之後的聲調會依你自己的聲音來判斷。",
                     calibrationTooShort: "錄音太短了。請繼續朗讀，等按鈕可以按時再停止。", calibrationFailed: "這段錄音無法使用。請清楚地把五個音讀兩遍，再試一次。",
                     calStep1: "請把這五個音大聲讀兩遍",
-                    calStep1Hint: "先聽一聽（\u25b6）。再把每個音唸慢一點、拉長一點（mā\u2011ā\u2011ā），音與音之間稍微停一下。像和朋友聊天一樣自然地唸。",
+                    calStep1Hint: "先聽一聽（\u25b6）。再把每個音唸慢一點、拉長一點（mā\u2011ā\u2011ā），音與音之間稍微停一下。像和朋友聊天一樣自然地唸。第四聲（mà）要保持短而有力。",
                     calStep2: "按下按鈕，開始朗讀",
                     calToneHigh: "高平",
                     calToneRising: "上升",
@@ -1560,6 +1561,7 @@ async def read_index():
                     adviceTone3: "「{char}」第三聲：讓聲音沉到低處，像輕輕說「嗯……」，不要停在高音。",
                     adviceTone4: "「{char}」第四聲：從高處開始，乾脆地往下降，像堅定地說「不！」。",
                     retrySlower: "這個詞請唸慢一點、稍微拉長，不要趕著唸過去，聲調才聽得清楚。",
+                    retryShortFall: "第四聲本來就短而有力，不要拉長。從高處開始，一口氣乾脆地降下來。",
                     retrySteady: "請讓聲音保持穩定，並稍微大聲一點；避免氣音或沙啞的聲音。",
                     retryClearer: "請把聲調唸得更明顯，讓音高的升降聽得更清楚。",
                     retryReadExactly: "請從頭到尾照著文字完整唸出來。",
@@ -1653,7 +1655,7 @@ async def read_index():
                     calibrationRecording: "Đang ghi… hãy đọc năm âm hai lần.", calibrationProcessing: "Đang kiểm tra giọng của bạn…", calibrationSaved: "Xong rồi! Từ giờ thanh điệu sẽ được chấm theo chính giọng của bạn.",
                     calibrationTooShort: "Bản ghi quá ngắn. Hãy đọc tiếp cho đến khi bấm được nút dừng.", calibrationFailed: "Không dùng được bản ghi này. Hãy đọc rõ cả năm âm, hai lần, rồi thử lại.",
                     calStep1: "Đọc to năm âm này, hai lần",
-                    calStep1Hint: "Hãy nghe trước (\u25b6). Sau đó đọc từng âm thật chậm và kéo dài một chút (m\u0101\u2011\u0101\u2011\u0101), nghỉ ngắn giữa các âm. Đọc nhẹ nhàng như đang nói chuyện với bạn bè.",
+                    calStep1Hint: "Hãy nghe trước (\u25b6). Sau đó đọc từng âm thật chậm và kéo dài một chút (m\u0101\u2011\u0101\u2011\u0101), nghỉ ngắn giữa các âm. Đọc nhẹ nhàng như đang nói chuyện với bạn bè. Riêng thanh 4 (m\u00e0) vẫn đọc ngắn và dứt khoát.",
                     calStep2: "Bấm nút và bắt đầu đọc",
                     calToneHigh: "cao",
                     calToneRising: "lên",
@@ -1696,6 +1698,7 @@ async def read_index():
                     adviceTone3: "“{char}” – thanh 3: hạ giọng xuống thấp, như khi khẽ nói “ừm…”, đừng giữ ở giọng cao.",
                     adviceTone4: "“{char}” – thanh 4: bắt đầu ở giọng cao rồi hạ nhanh, dứt khoát, như khi nói “Không!”.",
                     retrySlower: "Hãy đọc từ này chậm hơn và kéo dài âm một chút, đừng đọc lướt, để dễ nghe rõ thanh điệu.",
+                    retryShortFall: "Thanh 4 vốn ngắn và dứt khoát: đừng kéo dài. Bắt đầu cao rồi hạ xuống dứt khoát trong một nhịp.",
                     retrySteady: "Hãy giữ giọng đều và to hơn một chút. Tránh thì thầm hoặc giọng khàn.",
                     retryClearer: "Hãy nhấn thanh điệu rõ hơn một chút để nghe rõ chỗ lên xuống.",
                     retryReadExactly: "Hãy đọc đúng và đủ như chữ đã cho, từ đầu đến cuối.",
@@ -1834,7 +1837,7 @@ async def read_index():
                     calibrationTooShort: "Rekaman terlalu singkat. Teruslah membaca sampai tombol berhenti bisa ditekan.",
                     calibrationFailed: "Rekaman ini tidak bisa dipakai. Bacalah kelima bunyi dengan jelas, dua kali, lalu coba lagi.",
                     calStep1: "Bacalah lima bunyi ini dengan lantang, dua kali",
-                    calStep1Hint: "Dengarkan dulu (\u25b6). Lalu ucapkan setiap bunyi dengan pelan dan panjangkan sedikit (m\u0101\u2011\u0101\u2011\u0101), dengan jeda singkat antarbunyi. Bacalah dengan tenang, seperti mengobrol dengan teman.",
+                    calStep1Hint: "Dengarkan dulu (\u25b6). Lalu ucapkan setiap bunyi dengan pelan dan panjangkan sedikit (m\u0101\u2011\u0101\u2011\u0101), dengan jeda singkat antarbunyi. Bacalah dengan tenang, seperti mengobrol dengan teman. Nada 4 (m\u00e0) tetap pendek dan tegas.",
                     calStep2: "Tekan tombol dan mulai membaca",
                     calToneHigh: "tinggi",
                     calToneRising: "naik",
@@ -1896,6 +1899,7 @@ async def read_index():
                     adviceTone3: "“{char}” – nada 3: biarkan suara turun rendah, seperti “hmm…” pelan, jangan tetap tinggi.",
                     adviceTone4: "“{char}” – nada 4: mulai dari nada tinggi lalu turun cepat, seperti “Tidak!” yang tegas.",
                     retrySlower: "Ucapkan kata ini sedikit lebih pelan dan panjangkan sedikit \u2013 jangan terburu-buru, agar nadanya terdengar jelas.",
+                    retryShortFall: "Nada 4 memang pendek dan tegas: jangan dipanjangkan. Mulai dari tinggi lalu turun tegas dalam satu gerakan.",
                     retrySteady: "Jaga suara tetap stabil dan sedikit lebih keras. Hindari berbisik atau suara serak.",
                     retryClearer: "Buat nadanya sedikit lebih jelas agar naik-turunnya terdengar.",
                     retryReadExactly: "Bacalah bagian ini persis seperti tertulis, dari awal sampai akhir.",
@@ -2079,7 +2083,7 @@ async def read_index():
                     calibrationTooShort: "रिकॉर्डिंग बहुत छोटी थी। तब तक पढ़ते रहें जब तक बटन दबाने लायक न हो जाए।",
                     calibrationFailed: "यह रिकॉर्डिंग इस्तेमाल नहीं हो सकी। पाँचों ध्वनियाँ साफ़ दो बार पढ़कर फिर कोशिश करें।",
                     calStep1: "इन पाँच ध्वनियों को ज़ोर से, दो बार पढ़ें",
-                    calStep1Hint: "पहले सुनें (\u25b6)। फिर हर ध्वनि को धीरे बोलें और थोड़ा खींचकर बोलें (m\u0101\u2011\u0101\u2011\u0101), ध्वनियों के बीच छोटा विराम लें। दोस्त से बात करने की तरह शांत होकर पढ़ें।",
+                    calStep1Hint: "पहले सुनें (\u25b6)। फिर हर ध्वनि को धीरे बोलें और थोड़ा खींचकर बोलें (m\u0101\u2011\u0101\u2011\u0101), ध्वनियों के बीच छोटा विराम लें। दोस्त से बात करने की तरह शांत होकर पढ़ें। स्वर 4 (m\u00e0) छोटा और तीखा ही रहता है।",
                     calStep2: "बटन दबाएँ और पढ़ना शुरू करें",
                     calToneHigh: "ऊँचा",
                     calToneRising: "चढ़ता",
@@ -2141,6 +2145,7 @@ async def read_index():
                     adviceTone3: "“{char}” – टोन 3: आवाज़ को नीचे उतरने दें, जैसे धीमे से “हम्म…” कहते हैं; ऊँची न रखें।",
                     adviceTone4: "“{char}” – टोन 4: ऊँची आवाज़ से शुरू करें और तेज़ी से नीचे गिराएँ, जैसे दृढ़ता से “नहीं!” कहते हैं।",
                     retrySlower: "इस शब्द को थोड़ा धीमे और थोड़ा खींचकर बोलें \u2013 जल्दबाज़ी न करें, ताकि स्वर साफ़ सुनाई दें।",
+                    retryShortFall: "स्वर 4 छोटा और तीखा होता है: इसे खींचें नहीं। ऊँचे से शुरू करें और एक ही झटके में मज़बूती से नीचे गिराएँ।",
                     retrySteady: "आवाज़ स्थिर और थोड़ी ऊँची रखें। फुसफुसाने या खरखराती आवाज़ से बचें।",
                     retryClearer: "टोन को थोड़ा और स्पष्ट करें ताकि उतार-चढ़ाव साफ़ सुनाई दे।",
                     retryReadExactly: "इस हिस्से को जैसा लिखा है वैसा ही, शुरू से अंत तक पढ़ें।",
@@ -3585,7 +3590,7 @@ async def read_index():
                 const qualityKey = data.audio_quality && data.audio_quality.passed === false ? qualityKeys[(data.audio_quality.reasons || [])[0]] : null;
                 // The aligner itself failed (not the learner's recording): say so, instead of leaving "Okay" everywhere.
                 const systemFailure = data.tone_verification?.alignment?.error_kind === "system";
-                const retryKeys = { slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard", full_third: "retryFullThird" };
+                const retryKeys = { short_fall: "retryShortFall", slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard", full_third: "retryFullThird" };
                 const groups = phrases.map((phrase, index) => {
                     const labelText = phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`;
                     // In a phrase of several characters, mark the one that needs work (red wavy line) or was unclear (amber dotted line).

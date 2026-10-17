@@ -60,7 +60,7 @@ class UiStringsTests(unittest.TestCase):
             + ["retrySlower", "retrySteady", "retryClearer", "retryReadExactly", "retryAgain"]
             + ["qualityClipped", "qualityTooQuiet", "qualityNoisy", "qualityTooShort", "qualityTooLong",
                "qualityNoSpeech", "qualityNoVoicing"]
-            + ["busyWait", "notHeard", "retryNotHeard", "retryFullThird"])
+            + ["busyWait", "notHeard", "retryNotHeard", "retryFullThird", "retryShortFall"])
 
     @classmethod
     def setUpClass(cls):
@@ -71,7 +71,7 @@ class UiStringsTests(unittest.TestCase):
             self.assertEqual(len(re.findall(r"\b%s:" % key, self.source)), 5, key)         # en, zh-TW, vi, id, hi
 
     def test_every_retry_code_the_backend_can_send_has_a_ui_key(self):
-        codes = {code for code, _ in ta._RETRY_BY_REASON} | {"again", "not_heard"}
+        codes = {code for code, _ in ta._RETRY_BY_REASON} | {"again", "not_heard", "short_fall"}
         mapping = dict(re.findall(r"(\w+): \"(retry\w+)\"", self.source.split("const retryKeys = {")[1].split("}")[0]))
         self.assertEqual(set(mapping), codes)
         for ui_key in mapping.values():

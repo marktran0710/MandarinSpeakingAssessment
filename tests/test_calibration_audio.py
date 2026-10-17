@@ -25,7 +25,7 @@ class ReferenceSoundTests(unittest.TestCase):
     def test_all_five_sounds_exist_and_last_long_enough_to_be_recognised(self):
         for tone in range(1, 6):
             sound = parselmouth.Sound(str(SOUND_DIR / f"ma{tone}.wav"))
-            self.assertGreater(sound.duration, 0.25 if tone == 5 else 0.5, tone)       # the full tones are drawn out; the light one is short
+            self.assertGreater(sound.duration, {4: 0.35, 5: 0.25}.get(tone, 0.5), tone)       # tones 1-3 are drawn out a little; tone 4 is short and sharp; the light one shorter
             self.assertLess(sound.duration, 1.0, tone)
 
     def test_the_system_hears_each_sound_as_the_tone_it_is_meant_to_teach(self):

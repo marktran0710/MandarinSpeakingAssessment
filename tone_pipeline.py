@@ -318,7 +318,8 @@ def calibration_pace_hint(profile, config=None):
     than the minimum usable voicing): the learner is told to read slower and stretch each sound. "" when the reading was fine."""
     cal = (config or load_config())["calibration"]
     tokens = ((profile.get("quality") or {}).get("tokens")) or []
-    short = sum(1 for token in tokens if not token.get("meets_minimum"))
+    # only the first three sounds (mā má mǎ): the fourth (mà, tone 4) and the fifth (ma, light) are naturally short and must not look rushed
+    short = sum(1 for token in tokens[:3] if not token.get("meets_minimum"))
     return "slower" if len(tokens) < cal["token_count"] or short >= 2 else ""
 
 

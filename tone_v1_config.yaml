@@ -278,6 +278,7 @@ length_check:
 # on file at 240-410 ms), or at least too_short_share of the syllables too short to analyse. The page then says: read slower, or stretch each
 # sound. Looked at 2026-10-17: the share of too-short syllables does NOT follow the overall speed (short function words 不 個 一), so both are tested.
 pace:
+  exclude_tones: [4, 5]       # tone 4 is the shortest tone (single words: 355 ms vs 410-480; teachers) and the light tone shorter still: never asked to be drawn out
   fast_median_syllable_ms: 210
   too_short_share: 0.30
   min_syllables: 3
