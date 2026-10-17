@@ -981,7 +981,12 @@ class SentenceRulesTests(unittest.TestCase):
 
     def test_an_alternative_does_not_excuse_a_third_wrong_tone(self):
         falling = list(np.linspace(6, -6, 60))                        # a clear T4 where T3 / T2 are accepted
-        self.assertEqual(self.verify_with(CONFIG, "你", falling, also_accept_tones=(2,))["status"], "practice")
+        verdict = self.verify_with(CONFIG, "你", falling, also_accept_tones=(2,))["status"]
+        self.assertNotEqual(verdict, "likely_correct")                 # the alternative does not make it Good
+        import copy
+        strict = copy.deepcopy(CONFIG)
+        strict["tone"]["half_t3_end_as_okay"] = False                # and without the word-final grace it is "Needs practice"
+        self.assertEqual(self.verify_with(strict, "你", falling, also_accept_tones=(2,))["status"], "practice")
 
     FALLING_WRONG = list(np.linspace(4, -4, 16))                      # 80 ms of falling pitch where T2 is expected
 
@@ -1022,7 +1027,8 @@ class ClauseFinalHalfThirdTests(unittest.TestCase):
         result, context = self.verify_with(CONFIG, self.LOW_FALL)
         self.assertTrue(context["is_clause_final"])
         self.assertFalse(tp.allows_half_third(context, CONFIG))
-        self.assertEqual(result["status"], "practice")
+        self.assertEqual(result["status"], "insufficient_evidence")        # not Good (the full dip and rise is needed) ...
+        self.assertIn("half_third_only", result["reasons"])                  # ... but a low fall is Okay, not "Needs practice"
         self.assertNotIn("clause_final_half_t3", result)
 
     def test_with_the_flag_a_low_fall_is_accepted_and_the_verdict_says_why(self):
@@ -1043,7 +1049,9 @@ class ClauseFinalHalfThirdTests(unittest.TestCase):
     def test_known_trade_off_a_t4_falls_to_low_too_and_is_not_told_apart_from_a_half_third(self):
         t4 = list(np.linspace(8, -8, 60))
         self.assertEqual(self.verify_with(self.SENTENCE, t4)[0]["status"], "likely_correct")
-        self.assertEqual(self.verify_with(CONFIG, t4)[0]["status"], "practice")       # the word level does tell them apart
+        word_level = self.verify_with(CONFIG, t4)[0]
+        self.assertNotEqual(word_level["status"], "likely_correct")                   # the word level never calls it a third tone ...
+        self.assertEqual(word_level["status"], "insufficient_evidence")               # ... it is Okay with "say it in full"
 
     def test_the_flag_changes_nothing_for_other_tones(self):
         for char in ("媽", "麻", "罵"):
@@ -1380,8 +1388,7 @@ class HalfThirdAtTheEndOfAWordTests(unittest.TestCase):
     def config(self, enabled=True):
         import copy
         config = copy.deepcopy(CONFIG)
-        if enabled:
-            config["tone"]["half_t3_end_as_okay"] = True
+        config["tone"]["half_t3_end_as_okay"] = bool(enabled)
         return config
 
     @staticmethod
@@ -1409,6 +1416,15 @@ class HalfThirdAtTheEndOfAWordTests(unittest.TestCase):
 
     def test_today_without_the_setting_the_same_half_third_is_needs_practice(self):
         self.assertEqual(self.verdict("你好", 1, self.HALF, self.config(False))["status"], "practice")
+
+    def test_production_grades_the_word_final_tone_3_in_three_levels_and_sentences_accept_the_half_third(self):
+        import tone_assessment as ta
+        words, sentences = ta.get_config(), ta.get_config("sentence")
+        self.assertTrue(words["tone"]["half_t3_end_as_okay"])
+        self.assertEqual(self.verdict("你好", 1, self.FULL, words)["status"], "likely_correct")
+        self.assertEqual(self.verdict("你好", 1, self.HALF, words)["status"], "insufficient_evidence")      # Okay + tip
+        self.assertEqual(self.verdict("你好", 1, self.FLAT, words)["status"], "practice")                    # really wrong
+        self.assertEqual(self.verdict("你好", 1, self.HALF, sentences)["status"], "likely_correct")          # a sentence: fine
 
     def test_before_another_tone_a_half_third_is_still_correct_and_a_single_t3_word_must_be_full(self):
         config = self.config()

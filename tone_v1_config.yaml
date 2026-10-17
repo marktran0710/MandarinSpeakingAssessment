@@ -151,6 +151,10 @@ tone:
   t4_min_fall_st: 3.0
 
   clause_final_half_t3: false  # true = a clause-final T3 may also be a low fall (half-third); sentence practice turns it on
+  # Single words: a tone 3 at the end of the word must be said in full to be Good. A low fall with no rise is Okay (with the
+  # advice "say it in full"), never "Needs practice". Sentences accept the half-third as Good, so this never applies there.
+  # Stress test (520 clips): wrong tones shown Good unchanged at 20.0%; 13 half-third-like syllables Needs practice -> Okay.
+  half_t3_end_as_okay: true
 
   # Off in the base config (single-word practice uses the single t4_min_fall_st above); ON in the `sentence:` profile below.
   # When present, the fall a tone 4 needs depends on how long
