@@ -117,8 +117,8 @@ null,
 "C5-5-1-I5-W005#0": [
 "likely_correct",
 1.0,
-0.728,
-"unstable_pitch_track"
+0.971,
+""
 ],
 "C5-5-1-I5-W005#1": [
 "insufficient_evidence",
@@ -423,8 +423,8 @@ null,
 "C5-5-2-I9-W030#0": [
 "likely_correct",
 1.0,
-0.75,
-"unstable_pitch_track"
+1.0,
+""
 ],
 "C5-5-2-I9-W030#1": [
 "insufficient_evidence",
@@ -6193,8 +6193,8 @@ null,
 "C6-6-1-W054#0": [
 "likely_correct",
 1.0,
-0.75,
-"unstable_pitch_track"
+1.0,
+""
 ],
 "C6-6-1-W054#1": [
 "insufficient_evidence",
@@ -6271,8 +6271,8 @@ null,
 "C6-6-1-W062#0": [
 "likely_correct",
 1.0,
-0.734,
-"unstable_pitch_track"
+0.979,
+""
 ],
 "C6-6-1-W062#1": [
 "insufficient_evidence",
@@ -6709,20 +6709,20 @@ null,
 "C8-8-1-W170#0": [
 "likely_correct",
 1.0,
-0.75,
-"unstable_pitch_track"
+1.0,
+""
 ],
 "C8-8-1-W170#1": [
 "likely_correct",
 1.0,
-0.75,
-"unstable_pitch_track"
+1.0,
+""
 ],
 "C8-8-1-W170#2": [
 "likely_correct",
 1.0,
-0.737,
-"unstable_pitch_track"
+0.982,
+""
 ],
 "C8-8-1-W170#3": [
 "insufficient_evidence",

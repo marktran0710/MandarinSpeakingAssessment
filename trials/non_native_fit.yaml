@@ -1,0 +1,9 @@
+# Candidate "fit for non-native learners" (2026-10-17): two generic levers, chosen from the single-lever trials (trials/lever_*.yaml).
+#   Good quality 0.65 -> 0.60   learners +26 Good (of 855 sentence syllables), wrong tones accepted +0.4 pt
+#                               (learners' pitch tracks are noisier than teachers'; their tone SHAPE is clear but the track quality sits at 0.60-0.65)
+#   Good match   0.70 -> 0.65   learners +3, wrong tones accepted +0.8 pt (nearly free: learners' match scores are ~0 or ~1, almost none in between)
+# Not taken: tone 1 shape (+3.6 pt false accepts, nothing gained), tone 2 / tone 3 shapes (small gain, two correct syllables lost to the
+# half-tone-3 boundary), geometric mean, 100 ms floor, half tone 3 at the end of words. Needs practice and all earlier decisions are unchanged.
+confidence:
+  likely_correct_quality: 0.60
+  likely_correct_match: 0.65

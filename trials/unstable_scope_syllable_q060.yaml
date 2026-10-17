@@ -1,0 +1,4 @@
+# Same, plus Good quality 0.60 (to see what is left for the quality bar to do once the collateral penalty is gone).
+confidence:
+  unstable_scope: syllable
+  likely_correct_quality: 0.60

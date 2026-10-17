@@ -201,6 +201,13 @@ confidence:
   practice_min_window_ms: 0   # a syllable analysed on a window shorter than this cannot be `practice`; 0 = off (single words)
 
   unstable_pitch_quality_factor: 0.75   # pitch track still suspicious after all retries: caps quality below practice_quality
+  # Who gets that penalty when a pitch jump is left inside ONE syllable's segment: "utterance" = every syllable of the recording
+  # (the old rule: one jump in an 11-syllable sentence dragged all of them under the Good bar), "syllable" = only the syllables that
+  # contain a jump (they are gated as octave_jump_in_segment anyway). A track that is unreliable as a whole penalises everyone in both
+  # modes, and with "syllable" a spared syllable can be Good but a recording with a jump anywhere still cannot produce a Needs practice.
+  # Measured 2026-10-17 (trials/unstable_scope_syllable.yaml): learners +35 Good of 855 sentence syllables, teachers +16 Good,
+  # no new false alarm, wrong tones shown Good 20.0% -> 20.0%.
+  unstable_scope: syllable
 
   quality_weights:
     ac_cc_agreement: 0.35

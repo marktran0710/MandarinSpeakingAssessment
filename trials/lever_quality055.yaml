@@ -1,0 +1,3 @@
+# Quality-only probe: Good quality 0.55 (match stays 0.70)
+confidence:
+  likely_correct_quality: 0.55

@@ -1111,7 +1111,18 @@ def scoring_window(config, context, seg_start, seg_end):
     return start, end
 
 
-def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True):
+def track_stability(track_ok, jumps_by_syllable, scope="utterance"):
+    """(is the recording's pitch track stable, [is each syllable's]). A jump left inside a syllable's segment makes the recording
+    unstable; with scope "utterance" (default) that cuts the quality of EVERY syllable, with scope "syllable" only the syllables that
+    contain a jump (they are gated as octave_jump_in_segment anyway). A track that is unreliable as a whole (`track_ok` False)
+    makes every syllable unstable in both scopes."""
+    stable = bool(track_ok) and not any(jumps_by_syllable)
+    if scope == "syllable":
+        return stable, [bool(track_ok) and not jumps for jumps in jumps_by_syllable]
+    return stable, [stable] * len(jumps_by_syllable)
+
+
+def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True, accuse_ok=True):
     align = config["alignment"]
     seg_start, seg_end, source = _segment_for(syllable, config)
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
@@ -1223,6 +1234,11 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     short_window = status == "practice" and (seg_end - seg_start) * 1000.0 < config["confidence"].get("practice_min_window_ms", 0)
     if short_window:
         status = "insufficient_evidence"
+    # `unstable_scope: syllable` spares a clean syllable of a recording whose track has a jump elsewhere from the quality penalty, so
+    # it can be Good; but accusing needs more certainty than accepting: that recording may not produce a "Needs practice".
+    held_back = status == "practice" and not accuse_ok
+    if held_back:
+        status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
         score_times, score_st, score_start, score_end, expected, allows_half_third(context, config), status, quality, config,
         also_accept=accepted[1:], syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
@@ -1245,6 +1261,8 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         result["reasons"].append("half_third_only")
     elif short_window:
         result["reasons"].append("short_analysis_window")
+    elif held_back:
+        result["reasons"].append("unstable_pitch_track")
     elif status == "insufficient_evidence":
         result["reasons"].append(
             "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
@@ -1596,11 +1614,15 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     jump_st = config["sanity"]["octave_jump_st"]
     jumps_left = count_octave_jumps(clean["st"], jump_st, in_semitones=True)
     jumps_in_segments = 0
+    jumps_by_syllable = []
     for syllable in syllables:
         seg_start, seg_end, _ = _segment_for(syllable, config)
         window = clean["st"][(clean["times"] >= seg_start) & (clean["times"] < seg_end)]
-        jumps_in_segments += count_octave_jumps(window, jump_st, in_semitones=True)
-    stable = extraction["diagnostics"]["stable"] and jumps_in_segments == 0
+        jumps_by_syllable.append(count_octave_jumps(window, jump_st, in_semitones=True))
+        jumps_in_segments += jumps_by_syllable[-1]
+    # False: AC and CC still disagree / coverage collapsed (the whole track)
+    stable, syllable_stable = track_stability(extraction["diagnostics"]["stable"], jumps_by_syllable,
+                                              config["confidence"].get("unstable_scope", "utterance"))
     extraction["diagnostics"].update({"stable": stable, "octave_jumps_after_cleanup": jumps_left,
                                       "octave_jumps_in_segments": jumps_in_segments,
                                       "octave_frames_corrected": int(clean["octave_corrected"].sum())})
@@ -1610,7 +1632,7 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
             end = previous_end_level(syllables[index - 1], clean, config)
             if end is not None and np.isfinite(end):
                 ctx = {**ctx, "previous_end_st": float(end)}
-        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, stable))
+        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index], accuse_ok=stable))
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
     results = [_public(r) for r in raw]

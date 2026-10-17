@@ -78,3 +78,32 @@ Rule 11 (T3 chains): 3 of 88 chain syllables are not Good. Rule 12 (declination)
 | 11 | Complex T3 chains: prosodic grouping | not done: 3 of 88 chain syllables are not Good |
 | 12 | Declination / focus: local normalization | not done: median drift 0.04 st per syllable vs 2-3 st thresholds |
 | - | Left context (previous tone / previous F0 endpoint / phrase-final) | applied for tone 2 after a high tone (`left_context`); engine also takes `next`, `phrase_final` |
+
+## Fit for non-native learners (2026-10-17)
+
+Teacher audio cannot show what suits learners: teachers score ~1.0 almost everywhere, so a threshold between 0.60 and 0.70 changes nothing for
+them. The archived learner attempts (`user data/`: 101 attempts, 3 speakers, 887 syllables; 55 of one speaker's 79 attempts are the SAME sentence
+5-1-1, so this is suggestive, not a measurement; no truth labels) were replayed through the real assessment path, one lever at a time.
+
+Learners vs teachers, sentence mode: Good 57.9% vs 91.8%, Okay 39.1% vs 7.7%, Needs practice 3.0% vs 0.5%. Of the learners' 347 Okay syllables
+only ~110 have a match score under 0.70; most are `unstable_pitch_track` (~180), `bad_alignment` (~90), `alignment_failed` (21). Learner match
+scores are bimodal (78% >= 0.90, 17% <= 0.20, 0.5% between 0.60 and 0.70), so the Good-match bar is nearly irrelevant to them.
+
+| lever (on top of production) | learner sentence Good (of 855) | wrong tones shown Good, native replay | wrong tones shown Good, 520 clips |
+|---|---|---|---|
+| production | 57.9% | 22.7% | 20.0% |
+| Good match 0.65 | +3 syllables | +0.8 pt | +0.8 pt |
+| Good match 0.60 | +4 | +1.4 pt | |
+| Good quality 0.60 | +26 | +0.4 pt | +0.3 pt |
+| Good quality 0.55 / 0.50 | +41 / +44 | +0.6 / +0.7 pt | not run (the guard against bad tracks is what it weakens) |
+| tone 1 shape (2.5 / 5.0) | +2 -1 | +3.6 pt | |
+| tone 2 shape / tone 3 shape | +4 / +6 -2 | +0.7 / +1.1 pt | |
+| `unstable_scope: syllable` | **+35** (no new Needs practice) | **0.0 pt** | **0.0 pt** (recall 48.0%, false alarms unchanged) |
+
+Why: `unstable_pitch_quality_factor` (x0.75) was applied to EVERY syllable of a recording as soon as one syllable had a pitch jump left in its
+segment; 21 of the 26 syllables a quality-0.60 bar would rescue carried that flag. With `unstable_scope: syllable` only the syllables that
+contain a jump keep the penalty (they are gated as `octave_jump_in_segment` anyway), a track unreliable as a whole still penalises everyone,
+and a recording with a jump anywhere cannot produce a Needs practice (`held_back`; without that, 36 new accusations appeared on learner clips).
+Teachers: sentences Good 91.8 -> 93.0%, words unchanged, false alarms 7 -> 7. Production adopts it; Good thresholds stay 0.65 quality / 0.70 match.
+Not adopted: lower Good quality or match bars, the tone 1/2/3 shape loosening (small gain, tone 3 lost two correct syllables at the half-third boundary).
+Listening list: `outputs/config_trials/learner_flips_unstable_scope.csv` (the syllables the adopted setting changes; file + from/to ms).
