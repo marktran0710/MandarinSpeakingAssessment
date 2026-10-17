@@ -216,3 +216,20 @@ under 130 ms of analysed window (n = 69) 15 were RISING and 8 flat (< 0.5 st), y
 
 Through the real scorer: 100 teacher sentences false alarms 6 -> 8; LATIC tone-4 Needs practice 14.5 -> 16.7%, archived attempts 4.9 -> 7.0% (Okay down by the same, Good unchanged).
 The two extra teacher flags: a "tone 4" that rises 2.2 st and a flat 160 ms syllable.
+
+## A fourth class for a really clipped tone 4 (2026-10-17)
+
+`tone.t4_by_duration.tiny_ms: 140` with `min_fall_tiny_st` (sentences): standard 0.9 st, easy 0.6 st (the short class is < 180 ms: 1.2 / 0.9). Added on request (a fast tone 4 in live,
+non-native speech is shorter than the teachers'). Also fixed `t4_min_fall`: the before-a-high-onset relaxation is now `min(bar, max(bar - 0.5, floor))`, so the 0.8 floor can never
+RAISE a lower bar (the 0.6 tiny bar of the easy level stays 0.6 before tone 1/4).
+
+Control: `trials/t4_tiny_off.yaml` (tiny_ms 0 = class off). Tone-4 syllables under 140 ms are rare: 33 of 2,142 archived learner syllables, 19 of 1,838 LATIC.
+
+| | tiny tier off | on |
+|---|---|---|
+| 100 teacher sentences: Good % / false alarms | 95.2 / 8 | 95.2 / 8 |
+| archived learners (208 attempts): syllables whose verdict changed | | 1 (做, 100 ms, 0.97 st fall: Okay -> Good) |
+| LATIC learners (160 utterances): syllables whose verdict changed | | 0 |
+| native confusion replay, easy: correct reading Good / wrong tone accepted | 93.2 / 23.8 | 93.2 / 23.8 |
+
+Below ~85 ms of window nothing can be flagged (the 100 ms floor), so the class can only turn Okay into Good. Its value is for live speakers whose tone 4 is shorter than anything in the data.

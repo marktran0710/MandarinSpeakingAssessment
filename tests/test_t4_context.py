@@ -42,8 +42,21 @@ class ToneFourBeforeAHighOnsetTests(unittest.TestCase):
 
     def test_the_floor_is_a_setting(self):
         config = copy.deepcopy(self.sentence)
-        config["tone"]["t4_before_t4"]["floor_st"] = 1.5
-        self.assertEqual(self.bars(config, 150, True), 1.5)
+        config["tone"]["t4_before_t4"]["floor_st"] = 1.0
+        self.assertEqual(self.bars(config, 150, True), 1.0)                            # 1.2 - 0.5 = 0.7, held up to the floor
+
+    def test_the_relaxation_is_never_stricter_than_the_bar_it_relaxes(self):
+        config = copy.deepcopy(self.sentence)
+        config["tone"]["t4_before_t4"]["floor_st"] = 1.5                               # above the 1.2 bar of a 150 ms syllable
+        self.assertEqual(self.bars(config, 150, True), 1.2)
+        easy = copy.deepcopy(self.easy)
+        self.assertEqual(self.bars(easy, 120, False), 0.6)                             # the very short class of the easy level ...
+        self.assertEqual(self.bars(easy, 120, True), 0.6)                              # ... stays 0.6 before a high onset: the 0.8 floor must not raise it
+
+    def test_a_really_clipped_tone_four_has_its_own_lower_bar(self):
+        self.assertEqual([self.bars(self.sentence, ms, False) for ms in (100, 139.9, 140, 179.9)], [0.9, 0.9, 1.2, 1.2])
+        self.assertEqual([self.bars(self.easy, ms, False) for ms in (100, 139.9, 140, 179.9)], [0.6, 0.6, 0.9, 0.9])
+        self.assertEqual(self.bars(self.sentence, 120, True), 0.8)                     # 0.9 - 0.5 = 0.4 -> the 0.8 floor
 
     def test_a_tone_four_before_tone_one_or_tone_four_gets_the_lower_bar_one_before_tone_two_does_not(self):
         fall = 1.3                                                                  # between the two bars of a 250 ms syllable (1.2 and 1.7)

@@ -385,6 +385,17 @@ class ToneFourByDurationTests(unittest.TestCase):
         self.assertGreater(self.t4(recovers, 150, self.config(require_end_below_start=False)), 0.4)
         self.assertGreaterEqual(self.t4(self.SMALL_FALL, 150, self.config()), 0.9)    # a normal fall is not affected
 
+    def test_the_optional_tiny_class_is_used_only_when_configured(self):
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 120.0}, self.config()["tone"]), 1.5)              # no tiny_ms: the short bar, as before
+        tiny = self.config(tiny_ms=140, min_fall_tiny_st=0.9)["tone"]
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 139.9}, tiny), 0.9)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 140.0}, tiny), 1.5)
+        self.assertEqual(tp.t4_min_fall({"syllable_ms": 250.0}, tiny), 2.0)
+        # the same 1.8 st fall is accepted in a 120 ms syllable under either rule, a 1.0 st fall only with the tiny class
+        small = [0.7, 0.0, -0.7]
+        self.assertLess(self.t4(small, 120, self.config()), 0.6)
+        self.assertGreaterEqual(self.t4(small, 120, self.config(tiny_ms=140, min_fall_tiny_st=0.9)), 0.9)
+
     def test_without_the_setting_nothing_changes(self):
         for anchors in ([5.0, 0.0, -4.0], [1.0, 0.0, -0.5], [1.0, 0.5, 0.0, -0.8], [0.0, -2.0, -3.0, 0.5]):
             plain = self.t4(anchors, None, CONFIG)
@@ -396,8 +407,8 @@ class ToneFourByDurationTests(unittest.TestCase):
         import tone_assessment as ta
         self.assertNotIn("t4_by_duration", ta.get_config()["tone"])                    # single words: one number, 3.0 st
         self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"],
-                         {"short_ms": 180, "medium_ms": 300, "min_fall_short_st": 1.2, "min_fall_medium_st": 1.7, "min_fall_long_st": 2.2,
-                          "require_end_below_start": True})                                # 1.5 / 2.0 / 2.5 until 2026-10-17
+                         {"tiny_ms": 140, "min_fall_tiny_st": 0.9, "short_ms": 180, "medium_ms": 300, "min_fall_short_st": 1.2, "min_fall_medium_st": 1.7,
+                          "min_fall_long_st": 2.2, "require_end_below_start": True})       # 1.5 / 2.0 / 2.5 and no tiny class until 2026-10-17
 
     def test_the_syllable_length_reaches_the_scorer(self):
         feats = tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1, syllable_ms=250)

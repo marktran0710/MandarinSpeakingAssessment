@@ -1051,7 +1051,8 @@ def t4_min_fall(f, tone_config):
         # the first of two tone 4s may fall less (the second keeps the normal rule): `relaxation_st` lower than the length rule
         # says (a 220 ms syllable: 2.0 -> 1.5), or the absolute `min_fall_st`
         if "relaxation_st" in before_t4:
-            needed = max(needed - before_t4["relaxation_st"], before_t4.get("floor_st", 0.5))      # never so low that a flat line passes
+            relaxed = max(needed - before_t4["relaxation_st"], before_t4.get("floor_st", 0.5))     # never so low that a flat line passes
+            needed = min(needed, relaxed)                                                          # and never stricter than the bar it relaxes
         else:
             needed = min(needed, before_t4["min_fall_st"])
     return needed
@@ -1062,6 +1063,8 @@ def _t4_fall_by_duration(f, tone_config):
     ms = f.get("syllable_ms")
     if not rule or ms is None:
         return tone_config["t4_min_fall_st"]
+    if rule.get("tiny_ms") and ms < rule["tiny_ms"]:                  # optional fourth class: a really clipped syllable (a fast tone 4 in running speech)
+        return rule["min_fall_tiny_st"]
     if ms < rule["short_ms"]:
         return rule["min_fall_short_st"]
     if ms < rule["medium_ms"]:

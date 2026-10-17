@@ -1,0 +1,11 @@
+# Switches the very-short tone-4 class OFF again (2026-10-17): the control for the tiny tier that production now has (140 ms, 0.9 st standard / 0.6 st easy). Sentences only.
+sentence:
+  tone:
+    t4_by_duration:
+      tiny_ms: 0
+levels:
+  easy:
+    sentence:
+      tone:
+        t4_by_duration:
+          tiny_ms: 0
