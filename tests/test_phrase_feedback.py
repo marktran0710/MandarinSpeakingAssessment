@@ -217,6 +217,12 @@ class OptionalPartTests(unittest.TestCase):
         import tone_assessment as ta
         return ta.chapter5_display_cells({"traditional_chinese": workbook_text, "script": script, "pinyin": pinyin})
 
+    def test_a_chapter_5_word_shows_bu_as_spoken(self):
+        item = {"script": "不錯", "pinyin": "búcuò"}
+        self.assertEqual(ta.chapter5_character_pinyin(item), ["bú", "cuò"])
+        cells = ta.chapter5_display_cells({"traditional_chinese": "不錯(的)", "script": "不錯", "pinyin": "búcuò"})
+        self.assertEqual([c["pinyin"] for c in cells[:2]], ["bú", "cuò"])
+
     def test_the_optional_part_is_shown_with_its_own_pinyin_and_marked(self):
         cells = self.cells("裡(面)", "裡")
         self.assertEqual([(c["char"], c["pinyin"], c["optional"]) for c in cells], [("裡", "lǐ", False), ("面", "miàn", True)])

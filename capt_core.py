@@ -68,7 +68,8 @@ def display_pinyin(text, tones=None):
     are therefore read from the Simplified form (yīn yuè), while the tones are the ones this app expects and scores
     (_base_tones: Taiwan readings, 個 gè, 隻 zhī), so what is shown matches the tone sequence the learner is checked on.
     Anything that is not a Han character is passed through as before. `tones` (one per Han character, in order) replaces
-    the default tones, e.g. the catalog's own reading of 沒（有）空 (kòng); it is ignored if the count does not match."""
+    the default tones, e.g. the catalog's own reading of 沒（有）空 (kòng); it is ignored if the count does not match.
+    Without `tones`, 不 and 一 are written as they are SPOKEN (bú cuò, yí gè, yì qǐ), as every textbook prints them."""
     runs = re.findall(r"[一-龥]+|[^一-龥]+", text)
     han = sum(len(run) for run in runs if is_chinese_char(run[0]))
     if tones is not None and len(tones) != han:
@@ -80,11 +81,24 @@ def display_pinyin(text, tones=None):
             continue
         simplified = _T2S.convert(run)
         letters = lazy_pinyin(simplified if len(simplified) == len(run) else run, style=Style.NORMAL, v_to_u=True)
-        run_tones = list(tones[cursor:cursor + len(run)]) if tones is not None else _base_tones(run)
+        run_tones = list(tones[cursor:cursor + len(run)]) if tones is not None else display_tones(run)
         cursor += len(run)
         for letter, tone in zip(letters, run_tones):
             out.append(letter if tone == 5 else to_tone(f"{letter}{tone}"))
     return out
+
+
+def spoken_tone_for_print(context):
+    """The tone to print for one syllable of `expected_tone_contexts`: its dictionary tone, except 不 and 一, whose spoken (sandhi) tone is printed.
+    A third tone before another third tone is not re-written (nǐ hǎo, not ní hǎo): pinyin does not mark that change."""
+    return context["target_tone"] if context["char"] in "不一" else context["lexical_tone"]
+
+
+def display_tones(run):
+    """The tones to print above a run of Han characters (no punctuation inside): see spoken_tone_for_print."""
+    base = _base_tones(run)
+    spoken = _clause_tones(run)
+    return [spoken[i] if ch in "不一" else base[i] for i, ch in enumerate(run)]
 
 
 # Taiwan Mandarin readings differ from mainland Pinyin readings.

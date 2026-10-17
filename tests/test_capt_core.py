@@ -186,7 +186,9 @@ class TestDisplayPinyin(unittest.TestCase):
         for text in ("音樂", "我覺得有一點累", "這個", "隻", "妳這個週末要做什麼", "女兒", "你好嗎"):
             numbered = [to_tone3(p) for p in core.display_pinyin(text)]                 # yuè -> yue4, ma -> ma
             digits = [int(p[-1]) if p[-1].isdigit() else 5 for p in numbered]
-            self.assertEqual(digits, core._base_tones(text), text)
+            self.assertEqual(digits, core.display_tones(text), text)
+            self.assertEqual([d for d, ch in zip(digits, text) if ch not in "不一"],
+                             [t for t, ch in zip(core._base_tones(text), text) if ch not in "不一"], text)    # every other syllable: the dictionary tone
 
     def test_the_taiwan_and_catalog_readings_are_kept(self):
         self.assertEqual(core.display_pinyin("這個"), ["zhè", "gè"])
@@ -205,6 +207,40 @@ class TestDisplayPinyin(unittest.TestCase):
         self.assertIn('core.display_pinyin(sample["script"])', source)
         self.assertIn('tone_assessment.chapter5_character_pinyin(item)', source)
         self.assertNotIn("lazy_pinyin(sample", source)
+
+
+class TestDisplayPinyinWritesBuAndYiAsSpoken(unittest.TestCase):
+    """不錯 is read bú cuò and 一個 yí gè: the pinyin over the script must say so, not print the dictionary tone (bù cuò, yī gè)."""
+
+    def test_bu_before_a_fourth_tone_is_second_tone(self):
+        self.assertEqual(core.display_pinyin("不錯"), ["bú", "cuò"])
+        self.assertEqual(core.display_pinyin("不要"), ["bú", "yào"])
+        self.assertEqual(core.display_pinyin("我知道一家很不錯的咖啡廳")[6:8], ["bú", "cuò"])
+
+    def test_bu_elsewhere_stays_fourth_tone_and_between_two_copies_of_a_verb_is_light(self):
+        self.assertEqual(core.display_pinyin("不好"), ["bù", "hǎo"])
+        self.assertEqual(core.display_pinyin("不"), ["bù"])
+        self.assertEqual(core.display_pinyin("好不好"), ["hǎo", "bu", "hǎo"])
+
+    def test_yi_takes_the_tone_it_is_spoken_with(self):
+        self.assertEqual(core.display_pinyin("一個"), ["yí", "gè"])             # before a fourth tone: second
+        self.assertEqual(core.display_pinyin("一起"), ["yì", "qǐ"])             # before the other tones: fourth
+        self.assertEqual(core.display_pinyin("一杯"), ["yì", "bēi"])
+        self.assertEqual(core.display_pinyin("一"), ["yī"])                     # alone, in a number or at the end of a word: first
+        self.assertEqual(core.display_pinyin("第一"), ["dì", "yī"])
+        self.assertEqual(core.display_pinyin("統一"), ["tǒng", "yī"])
+
+    def test_a_third_tone_before_a_third_tone_is_not_rewritten(self):
+        self.assertEqual(core.display_pinyin("你好"), ["nǐ", "hǎo"])            # pinyin does not mark that change
+
+    def test_the_text_a_learner_types_is_written_the_same_way(self):
+        self.assertEqual(core.pinyin_per_character("不錯，一個"), ["bú", "cuò", "", "yí", "gè"])
+
+    def test_the_tone_printed_is_the_tone_scored_for_bu_and_yi(self):
+        for text in ("不錯", "不要", "一個", "一起", "不好", "好不好", "第一"):
+            printed = [int(to_tone3(p)[-1]) if to_tone3(p)[-1].isdigit() else 5 for p in core.display_pinyin(text)]
+            scored = [item["target_tone"] for item in core.expected_tone_contexts([text])]
+            self.assertEqual([p for p, ch in zip(printed, text) if ch in "不一"], [s for s, ch in zip(scored, text) if ch in "不一"], text)
 
 
 class TestDisplayPinyinOverridesAndFixes(unittest.TestCase):

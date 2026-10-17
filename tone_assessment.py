@@ -243,7 +243,7 @@ def chapter5_display_cells(item):
     prefix, optional, suffix = parts
     full = prefix + optional + suffix
     clauses = [c for c in capt_core.prepare_target(full) if c.strip()]
-    pinyin = capt_core.display_pinyin(full, tones=[c["lexical_tone"] for c in chapter5_contexts(clauses, item)])
+    pinyin = capt_core.display_pinyin(full, tones=[capt_core.spoken_tone_for_print(c) for c in chapter5_contexts(clauses, item)])
     if len(pinyin) != len(full):
         return None
     flags = [False] * len(prefix) + [True] * len(optional) + [False] * len(suffix)
@@ -251,9 +251,9 @@ def chapter5_display_cells(item):
 
 
 def chapter5_character_pinyin(item):
-    """Pinyin to show over a Chapter 5 word: the tones the word is scored on (including the catalog's own readings)."""
+    """Pinyin to show over a Chapter 5 word: the tones the word is scored on (including the catalog's own readings; 不 and 一 as spoken)."""
     clauses = [c for c in capt_core.prepare_target(item["script"]) if c.strip()]
-    tones = [c["lexical_tone"] for c in chapter5_contexts(clauses, item)]
+    tones = [capt_core.spoken_tone_for_print(c) for c in chapter5_contexts(clauses, item)]
     return capt_core.display_pinyin(item["script"], tones=tones)
 
 
