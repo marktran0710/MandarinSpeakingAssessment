@@ -290,7 +290,10 @@ levels:
       t2_min_rise_st: 2.0
       t3_min_fall_st: 1.6
       t3_min_full_rise_st: 1.6
-      t4_min_fall_st: 2.4
+      t4_min_fall_st: 1.8           # single words, easy level (2.4 until 2026-10-17; standard stays 3.0). Real single words fall ~10 st (teachers' median 9.9,
+                                    # learners' 12.0), so the bar rarely binds: teacher words unchanged; the 520-clip stress test, tone-4 syllables: unchanged syllables
+                                    # flagged Needs practice 19.8 -> 11.5%, wrong tones shown Good 2.9 -> 6.6% (mostly time-reversed contours, which are really falls).
+                                    # 2.0 would give most of that gain (12.5%) for 3.3% false accepts; 1.5: 10.4% and 7.4%.
     sentence:
       tone:
         t4_by_duration:

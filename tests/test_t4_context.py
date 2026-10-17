@@ -66,7 +66,7 @@ class ToneFourBeforeAHighOnsetTests(unittest.TestCase):
         self.assertEqual(words["tone"]["t4_min_fall_st"], 3.0)
         self.assertNotIn("t4_before_t4", words["tone"])
         self.assertNotIn("t4_by_duration", words["tone"])
-        self.assertEqual(ta.get_config(None, "easy")["tone"]["t4_min_fall_st"], 2.4)
+        self.assertEqual(ta.get_config(None, "easy")["tone"]["t4_min_fall_st"], 1.8)
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ class LevelConfigTests(unittest.TestCase):
 
     def test_easy_asks_for_a_smaller_movement_in_tones_2_3_and_4_only(self):
         std, easy = ta.get_config(), ta.get_config(None, "easy")
-        self.assertEqual((easy["tone"]["t2_min_rise_st"], easy["tone"]["t3_min_fall_st"], easy["tone"]["t4_min_fall_st"]), (2.0, 1.6, 2.4))
+        self.assertEqual((easy["tone"]["t2_min_rise_st"], easy["tone"]["t3_min_fall_st"], easy["tone"]["t4_min_fall_st"]), (2.0, 1.6, 1.8))
         for key in ("t1_max_delta_st", "t1_max_range_st", "t2_max_min_position", "t3_min_position", "t3_max_position"):
             self.assertEqual(easy["tone"][key], std["tone"][key], key)
         self.assertEqual(easy["confidence"], std["confidence"])               # the decision bars are not part of a level
