@@ -24,26 +24,68 @@ HOP_SEC = 0.01
 REASON_PRIORITY = ("clipped", "too_quiet", "noisy", "too_short", "too_long", "no_speech", "no_voicing")
 
 
+DECODE_TIMEOUT_SEC = 60
+_PYDUB_HARDENED = False
+
+
+def _harden_pydub():
+    """pydub starts `ffprobe` / `ffmpeg` with the stdin it inherits and waits for them forever. Started from a detached
+    background process (a batch job, a server worker), an `ffprobe` on Windows has hung for good on a perfectly good file.
+    Give pydub's child processes an empty stdin and a time limit, for pydub only (the shared `subprocess` module is untouched)."""
+    global _PYDUB_HARDENED
+    if _PYDUB_HARDENED:
+        return
+    import subprocess
+    import types
+
+    import pydub.audio_segment
+    import pydub.utils
+
+    class SafePopen(subprocess.Popen):
+        def __init__(self, *args, **kwargs):
+            if kwargs.get("stdin") is None:
+                kwargs["stdin"] = subprocess.DEVNULL
+            super().__init__(*args, **kwargs)
+
+        def communicate(self, input=None, timeout=None):
+            try:
+                return super().communicate(input, timeout if timeout is not None else DECODE_TIMEOUT_SEC)
+            except subprocess.TimeoutExpired:
+                self.kill()
+                super().communicate()
+                raise
+
+    shim = types.SimpleNamespace(**{name: getattr(subprocess, name) for name in dir(subprocess) if not name.startswith("_")})
+    shim.Popen = SafePopen
+    pydub.utils.Popen = SafePopen
+    pydub.audio_segment.subprocess = shim
+    _PYDUB_HARDENED = True
+
+
 def decode_audio(path, sample_rate=TARGET_RATE):
     """Decode any supported container to mono float32 at `sample_rate` (pydub shells out to FFmpeg).
 
     FFmpeg reads the file by its path. Handing pydub an open file instead makes it pipe the bytes through FFmpeg's
     `cache:pipe:0`, which writes a temp file with a FIXED name (ffcache2...) in the shared temp folder: two decodes at
     the same moment (the server and a batch job, two requests) collide with "File exists" and one of them fails, so a
-    learner's recording is refused for no reason. The piped way stays as a fallback, retried a few times."""
+    learner's recording is refused for no reason. The piped way stays as a fallback, retried a few times; a child process
+    that does not finish within DECODE_TIMEOUT_SEC is killed and counts as a failed try."""
+    import subprocess
+
     from pydub import AudioSegment
     from pydub.exceptions import CouldntDecodeError
 
+    _harden_pydub()
     try:
         segment = AudioSegment.from_file(str(path))
-    except (CouldntDecodeError, OSError):
+    except (CouldntDecodeError, OSError, subprocess.TimeoutExpired):
         segment = None
         for attempt in range(4):                       # a path FFmpeg cannot open (odd characters): pipe it, and retry a collision
             try:
                 with open(path, "rb") as handle:
                     segment = AudioSegment.from_file(handle)
                 break
-            except CouldntDecodeError:
+            except (CouldntDecodeError, subprocess.TimeoutExpired):
                 if attempt == 3:
                     raise
                 time.sleep(0.15 * (attempt + 1))
