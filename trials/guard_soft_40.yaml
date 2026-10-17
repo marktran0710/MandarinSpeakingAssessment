@@ -1,0 +1,4 @@
+# 'speech outside the aligned syllables' guard (2026-10-17): above 0.4 the alignment is not trusted (nothing judged); between 0.25 and 0.4 it is doubtful: judged, but no Needs practice.
+alignment:
+  max_unaligned_voiced_fraction: 0.25
+  hard_unaligned_voiced_fraction: 0.4

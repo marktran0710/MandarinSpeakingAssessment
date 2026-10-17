@@ -1169,7 +1169,7 @@ def track_stability(track_ok, jumps_by_syllable, scope="utterance"):
     return stable, [stable] * len(jumps_by_syllable)
 
 
-def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True, accuse_ok=True):
+def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True, accuse_ok=True, doubtful_alignment=False):
     align = config["alignment"]
     seg_start, seg_end, source = _segment_for(syllable, config)
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
@@ -1285,7 +1285,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     # it can be Good; but accusing needs more certainty than accepting: that recording may not produce a "Needs practice".
     # The same goes for a syllable whose tail had to be cut off behind a tracking jump (`sanity.jump_fragment_trim_ms`): judged on what
     # is left, it can be accepted but not accused.
-    held_back = status == "practice" and (not accuse_ok or trimmed_frames > 0)
+    held_back = status == "practice" and (not accuse_ok or trimmed_frames > 0 or doubtful_alignment)
     if held_back:
         status = "insufficient_evidence"
     edge_step = status != "insufficient_evidence" and edge_step_changes_verdict(
@@ -1313,7 +1313,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     elif short_window:
         result["reasons"].append("short_analysis_window")
     elif held_back:
-        result["reasons"].append("unstable_pitch_track" if not accuse_ok else "octave_jump_in_segment")
+        result["reasons"].append("bad_alignment" if doubtful_alignment else "unstable_pitch_track" if not accuse_ok else "octave_jump_in_segment")
     elif status == "insufficient_evidence":
         result["reasons"].append(
             "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
@@ -1646,11 +1646,17 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     for syllable in syllables:
         covered |= (extraction["times"] >= syllable["start"]) & (extraction["times"] < syllable["end"])
     outside = float((voiced_frames & ~covered).sum() / max(int(voiced_frames.sum()), 1))
-    unaligned = outside > config["alignment"]["max_unaligned_voiced_fraction"]
+    # Up to `max_unaligned_voiced_fraction` all is well. Above `hard_unaligned_voiced_fraction` (default: the same number) the alignment is not trusted and
+    # no syllable is judged. In between the alignment is DOUBTFUL (a hesitation, a repeated word, loose boundaries): syllables are judged as usual but the
+    # recording cannot accuse anyone (a syllable can be Good or Okay, never Needs practice).
+    soft_limit = config["alignment"]["max_unaligned_voiced_fraction"]
+    unaligned = outside > max(soft_limit, config["alignment"].get("hard_unaligned_voiced_fraction", soft_limit))
+    doubtful = soft_limit < outside and not unaligned
     if unaligned:
         for syllable in syllables:
             syllable["alignment_ok"] = False
-    extraction["diagnostics"].update({"voiced_outside_syllables": round(outside, 3), "speech_outside_alignment": unaligned})
+    extraction["diagnostics"].update({"voiced_outside_syllables": round(outside, 3), "speech_outside_alignment": unaligned,
+                                      "alignment_doubtful": doubtful})
     if baseline is None:
         voiced = extraction["f0"][np.isfinite(extraction["f0"])]
         if not len(voiced):
@@ -1686,7 +1692,8 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
             if end is not None and np.isfinite(end):
                 ctx = {**ctx, "previous_end_st": float(end)}
         raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index],
-                                  accuse_ok=stable and not trimmed_anywhere))   # a recording that needed a cut cannot accuse anyone
+                                  accuse_ok=stable and not trimmed_anywhere,   # a recording that needed a cut cannot accuse anyone
+                                  doubtful_alignment=doubtful))
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
     results = [_public(r) for r in raw]

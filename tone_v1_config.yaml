@@ -116,7 +116,13 @@ alignment:
   min_voiced_frames: 6
   allow_unk: false
   allow_spn: false
-  max_unaligned_voiced_fraction: 0.25   # more voiced speech than this outside every aligned syllable = alignment not trusted
+  # Voiced speech outside every aligned syllable (a hesitation, a repeated or extra word, loose boundaries). Up to max_unaligned_voiced_fraction all is
+  # well. Above hard_unaligned_voiced_fraction the alignment is not trusted and nothing is judged. In between it is DOUBTFUL: the syllables are judged
+  # as usual but the recording cannot accuse anyone (Good or Okay, never Needs practice). Measured 2026-10-17 (trials/guard_soft_40.yaml): learners
+  # (sentences) Good 67.2 -> 73.2% with Needs practice 2.9% unchanged; teacher audio read against a script missing the last 2 characters Good
+  # 77.0 -> 93.3% (it was 94.8% with the full script); against ANOTHER sentence Good 12.3 -> 23.8% (about chance).
+  max_unaligned_voiced_fraction: 0.25
+  hard_unaligned_voiced_fraction: 0.40
   skip_mfa_single_syllable: true        # one-syllable script: the syllable is the longest voiced run, no forced alignment
   single_syllable_bridge_ms: 80          # voiced gaps up to this are bridged when finding that run
   # Stock mandarin_taiwan_mfa plus the catalog characters it lacks (python build_mfa_dictionary.py).
