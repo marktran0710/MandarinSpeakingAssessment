@@ -178,3 +178,25 @@ learners' (median 2.2 st). So the rule is for learners, and its cost was measure
 
 Adopted: C with a floor of 0.8 st (the floor changed nothing on this data; it keeps a flat line from passing). 100 teacher sentences: Good 95.0 -> 95.2%, false
 alarms 6 -> 6. D was left out: tone 1 accepted as tone 4 more than doubles and the lowest Good bar becomes a 0.57 st fall.
+
+## Tone 1 against tone 4 in sentences (2026-10-17)
+
+In sentences the tone-4 bars are ~0.7-1.4 st while a tone 1 was Good for ANY drift up to 2.6 st (either way): a fall of 1-2.6 st was valid for both. Teachers' tone 1 hardly
+ever falls (sentences: 90% fall less than 0.2 st, median -0.9 = slightly rising); learners' tone 1 p90 is 1.4 st. Two rules, sentences only, verdict-only:
+
+1. `t1_max_fall_st` / `t1_fall_width_st`: a FALL has its own allowance (a rise keeps 2.6 st). Good while it falls at most t1_max_fall_st + 0.3 x width.
+2. `t4_steady`: a tone 4 that falls less than 2 st must fall steadily: >= 70% of the 5-frame-mean steps do not rise (`fall_steps_down` feature). Teacher tone 4 median 1.00, tone 1 0.40.
+
+Fall limit for tone 1 (Good at most x st), easy level:
+
+| limit | native tone 4 accepted as tone 1 | LATIC tone 1 Good | archived attempts tone 1 Good |
+|---|---|---|---|
+| 2.6 (before) | 8.5% | 93.9% | 89.4% |
+| 2.3 | 6.7% | 93.6% | 88.4% |
+| **2.0 (adopted)** | **4.1%** | **92.1%** | **87.4%** |
+| 1.75 | 2.3% | 86.0% | 85.0% |
+| 1.5 | 2.3% | 80.2% | 83.6% |
+
+With the steadiness rule at 0.70: native tone 1 accepted as a tone 4 2.9 -> 2.1% (0.85: 1.7%); learners' tone 4 Good 64.3 -> 63.1% (LATIC; 0.85: 61.1%), 64.9 -> 64.7% (archived).
+Teachers read correctly: tone 1 95.8%, tone 4 96.9%, unchanged; 100 teacher sentences unchanged (Good 95.2%, 6 false alarms).
+Single words keep the symmetrical tone 1 and have no steadiness rule: their tone 1 (median -1.0) and tone 4 (median ~10 st) are ~10 st apart.

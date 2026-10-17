@@ -1,0 +1,6 @@
+# A tone 4 that falls less than 2 st must fall steadily (>= 70% of the steps do not rise) (2026-10-17). Sentences only.
+sentence:
+  tone:
+    t4_steady:
+      below_st: 2.0
+      min_down_share: 0.70

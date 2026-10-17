@@ -1,0 +1,9 @@
+# Tone 1 vs tone 4 in sentences (2026-10-17): a tone 1 is Good while it falls at most about 2.0 st (it was 2.6, in both directions; a RISE keeps 2.6), and a tone 4 that falls
+# less than 2 st has to fall steadily (at least 70% of the 5-frame-mean steps do not rise). Sentences only.
+sentence:
+  tone:
+    t1_max_fall_st: 1.7
+    t1_fall_width_st: 1.0
+    t4_steady:
+      below_st: 2.0
+      min_down_share: 0.70

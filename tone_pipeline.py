@@ -1018,6 +1018,9 @@ def syllable_features(times, st, start, end, syllable_ms=None, followed_by_t4=Fa
         "fall_before_min": float(v_st[: low + 1].max() - v_st[low]),
         "rise_after_min": float(v_st[low:].max() - v_st[low]),
     })
+    if n >= 8:                       # how steadily the pitch goes down: the share of steps (5-frame mean) that do not rise; a flat or wobbly line scores low
+        smooth = np.convolve(v_st, np.ones(5) / 5, mode="valid")
+        feats["fall_steps_down"] = float(np.mean(np.diff(smooth) <= 0.02)) if len(smooth) > 2 else 1.0
     return feats
 
 
@@ -1066,7 +1069,8 @@ def _t4_fall_by_duration(f, tone_config):
 
 
 # Tone settings that change verdicts only; the boundary search must not see them (it would move boundaries to suit them).
-VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context", "t3_low_register")
+VERDICT_ONLY_TONE_RULES = ("t4_by_duration", "t4_before_t4", "final_tail_guard", "carryover_trim", "left_context", "t3_low_register",
+                           "t1_max_fall_st", "t1_fall_width_st", "t4_steady")
 
 
 def combine_factors(parts, config):
@@ -1081,8 +1085,13 @@ def combine_factors(parts, config):
 def tone_scores(f, allow_half_t3, config):
     """Soft 0..1 fit of a contour to each of T1-T4 (T3 = max of full and, if the context allows, half)."""
     t = config["tone"]
-    t1 = combine_factors([_le(abs(f["early_to_late_delta"]), t["t1_max_delta_st"]),
-                          _le(f["range_core_ST"], t["t1_max_range_st"], width=2.0)], config)
+    delta = f["early_to_late_delta"]
+    if "t1_max_fall_st" in t and delta > 0:
+        # a tone 1 hardly ever falls (teachers: 90% fall less than 0.2 st) and a fall of 1-2.5 st is what a shallow tone 4 looks like: its own, smaller allowance
+        delta_factor = _le(delta, t["t1_max_fall_st"], t.get("t1_fall_width_st", 1.0))
+    else:
+        delta_factor = _le(abs(delta), t["t1_max_delta_st"])
+    t1 = combine_factors([delta_factor, _le(f["range_core_ST"], t["t1_max_range_st"], width=2.0)], config)
     t2 = combine_factors([_ge(f["rise_after_min"], t["t2_min_rise_st"]), _le(f["min_position"], t["t2_max_min_position"], 0.2)], config)
     t3_full = combine_factors([_ge(f["fall_before_min"], t["t3_min_fall_st"]), _ge(f["rise_after_min"], t["t3_min_full_rise_st"]),
                                _window(f["min_position"], t["t3_min_position"], t["t3_max_position"])], config)
@@ -1095,6 +1104,9 @@ def tone_scores(f, allow_half_t3, config):
     t3_low = combine_factors([_le(f["start_ST"], low["max_start_st"], 2.0), _ge(-f["min_ST"], low["min_depth_st"]),
                               _le(f["max_ST"], low["max_st"], 2.0)], config) if low and allow_half_t3 else 0.0
     t4 = _ge(f["early_to_late_delta"], t4_min_fall(f, t))
+    steady = t.get("t4_steady")
+    if steady and "fall_steps_down" in f and f["early_to_late_delta"] < steady["below_st"]:
+        t4 *= _ge(f["fall_steps_down"], steady["min_down_share"])      # a shallow fall that wobbles or stays flat is a tone 1, not a small tone 4
     rule = t.get("t4_by_duration")
     if rule and rule.get("require_end_below_start") and not f["end_ST"] < f["start_ST"]:
         t4 = 0.0                                        # a tone 4 must end lower than it starts

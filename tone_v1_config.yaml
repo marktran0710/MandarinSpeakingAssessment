@@ -348,6 +348,18 @@ sentence:
       max_start_st: -2.0
       min_depth_st: 3.0
       max_st: 1.5
+    # Tone 1 against tone 4 (verdict-only). In sentences a tone 4 may fall only ~1 st, so the two overlapped: a tone 1 was Good for ANY drift up to 2.6 st, either way.
+    # A tone 1 hardly ever falls (teachers: 90% fall less than 0.2 st) and a rise is not what a shallow tone 4 looks like, so a FALL now has its own allowance: Good up to
+    # about 2.0 st (t1_max_fall_st + 0.3 x width), nothing at 2.7; a rise keeps 2.6. And a tone 4 that falls less than `below_st` must fall steadily: at least
+    # min_down_share of the steps (5-frame means) must not rise (teacher tone 4: median 1.00; teacher tone 1: 0.40). Measured 2026-10-17 (trials/t1t4_final.yaml):
+    # native tone 4 accepted as a tone 1 8.5 -> 4.1%, native tone 1 accepted as a tone 4 2.9 -> 2.1%, teachers' tone 1 and tone 4 read correctly unchanged (95.8 / 96.9%),
+    # 100 teacher sentences unchanged (Good 95.2%, 6 false alarms). Price on learners: tone 1 Good 93.9 -> 92.1% (LATIC), 89.4 -> 87.4% (archived attempts); tone 4 Good 64.3 -> 63.1%.
+    # A fall limit of 1.5 st separated them most (tone 4 as tone 1: 2.3%) but cost the learners' tone 1 14 points (93.9 -> 80.2%).
+    t1_max_fall_st: 1.7
+    t1_fall_width_st: 1.0
+    t4_steady:
+      below_st: 2.0
+      min_down_share: 0.70
     # Left context: a syllable is judged knowing what came before it. A tone 2 right after a high tone (a tone 1/2, or any
     # syllable whose pitch ended 3+ st above the speaker's median) has to dip first and rises less: native tone 2 is Good
     # only 68-82% of the time there (95% elsewhere). Rules apply in order; verdict-only (the boundary search never sees them).

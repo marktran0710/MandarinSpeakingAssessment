@@ -1,0 +1,8 @@
+# Both: asymmetric tone 1 and a steady shallow tone 4 (0.85) (2026-10-17). Sentences only.
+sentence:
+  tone:
+    t1_max_fall_st: 1.2
+    t1_fall_width_st: 1.0
+    t4_steady:
+      below_st: 2.0
+      min_down_share: 0.85
