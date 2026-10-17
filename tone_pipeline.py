@@ -1047,7 +1047,7 @@ def t4_min_fall(f, tone_config):
         # the first of two tone 4s may fall less (the second keeps the normal rule): `relaxation_st` lower than the length rule
         # says (a 220 ms syllable: 2.0 -> 1.5), or the absolute `min_fall_st`
         if "relaxation_st" in before_t4:
-            needed = max(needed - before_t4["relaxation_st"], 0.5)
+            needed = max(needed - before_t4["relaxation_st"], before_t4.get("floor_st", 0.5))      # never so low that a flat line passes
         else:
             needed = min(needed, before_t4["min_fall_st"])
     return needed
@@ -1244,7 +1244,9 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
     times, st, trimmed_frames = segment_pitch(clean, seg_start, seg_end, config)
     syllable_sec = syllable["end"] - syllable["start"]
-    followed_by_t4 = context.get("adjacent_next_tone") == 4
+    # `tone.t4_before_t4.next_tones` (default only 4): which next tones count as "a tone 4 followed by a high onset" (the fall is cut short because the
+    # next syllable starts high again: tone 4 starts at the top, tone 1 stays there)
+    followed_by_t4 = context.get("adjacent_next_tone") in tuple((config["tone"].get("t4_before_t4") or {}).get("next_tones", (4,)))
     feats = syllable_features(times, st, seg_start, seg_end, syllable_ms=syllable_sec * 1000.0, followed_by_t4=followed_by_t4)
 
     ac, cc = extraction["ac"][mask], extraction["cc"][mask]

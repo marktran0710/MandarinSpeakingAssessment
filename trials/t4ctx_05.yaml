@@ -1,0 +1,14 @@
+# Tone 4 before a high onset may fall 0.5 st less (2026-10-17). SENTENCES ONLY: single words keep t4_min_fall_st. The standard level and the easy level (the default) are changed the same way.
+# before a high onset (next tone 1 or 4) a tone 4 needs 0.5 st less (floor 0.5).
+sentence:
+  tone:
+    t4_before_t4:
+      relaxation_st: 0.5
+      next_tones: [1, 4]
+levels:
+  easy:
+    sentence:
+      tone:
+        t4_before_t4:
+          relaxation_st: 0.5
+          next_tones: [1, 4]

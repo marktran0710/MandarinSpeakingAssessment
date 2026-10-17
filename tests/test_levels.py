@@ -37,10 +37,10 @@ class LevelConfigTests(unittest.TestCase):
         self.assertTrue(easy["tone"]["clause_final_half_t3"])
         self.assertEqual(easy["confidence"]["practice_min_window_ms"], 130)
         self.assertEqual(easy["confidence"]["unstable_scope"], "syllable")
-        self.assertEqual(std["tone"]["t4_by_duration"]["min_fall_short_st"], 1.5)
-        self.assertEqual(easy["tone"]["t4_by_duration"]["min_fall_short_st"], 1.2)
+        self.assertEqual(std["tone"]["t4_by_duration"]["min_fall_short_st"], 1.2)
+        self.assertEqual(easy["tone"]["t4_by_duration"]["min_fall_short_st"], 0.9)
         self.assertTrue(easy["tone"]["t4_by_duration"]["require_end_below_start"])
-        self.assertEqual(easy["tone"]["t4_before_t4"]["min_fall_st"], 1.6)
+        self.assertEqual(easy["tone"]["t4_before_t4"], {"relaxation_st": 0.5, "floor_st": 0.8, "next_tones": [1, 4]})
         self.assertEqual([rule["set"]["t2_min_rise_st"] for rule in easy["tone"]["left_context"]], [1.6, 1.6])
         self.assertEqual([rule["set"]["t2_min_rise_st"] for rule in std["tone"]["left_context"]], [2.0, 2.0])
 

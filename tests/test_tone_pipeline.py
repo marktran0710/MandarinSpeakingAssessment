@@ -395,7 +395,9 @@ class ToneFourByDurationTests(unittest.TestCase):
     def test_production_has_the_rule_in_the_sentence_profile_only(self):
         import tone_assessment as ta
         self.assertNotIn("t4_by_duration", ta.get_config()["tone"])                    # single words: one number, 3.0 st
-        self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"], self.RULE)
+        self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"],
+                         {"short_ms": 180, "medium_ms": 300, "min_fall_short_st": 1.2, "min_fall_medium_st": 1.7, "min_fall_long_st": 2.2,
+                          "require_end_below_start": True})                                # 1.5 / 2.0 / 2.5 until 2026-10-17
 
     def test_the_syllable_length_reaches_the_scorer(self):
         feats = tp.syllable_features(np.linspace(0, 0.1, 20), np.linspace(1, -1, 20), 0.0, 0.1, syllable_ms=250)
@@ -1109,7 +1111,7 @@ class FirstToneFourBeforeToneFourTests(unittest.TestCase):
         self.assertEqual(tp.tone_scores(self.feats(True), False, CONFIG)[4], tp.tone_scores(self.feats(False), False, CONFIG)[4])
         import tone_assessment as ta
         self.assertNotIn("t4_before_t4", ta.get_config()["tone"])                      # single words
-        self.assertEqual(ta.get_config("sentence")["tone"]["t4_before_t4"], {"min_fall_st": 2.0})
+        self.assertEqual(ta.get_config("sentence")["tone"]["t4_before_t4"], {"relaxation_st": 0.5, "floor_st": 0.8, "next_tones": [1, 4]})
 
     def test_the_verdict_for_each_tone_four_of_a_pair(self):
         contexts = capt_core.expected_tone_contexts(["罵罵"])

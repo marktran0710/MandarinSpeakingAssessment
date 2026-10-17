@@ -158,3 +158,23 @@ cannot accuse anyone (like a doubtful alignment); 3 squeezed syllables gate it; 
 the sentence: read exactly the text on screen". Learner rate of squeezed syllables or extra speech was NOT a clean "false trip" rate: the flagged ones include
 the two with the most extra speech, so some are real mismatches. Not caught: extra words in the middle of the sentence (the rule only looks before the first and
 after the last syllable, because a middle insertion tripped 24-39% of the learner recordings).
+
+## Tone 4 in sentences: shallower falls in context (2026-10-17)
+
+Asked for: allow a shallower tone-4 fall in context, especially before a high onset or another tone 4, in sentences only (not single words).
+`tone.t4_before_t4` now takes `next_tones` (default [4]) and `floor_st`; sentences set `relaxation_st: 0.5, floor_st: 0.8, next_tones: [1, 4]` and the by-length bars
+are 0.3 st lower (standard 1.2 / 1.7 / 2.2, easy 0.9 / 1.3 / 1.7). Single words keep 3.0 st (easy 2.4).
+
+Teachers' tone 4 does NOT fall less before a high onset (median fall 4.0 st before tone 1/4, 3.5 st before tone 2/3; clause-final 7.6 st): the shallow falls are the
+learners' (median 2.2 st). So the rule is for learners, and its cost was measured on the confusion that matters (easy level, native syllables read as the wrong tone):
+
+| variant (sentences, easy level) | LATIC tone-4 Good | archived attempts tone-4 Good | native tone 1 accepted as tone 4 | all wrong tones accepted |
+|---|---|---|---|---|
+| today | 57.5% | 60.4% | 1.3% | 24.6% |
+| A: 0.5 st less before tone 1/4 | 58.9% | 61.7% | 1.3% | 24.7% |
+| B: 0.8 st less before tone 1/4 | 59.8% | 62.7% | 1.7% | 24.8% |
+| C: A + every sentence tone 4 bar 0.3 st lower | 61.9% | 63.3% | 1.7% | 24.9% |
+| D: A + every bar 0.5 st lower | 64.3% | 63.5% | 3.0% | 25.1% |
+
+Adopted: C with a floor of 0.8 st (the floor changed nothing on this data; it keeps a flat line from passing). 100 teacher sentences: Good 95.0 -> 95.2%, false
+alarms 6 -> 6. D was left out: tone 1 accepted as tone 4 more than doubles and the lowest Good bar becomes a 0.57 st fall.

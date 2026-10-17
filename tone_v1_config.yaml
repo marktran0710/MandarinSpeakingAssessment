@@ -296,12 +296,14 @@ levels:
         t4_by_duration:
           short_ms: 180
           medium_ms: 300
-          min_fall_short_st: 1.2
-          min_fall_medium_st: 1.6
-          min_fall_long_st: 2.0
+          min_fall_short_st: 0.9
+          min_fall_medium_st: 1.3
+          min_fall_long_st: 1.7
           require_end_below_start: true
         t4_before_t4:
-          min_fall_st: 1.6
+          relaxation_st: 0.5
+          floor_st: 0.8
+          next_tones: [1, 4]
         left_context:
           - when: {tone: 2, previous: [1, 2]}
             set: {t2_min_rise_st: 1.6, t2_max_min_position: 0.90}
@@ -320,12 +322,19 @@ sentence:
     t4_by_duration:               # the fall a tone 4 needs depends on how long the aligned syllable is
       short_ms: 180
       medium_ms: 300
-      min_fall_short_st: 1.5      # < 180 ms
-      min_fall_medium_st: 2.0     # 180 - 300 ms
-      min_fall_long_st: 2.5       # >= 300 ms
+      min_fall_short_st: 1.2      # < 180 ms     (1.5 until 2026-10-17)
+      min_fall_medium_st: 1.7     # 180 - 300 ms (2.0)
+      min_fall_long_st: 2.2       # >= 300 ms    (2.5)
       require_end_below_start: true
-    t4_before_t4:                 # the first of two tone 4s in a row (also across a word end); the second keeps the normal rule
-      min_fall_st: 2.0
+    # A tone 4 followed by a syllable that starts high (tone 1, or another tone 4) is cut short: it needs relaxation_st less, never below floor_st
+    # (so a flat line never passes). Sentences only: single words keep t4_min_fall_st. Measured 2026-10-17 (trials/t4gen_03_ctx_05_floor08.yaml): 4 learners
+    # (LATIC) tone-4 Good 57.5 -> 61.9%, archived attempts 60.6 -> 63.4%; native tone 1 accepted as a tone 4 1.3 -> 1.7%; 100 teacher sentences Good
+    # 95.0 -> 95.2% with 6 false alarms before and after. (Teachers' tone 4 falls the same ~4 st before a high onset as before a low one; it is the learners'
+    # shallow falls, median 2.2 st, that this is for.)
+    t4_before_t4:
+      relaxation_st: 0.5
+      floor_st: 0.8
+      next_tones: [1, 4]
     # A tone 3 is first of all LOW: a syllable that starts low (<= -2 st), reaches a point >= 3 st below the speaker's median and never gets high
     # (max <= 1.5 st) is accepted as a tone 3, with or without a rise. Said at the start of a clause or after a low syllable there is no fall into
     # the low point, which both other forms require: all 8 tone-3 syllables of the learner recordings that were Needs practice had none, and 5 of
