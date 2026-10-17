@@ -233,3 +233,22 @@ Control: `trials/t4_tiny_off.yaml` (tiny_ms 0 = class off). Tone-4 syllables und
 | native confusion replay, easy: correct reading Good / wrong tone accepted | 93.2 / 23.8 | 93.2 / 23.8 |
 
 Below ~85 ms of window nothing can be flagged (the 100 ms floor), so the class can only turn Okay into Good. Its value is for live speakers whose tone 4 is shorter than anything in the data.
+
+## A syllable squeezed to a stub is given back its own voice (2026-10-17)
+
+Found on a live attempt (友美，妳這個週末要做什麼？): the aligner gave 這 a 90 ms stub that only covered the fading end of 妳 (the chart of the phrase began with that tail) and let 個 swallow BOTH
+real falls (2.78-3.05 s and 3.13-3.30 s): 這 was Okay ("short window") although well said, 個 was judged on both syllables. `alignment.repair_collapsed` (all profiles; `trials/repair_off.yaml` is
+the control): a syllable of <= 130 ms with no voice of its own (not neutral), whose span up to the next syllable's end holds exactly two voiced stretches of >= 70 ms, gets the first stretch
+and the next syllable the second (boundary half-way through the gap, nucleus = the stretch). Repaired syllables are judged but never accuse (`bad_alignment`, Practice -> Okay).
+Stubs of this kind (<= 100 ms, then a >= 250 ms gap): 13 of 205 learner attempts, 6 of 160 LATIC utterances.
+
+| | repair off | on |
+|---|---|---|
+| single words, teacher audio (237 syll.): Good % / false alarms | 95.4 / 0 | 95.4 / 0 |
+| 100 teacher sentences: Good % / false alarms | 95.2 / 8 | 95.3 / 8 |
+| 520 synthetic wrong tones: error recall / false accept % | 48.0 / 21.3 | 48.0 / 21.3 |
+| archived learners (211 attempts): Good / Okay / Practice % | 73.8 / 19.9 / 6.3 | 73.9 / 20.0 / 6.2 |
+| LATIC learners (160 utterances): Good / Okay / Practice % | 72.4 / 16.9 / 10.8 | 72.3 / 16.9 / 10.8 |
+
+Verdicts that moved: learners 10 syllables in 10 attempts (Okay -> Good 3, Practice -> Good 2, Practice -> Okay 2, Good -> Okay 3: a 個 that had been Good on two syllables' worth of pitch is now judged on its own
+and cannot accuse); LATIC 1 (Good -> Okay: a 無 that had been credited with the tail of the syllable before). Words, synthetic set and native confusion data: no change.

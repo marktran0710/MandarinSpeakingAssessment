@@ -1581,6 +1581,55 @@ def _shifted_segment(syllable, shift_start, shift_end, config):
     return start + cleanup["fallback_onset_trim"] * span, end - cleanup["fallback_offset_trim"] * span
 
 
+def _voiced_stretches(clean, bridge_ms):
+    """[(start_sec, end_sec)] of the voiced stretches of a cleaned contour; unvoiced gaps up to `bridge_ms` are bridged."""
+    times, step = np.asarray(clean["times"]), float(clean["step"])
+    bridge = int(round(bridge_ms / 1000.0 / step))
+    runs = []
+    for start, end in _voiced_runs(np.isfinite(clean["st"])):
+        if runs and start - runs[-1][1] <= bridge:
+            runs[-1][1] = end
+        else:
+            runs.append([start, end])
+    return [(float(times[a]), float(times[b - 1]) + step) for a, b in runs]
+
+
+def repair_collapsed_syllables(syllables, contexts, clean, config):
+    """Give a syllable the voice it was squeezed out of. Returns (syllables, indices of the repaired ones).
+
+    Sometimes the aligner shrinks a syllable to a ~90 ms stub right behind the previous one (all it covers is that syllable's fading tail)
+    and lets the next syllable swallow BOTH: the next window then holds two separate voiced stretches, the first of which really is the stub's.
+    The stub is then judged on a tail that is not its own (Okay, "too short"), and the next syllable on the wrong frames. When the span from the stub's end
+    to the next syllable's end holds exactly two voiced stretches of a plausible length, the stub gets the first and the next syllable the second.
+    Anything else (one stretch, three, a stub that has voice of its own, a neutral stub) is left as the aligner put it.
+    The repaired syllables are marked `alignment_repaired`: a heuristic repair never accuses (see verify_utterance)."""
+    cfg = config["alignment"].get("repair_collapsed") or {}
+    if not cfg.get("enabled") or len(syllables) < 2 or any(not s.get("alignment_ok", True) for s in syllables):
+        return syllables, []
+    stretches = _voiced_stretches(clean, cfg["bridge_ms"])
+    min_run, stub_max, onset = cfg["min_run_ms"] / 1000.0, cfg["stub_max_ms"] / 1000.0, cfg["onset_ms"] / 1000.0
+    tolerance = 0.02
+    repaired, out = [], list(syllables)
+    for i in range(len(out) - 1):
+        stub, nxt = out[i], out[i + 1]
+        if stub["end"] - stub["start"] > stub_max or contexts[i]["target_tone"] == 5:
+            continue
+        if any(a >= stub["start"] - tolerance and a < stub["end"] and b - a >= tolerance for a, b in stretches):
+            continue                                                  # it has voice of its own: not a stub
+        inside = [(a, b) for a, b in stretches if a >= stub["end"] - tolerance and a < nxt["end"] and b - a >= min_run]
+        if len(inside) != 2:
+            continue
+        (a1, b1), (a2, b2) = inside
+        split = (b1 + a2) / 2.0
+        start = max(stub["start"], a1 - onset)
+        out[i] = dict(stub, start=start, end=split, nucleus=(a1, b1), phones=[], segment_source="repaired_voiced_run",
+                      alignment_repaired={"was_ms": [round(stub["start"] * 1000), round(stub["end"] * 1000)]})
+        out[i + 1] = dict(nxt, start=split, nucleus=(a2, min(b2, nxt["end"])), phones=[], segment_source="repaired_voiced_run",
+                          alignment_repaired={"was_ms": [round(nxt["start"] * 1000), round(nxt["end"] * 1000)]})
+        repaired += [i, i + 1]
+    return out, repaired
+
+
 def search_boundaries(syllables, contexts, clean, config):
     """Choose syllable boundaries within +-max_shift_ms of the aligner's so the expected tones fit best.
 
@@ -1760,6 +1809,8 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
         speaker["baseline_hz"] = baseline
     clean = clean_contour(extraction, baseline, config)
 
+    syllables, repaired = repair_collapsed_syllables(syllables, contexts, clean, config)
+    extraction["diagnostics"]["alignment_repaired"] = repaired
     syllables, boundary_search = search_boundaries(syllables, contexts, clean, config)
     # A jump counts against stability only if it survives cleanup (median filter, octave fixes) AND lies inside a
     # syllable's analysis segment. A step between two syllables is an ordinary transition, not a tracking error.
@@ -1788,7 +1839,7 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
                 ctx = {**ctx, "previous_end_st": float(end)}
         raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index],
                                   accuse_ok=stable and not trimmed_anywhere,   # a recording that needed a cut cannot accuse anyone
-                                  doubtful_alignment=doubtful))
+                                  doubtful_alignment=doubtful or bool(s.get("alignment_repaired"))))
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
     results = [_public(r) for r in raw]

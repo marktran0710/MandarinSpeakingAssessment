@@ -1,0 +1,4 @@
+# Switches the collapsed-syllable repair OFF (2026-10-17): the control for alignment.repair_collapsed, which production now has on.
+alignment:
+  repair_collapsed:
+    enabled: false

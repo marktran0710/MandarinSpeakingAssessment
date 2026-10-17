@@ -123,6 +123,15 @@ alignment:
   # 77.0 -> 93.3% (it was 94.8% with the full script); against ANOTHER sentence Good 12.3 -> 23.8% (about chance).
   max_unaligned_voiced_fraction: 0.25
   hard_unaligned_voiced_fraction: 0.40
+  # A syllable the aligner squeezed to a ~90 ms stub (it only covers the previous syllable's fading tail) while the next one swallowed both: when the span up to the
+  # next syllable's end holds exactly two voiced stretches, the stub gets the first and the next syllable the second. Repaired syllables are judged but never accuse.
+  # Found 2026-10-17 on a live 這個 (the chart began with that tail, 這 was Okay and 個 was judged on both falls).
+  repair_collapsed:
+    enabled: true
+    stub_max_ms: 130                    # the aligner leaves 90-110 ms (before the boundary search moves them by up to 20 ms)
+    bridge_ms: 40                       # voiced gaps up to this are one stretch
+    min_run_ms: 70                      # a stretch shorter than this is not a syllable
+    onset_ms: 100                       # the repaired syllable starts this long before its voiced stretch (the consonant)
   skip_mfa_single_syllable: true        # one-syllable script: the syllable is the longest voiced run, no forced alignment
   single_syllable_bridge_ms: 80          # voiced gaps up to this are bridged when finding that run
   # Stock mandarin_taiwan_mfa plus the catalog characters it lacks (python build_mfa_dictionary.py).
