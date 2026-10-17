@@ -61,8 +61,13 @@ def trial_config(trial):
     original = tp.load_config
 
     def patched(path=None, overrides=None, **_):             # same signature as tp.load_config (callers use overrides=)
-        config = original(path, overrides)
+        # Layers, as in production: the file, then the trial's values, then a profile's own settings (the `sentence:`
+        # section, already merged with the trial's `sentence:` values). Applying the trial last would let a word-mode
+        # value overwrite the phrase-mode value for the same key.
+        config = original(path, None)
         deep_update(config, trial)
+        for section, values in (overrides or {}).items():
+            config.setdefault(section, {}).update(values)
         return config
 
     tp.load_config = patched

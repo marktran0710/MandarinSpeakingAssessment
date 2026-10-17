@@ -25,6 +25,16 @@ class TrialConfigTests(unittest.TestCase):
         self.assertIs(tp.load_config, before)                                                # restored
         self.assertEqual(ta.get_config("sentence")["tone"]["t4_by_duration"]["short_ms"], 180)
 
+    def test_word_and_phrase_values_for_the_same_key_stay_separate(self):
+        trial = {"tone": {"t1_max_delta_st": 2.5}, "confidence": {"practice_min_window_ms": 100},
+                 "sentence": {"tone": {"t1_max_delta_st": 3.0}, "confidence": {"practice_min_window_ms": 130}}}
+        with cc.trial_config(trial):
+            self.assertEqual(ta.get_config()["tone"]["t1_max_delta_st"], 2.5)                  # single words
+            self.assertEqual(ta.get_config("sentence")["tone"]["t1_max_delta_st"], 3.0)        # phrases keep their own value
+            self.assertEqual(ta.get_config()["confidence"]["practice_min_window_ms"], 100)
+            self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 130)
+        self.assertEqual(ta.get_config()["tone"]["t1_max_delta_st"], 2.0)
+
     def test_a_base_trial_changes_both_profiles(self):
         with cc.trial_config({"tone": {"t4_min_fall_st": 2.5}, "confidence": {"likely_correct_match": 0.6}}):
             self.assertEqual(ta.get_config()["tone"]["t4_min_fall_st"], 2.5)
@@ -41,7 +51,7 @@ class TrialConfigTests(unittest.TestCase):
                      "rule7_final_tail_sentence.yaml", "rule7_final_tail_30_sentence.yaml", "rule9_carryover_sentence.yaml",
                      "rule9_carryover_strong_sentence.yaml", "rule8_short_130_sentence.yaml", "rule8_short_180_sentence.yaml",
                      "rules_combined_sentence.yaml", "rule10_reduplication_sentence.yaml",
-                     "rules_recommended_sentence.yaml", "user_ruleset_b.yaml"):
+                     "rules_recommended_sentence.yaml", "user_ruleset_b.yaml", "user_config_c.yaml", "user_config_c_floor130.yaml"):
             self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
 
 

@@ -1,0 +1,41 @@
+# Trial C with the phrase floor kept at today's 130 ms - the word-mode / phrase-mode table pasted by the project owner (2026-10-17), with this pipeline's keys.
+#   "Word mode" column   = single-word practice (the base config); "Phrase mode" = sentence practice (the `sentence:` profile).
+#   T1 max delta / range          -> tone.t1_max_delta_st / t1_max_range_st      (word 2.5 / 5.0, phrase 3.0 / 5.5)
+#   T2 min rise / max low position-> tone.t2_min_rise_st / t2_max_min_position   (word 2.0 / 0.85, phrase 1.5 / 0.90)
+#   T3 min fall / min rise (full) -> tone.t3_min_fall_st / t3_min_full_rise_st   (word 1.5 / 1.5, phrase 1.5 / 1.0)
+#   Half-T3 "allowed (+ phrase-final)" -> a half-third is accepted wherever the context allows it (both modes);
+#                                    tone.clause_final_half_t3 true for phrases (already the case)
+#   T4 "duration-aware (+ T4->T4 context)" -> tone.t4_by_duration for both; tone.t4_before_t4 for phrases (as in production)
+#   practice_min_window "100 ms"  -> confidence.practice_min_window_ms 100 for both (phrases are 130 in production)
+# Everything the table does not mention keeps today's value (T3 low-point position, the quality / match thresholds).
+tone:
+  t1_max_delta_st: 2.5
+  t1_max_range_st: 5.0
+  t2_min_rise_st: 2.0
+  t2_max_min_position: 0.85
+  t3_min_fall_st: 1.5
+  t3_min_full_rise_st: 1.5
+  t4_by_duration:
+    short_ms: 180
+    medium_ms: 300
+    min_fall_short_st: 1.5
+    min_fall_medium_st: 2.0
+    min_fall_long_st: 2.5
+    require_end_below_start: true
+
+confidence:
+  practice_min_window_ms: 100
+
+sentence:
+  confidence:
+    practice_min_window_ms: 130
+  tone:
+    t1_max_delta_st: 3.0
+    t1_max_range_st: 5.5
+    t2_min_rise_st: 1.5
+    t2_max_min_position: 0.90
+    t3_min_fall_st: 1.5
+    t3_min_full_rise_st: 1.0
+    clause_final_half_t3: true
+    t4_before_t4:
+      min_fall_st: 2.0
