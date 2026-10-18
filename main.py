@@ -23,6 +23,7 @@ from pypinyin import lazy_pinyin, Style
 
 import audio_prep
 import capt_core as core
+import tts_sample
 import tone_assessment
 import tone_pipeline
 from practice_store import practice_store
@@ -223,6 +224,20 @@ converter = opencc.OpenCC('s2twp')   # Normalize scripts to Taiwan Traditional C
 SEGMENT_LEXICON = tone_assessment.build_lexicon(
     [word for words in WORD_ANNOTATIONS.values() for word in words]
     + [item["script"] for item in CHAPTER5_WORD_ITEMS.values()], converter.convert)
+
+
+@app.get("/api/tts-sample")
+def tts_sample_audio(text: str = ""):
+    """A computer-voice sample of what the learner typed in "My own text" (Windows' Taiwan Mandarin voice, a little slow; cached). Not used for scoring."""
+    text = text[:200]
+    converted = converter.convert(text)
+    try:
+        path = tts_sample.synthesize(converted if len(converted) == len(text) else text)
+    except tts_sample.BadText as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except tts_sample.SampleUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    return FileResponse(path, media_type="audio/wav", headers={"Cache-Control": "private, max-age=3600"})
 
 
 @app.get("/api/pinyin")
@@ -1063,7 +1078,11 @@ async def read_index():
             .sample-audio-section[hidden] { display: none; }
             .sample-audio-section label { margin: 0; font-size: 13px; color: #4a5568; flex: 0 0 auto; }
             .sample-audio-section audio { flex: 1 1 220px; width: auto; height: 36px; margin: 0; }
-            .sample-audio-section .upload-hint, .sample-audio-error { flex: 1 1 100%; margin: 0; }
+                .sample-audio-section .upload-hint, .sample-audio-error { flex: 1 1 100%; margin: 0; }
+            .custom-sample { margin: 8px 0 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+            .custom-sample[hidden], .custom-sample audio[hidden] { display: none; }
+            .custom-sample audio { flex: 1 1 220px; width: auto; height: 36px; margin: 0; }
+            .custom-sample .upload-hint, .custom-sample .sample-audio-error { flex: 1 1 100%; margin: 0; }
             #scriptBlock { position: relative; }
             #scriptBlock > label { font-size: 13px; color: #4a5568; }
             #scriptInput[readonly] { display: none; }          /* the same text is shown with pinyin right below */
@@ -1237,6 +1256,12 @@ async def read_index():
                     <input type="checkbox" id="showPinyin" checked onchange="refreshPinyinDisplay()">
                     <span data-i18n="showPinyin">Show pinyin</span>
                 </label>
+                <div id="customSampleBlock" class="custom-sample" hidden>
+                    <button type="button" id="customSampleBtn" onclick="playCustomSample()" data-i18n="customSampleListen">Listen to a sample</button>
+                    <audio id="customSampleAudio" controls preload="none" hidden aria-label="Sample" data-i18n-aria-label="customSampleListen"></audio>
+                    <p class="upload-hint" data-i18n="customSampleNote">A computer voice reading your text a little slowly. It is only a guide; a word may sound slightly different from a teacher\u2019s reading.</p>
+                    <p id="customSampleError" class="sample-audio-error" role="status" hidden></p>
+                </div>
             </div>
 
             <div class="record-controls">
@@ -1375,6 +1400,11 @@ async def read_index():
             customTextPreview: "Entered text preview",
             customScriptLabel: "Text to read:",
             customTextHint: "Enter any Mandarin text. It does not need to appear in a textbook.",
+            customSampleListen: "Listen to a sample",
+            customSampleBusy: "Making the sample\u2026",
+            customSampleNote: "A computer voice reading your text a little slowly. It is only a guide; a word may sound slightly different from a teacher\u2019s reading.",
+            customSampleError: "The sample could not be made. Try again.",
+            customSampleUnavailable: "The sample voice is not available on this server.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1511,6 +1541,11 @@ async def read_index():
                     customTextPreview: "輸入文本預覽",
                     customScriptLabel: "朗讀文本：",
                     customTextHint: "輸入任何華語文本，不必對應課本內容。",
+                    customSampleListen: "聽範例",
+                    customSampleBusy: "正在製作範例……",
+                    customSampleNote: "電腦語音會稍微放慢朗讀你的文本，僅供參考，個別詞的唸法可能與老師略有不同。",
+                    customSampleError: "無法製作範例，請再試一次。",
+                    customSampleUnavailable: "這台伺服器沒有可用的範例語音。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -1646,6 +1681,11 @@ async def read_index():
                     customTextPreview: "Xem trước nội dung đã nhập",
                     customScriptLabel: "Nội dung cần đọc:",
                     customTextHint: "Nhập bất kỳ văn bản tiếng Trung nào; không cần có trong sách.",
+                    customSampleListen: "Nghe thử mẫu",
+                    customSampleBusy: "Đang tạo âm thanh mẫu…",
+                    customSampleNote: "Giọng máy đọc chậm văn bản của bạn. Chỉ để tham khảo; một số từ có thể nghe hơi khác so với giáo viên đọc.",
+                    customSampleError: "Không tạo được âm thanh mẫu. Hãy thử lại.",
+                    customSampleUnavailable: "Máy chủ này chưa có giọng đọc mẫu.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -1800,6 +1840,11 @@ async def read_index():
                     customTextPreview: "Pratinjau teks yang dimasukkan",
                     customScriptLabel: "Teks yang dibaca:",
                     customTextHint: "Masukkan teks Mandarin apa saja. Tidak harus ada di buku pelajaran.",
+                    customSampleListen: "Dengarkan contoh",
+                    customSampleBusy: "Membuat contoh…",
+                    customSampleNote: "Suara komputer membacakan teks Anda dengan agak pelan. Hanya sebagai panduan; beberapa kata bisa terdengar sedikit berbeda dari bacaan guru.",
+                    customSampleError: "Contoh tidak dapat dibuat. Coba lagi.",
+                    customSampleUnavailable: "Suara contoh tidak tersedia di server ini.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2044,6 +2089,11 @@ async def read_index():
                     customTextPreview: "दर्ज किए गए पाठ का पूर्वावलोकन",
                     customScriptLabel: "पढ़ने का पाठ:",
                     customTextHint: "कोई भी मंदारिन पाठ लिखें। उसका पाठ्यपुस्तक में होना ज़रूरी नहीं है।",
+                    customSampleListen: "नमूना सुनें",
+                    customSampleBusy: "नमूना बन रहा है…",
+                    customSampleNote: "कंप्यूटर की आवाज़ आपका पाठ थोड़ा धीमे पढ़ती है। यह केवल मार्गदर्शन है; कुछ शब्द शिक्षक के पढ़ने से थोड़ा अलग लग सकते हैं।",
+                    customSampleError: "नमूना नहीं बन सका। फिर कोशिश करें।",
+                    customSampleUnavailable: "इस सर्वर पर नमूना आवाज़ उपलब्ध नहीं है।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -2663,6 +2713,8 @@ async def read_index():
                 document.getElementById("chapter5CategoryPicker").hidden = !isChapter5;
                 document.getElementById("chapter5WordControls").hidden = !isChapter5;
                 document.getElementById("customTextHint").hidden = !isCustom;
+                document.getElementById("customSampleBlock").hidden = !isCustom;
+                if (!isCustom) document.getElementById("customSampleAudio").pause();
                 document.getElementById("pinyinToggle").hidden = false;
                 document.getElementById("chapter5ReferenceLabel").hidden = !isChapter5;
                 if (!isChapter5) document.getElementById("chapter5OptionalHint").hidden = true;
@@ -2722,10 +2774,62 @@ async def read_index():
                 }, 250);
             }
 
+            // "My own text": a computer-voice sample of the typed text (the server's Taiwan Mandarin voice), made when the learner asks for it.
+            let customSample = { script: "", url: "" };
+
+            function hideStaleCustomSample(script) {
+                if (customSample.script !== script) {
+                    const audio = document.getElementById("customSampleAudio");
+                    audio.pause();
+                    audio.hidden = true;
+                }
+                document.getElementById("customSampleError").hidden = true;
+            }
+
+            async function playCustomSample() {
+                const script = document.getElementById("scriptInput").value;
+                const button = document.getElementById("customSampleBtn");
+                const audio = document.getElementById("customSampleAudio");
+                const error = document.getElementById("customSampleError");
+                error.hidden = true;
+                if (!hasMandarinCharacters(script)) {
+                    showTranslatedStatus("customTextHint");
+                    return;
+                }
+                if (customSample.script === script && customSample.url) {
+                    audio.hidden = false;
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                    return;
+                }
+                button.disabled = true;
+                button.textContent = t("customSampleBusy");
+                try {
+                    const response = await fetch(`/api/tts-sample?text=${encodeURIComponent([...script].slice(0, 200).join(""))}`);
+                    if (!response.ok) throw new Error(String(response.status));
+                    const blob = await response.blob();
+                    if (document.getElementById("scriptInput").value !== script) return;          // the text changed while it was being made
+                    if (customSample.url) URL.revokeObjectURL(customSample.url);
+                    customSample = { script, url: URL.createObjectURL(blob) };
+                    audio.src = customSample.url;
+                    audio.hidden = false;
+                    audio.play().catch(() => {});
+                } catch (failure) {
+                    const key = failure.message === "503" ? "customSampleUnavailable" : "customSampleError";
+                    error.dataset.i18n = key;
+                    error.textContent = t(key);
+                    error.hidden = false;
+                } finally {
+                    button.disabled = false;
+                    button.textContent = t("customSampleListen");
+                }
+            }
+
             function handleScriptInput() {
                 if (selectedPracticeMode() !== "custom") return;
                 const script = document.getElementById("scriptInput").value;
                 customTextDraft = script;
+                hideStaleCustomSample(script);
                 renderCustomTranscript(script);
                 requestCustomPinyin(script);
                 lastAssessment = null;
