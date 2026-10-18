@@ -37,8 +37,8 @@ class ToneFourBeforeAHighOnsetTests(unittest.TestCase):
     def test_the_bars_before_a_high_onset_are_half_a_semitone_lower_and_never_below_the_floor(self):
         self.assertEqual([round(self.bars(self.sentence, ms, False), 3) for ms in (150, 220, 350)], [1.2, 1.7, 2.2])
         self.assertEqual([round(self.bars(self.sentence, ms, True), 3) for ms in (150, 220, 350)], [0.8, 1.2, 1.7])       # 0.7 -> the 0.8 floor
-        self.assertEqual([round(self.bars(self.easy, ms, False), 3) for ms in (150, 220, 350)], [0.25, 0.25, 0.25])               # one bar for every length
-        self.assertEqual([round(self.bars(self.easy, ms, True), 3) for ms in (150, 220, 350)], [0.25, 0.25, 0.25])         # the 0.8 floor holds up a lowered bar, it never raises the bar itself
+        self.assertEqual([round(self.bars(self.easy, ms, False), 3) for ms in (150, 220, 350)], [0.38, 0.54, 0.71])
+        self.assertEqual([round(self.bars(self.easy, ms, True), 3) for ms in (150, 220, 350)], [0.38, 0.54, 0.71])         # the 0.8 floor holds up a lowered bar, it never raises the bar itself
 
     def test_the_floor_is_a_setting(self):
         config = copy.deepcopy(self.sentence)
@@ -55,7 +55,7 @@ class ToneFourBeforeAHighOnsetTests(unittest.TestCase):
 
     def test_a_really_clipped_tone_four_has_its_own_lower_bar(self):
         self.assertEqual([self.bars(self.sentence, ms, False) for ms in (100, 139.9, 140, 179.9)], [0.9, 0.9, 1.2, 1.2])
-        self.assertEqual([self.bars(self.easy, ms, False) for ms in (100, 139.9, 140, 179.9)], [0.25, 0.25, 0.25, 0.25])
+        self.assertEqual([self.bars(self.easy, ms, False) for ms in (100, 139.9, 140, 179.9)], [0.25, 0.25, 0.38, 0.38])
         self.assertEqual(self.bars(self.sentence, 120, True), 0.8)                     # 0.9 - 0.5 = 0.4 -> the 0.8 floor
 
     def test_a_tone_four_before_tone_one_or_tone_four_gets_the_lower_bar_one_before_tone_two_does_not(self):
