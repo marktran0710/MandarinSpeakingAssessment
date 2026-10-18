@@ -108,6 +108,8 @@ TAIWAN_WORD_TONES = {
     "覺得": [2, 5],
     "睡覺": [4, 4],             # shuìjiào; pypinyin reads Traditional 覺 as jué
     "衣服": [1, 5],
+    "休息": [1, 2],             # xiūxí in Taiwan (pypinyin: xiūxī)
+    "頭髮": [2, 3],             # tóufǎ in Taiwan (pypinyin: tóufà)
     # Reduplicated kinship terms: neutral second syllable (book Pinyin, MOE).
     "哥哥": [1, 5],
     "姐姐": [3, 5],
@@ -115,21 +117,32 @@ TAIWAN_WORD_TONES = {
     "妹妹": [4, 5],
     "弟弟": [4, 5],
 }
-# Everyday words whose LAST syllable is read light (neutral tone) in Taiwan Mandarin, as a learner is taught and hears them: 認識 rèn‧shi, 謝謝 xiè‧xie.
-# pypinyin cannot give these (it has no light-tone information for most of them, and its phrase dictionary is keyed by Simplified characters), so without
-# this list the page printed 認識 as "rèn shí". The first syllable keeps pypinyin's tone. A light syllable is not scored. Words the textbook itself prints with a full
-# tone (窗戶 chuānghù, 家具 jiājù, 客廳 kètīng, the (miàn) of 上面/下面 ...) must NOT be listed: tests/test_light_words.py checks the Chapter 5 book pinyin.
-LIGHT_FINAL_WORDS = tuple("""
-爸爸 媽媽 奶奶 爺爺 叔叔 伯伯 舅舅 姑姑 嬸嬸 娃娃 寶寶 星星 謝謝 拜拜
-看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
-認識 先生 學生 太太 小姐 師傅 丈夫 兄弟 親戚 姑娘 意思 清楚 明白 休息 麻煩 客氣
-眼睛 耳朵 頭髮 脾氣 便宜 暖和 熱鬧 打算 行李 玻璃 豆腐 葡萄 蘿蔔 嘴巴 腦袋 屁股 生意 名字 早上 蘑菇 風箏
+# Words whose LAST syllable is light (neutral tone) in Taiwan Mandarin, in three states (checked against the Ministry of Education's 重編國語辭典修訂本 and the
+# textbook teachers; pypinyin has no light-tone information for most of them and its phrase dictionary is keyed by Simplified characters, so without this the page
+# printed 認識 as "rèn shí"):
+#   REQUIRED_LIGHT   the dictionary gives a light last syllable: 爸爸 bàba, 謝謝 xièxie, 意思 yìsi ... The first syllable keeps pypinyin's tone.
+#   OPTIONAL_LIGHT   a light last syllable is allowed but not required: repeated verbs (看看, in slow careful speech the second is kept), words with another reading
+#                    (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣 by sense) and the ones not confirmed yet. Shown light.
+#   FULL_TONE        every other word: nothing to list (pypinyin's tone is used and scored). FULL_TONE_WORDS names the ones that were wrongly light before; the tests
+#                    keep them full: 學生 xuéshēng, 先生, 休息 xiūxí, 清楚 qīngchǔ, 寶寶 bǎobǎo, 眼睛 ... and the nine the textbook teachers read in full (喜歡 xǐ huān, 知道 zhī dào ...).
+# A light syllable is NOT scored (finalize_neutral: never `practice`, tone not checked), so a learner who keeps the full tone is never marked wrong, in either state.
+# The suffix rules (子, 們, 頭, 得, 嗎, 了, 吧, 的, 什麼) act as SUFFIXES: 房子 / 我們 are light, a 子 or 們 elsewhere keeps its tone (pypinyin decides; 頭 and 得 are listed by word).
+REQUIRED_LIGHT_WORDS = tuple("""
+爸爸 爺爺 姑姑 舅舅 嬸嬸 娃娃 星星 謝謝 拜拜
+意思 麻煩 明白 耳朵 脾氣 暖和 玻璃 豆腐 腦袋 屁股 早上 蘑菇
 石頭 木頭 舌頭 骨頭 枕頭 饅頭 拳頭 指頭 甜頭 念頭 外頭 裡頭 上頭 下頭 前頭 後頭
 記得 懂得 值得 曉得 認得
 """.split())
-# NOT light, by the Taiwan teachers of the textbook recordings (measured 2026-10-18, last syllable vs the one before it): 喜歡 xǐ huān, 知道 zhī dào, 漂亮 piào liàng,
-# 朋友 péng yǒu, 東西 dōng xī, 晚上 wǎn shàng, 時候 shí hòu, 地方 dì fāng, 舒服 shū fú are all read with a full last syllable (270-490 ms, as long as or longer than the first);
-# only 謝謝 xiè xie is really light (170 ms against 380 ms). The mainland habit of making those light must not be copied here.
+OPTIONAL_LIGHT_WORDS = tuple("""
+看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
+葡萄 兄弟 姑娘 便宜 生意 客氣
+媽媽 奶奶 叔叔 伯伯 太太 丈夫 認識 熱鬧 蘿蔔 嘴巴 名字
+""".split())
+LIGHT_FINAL_WORDS = REQUIRED_LIGHT_WORDS + OPTIONAL_LIGHT_WORDS
+FULL_TONE_WORDS = tuple("""
+學生 先生 休息 清楚 寶寶 師傅 親戚 眼睛 頭髮 打算 行李 風箏 小姐
+喜歡 知道 漂亮 朋友 東西 晚上 時候 地方 舒服
+""".split())
 
 # These compounds are often followed by a pause: keep the final syllable at Tone 3 instead of applying sandhi to the next character.
 PHRASE_BREAK_AFTER = ["所以", "哪裡"]
