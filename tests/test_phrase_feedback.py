@@ -342,11 +342,11 @@ class CalibrationDialogTests(unittest.TestCase):
         self.assertIn("laterButton.hidden = !(calibrated || calibrationHadError);", source)
         self.assertIn("calibrationHadError = true;", source)
         # state used by the first render must be declared before that render (a late `let` breaks the whole page)
-        self.assertLess(source.index("let calibrationHadError = false;"), source.index("applyLanguage(localStorage.getItem"))
+        self.assertLess(source.index("let calibrationHadError = false;"), source.index("applyLanguage(savedLanguage()"))
 
     def test_all_dialog_and_recorder_state_is_declared_before_the_first_render(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
-        first_render = source.index("applyLanguage(localStorage.getItem")
+        first_render = source.index("applyLanguage(savedLanguage()")
         for declaration in ("let calibrationOutcome", "let calibrationCanStop", "let calibrationClock", "let stopCalibrationMeter",
                             "let practiceIndicatorTimer", "let stopPracticeMeter", "const CALIBRATION_MIN_MS", "const CALIBRATION_MAX_MS"):
             self.assertIn(declaration, source)

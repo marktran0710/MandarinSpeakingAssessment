@@ -2265,9 +2265,36 @@ async def read_index():
                 return messageKeys[text] ? t(messageKeys[text]) : text;
             }
 
-            function applyLanguage(language) {
+            // The interface language of a first visit comes from the browser's own language settings (not from the IP address: a Vietnamese learner living in
+            // Taiwan has a Taiwanese IP). The first language in the browser's list that the page has wins; anything else (or an error) is English.
+            function detectBrowserLanguage() {
+                try {
+                    const preferred = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+                    for (const tag of preferred) {
+                        const base = String(tag || "").toLowerCase().split(/[-_;]/)[0];
+                        if (base === "vi") return "vi";
+                        if (base === "id" || base === "in") return "id";
+                        if (base === "hi") return "hi";
+                        if (base === "zh") return "zh-TW";
+                        if (base === "en") return "en";
+                    }
+                } catch (error) { /* fall through to English */ }
+                return "en";
+            }
+
+            function savedLanguage() {
+                try {
+                    return localStorage.getItem("mandarinUiLanguage") || "";
+                } catch (error) {
+                    return "";
+                }
+            }
+
+            function applyLanguage(language, remember = true) {
                 currentLanguage = Object.prototype.hasOwnProperty.call(LANGUAGE_TEXT, language) ? language : "en";
-                localStorage.setItem("mandarinUiLanguage", currentLanguage);
+                if (remember) {                                   // a language the learner picked is kept; the browser's guess is not stored
+                    try { localStorage.setItem("mandarinUiLanguage", currentLanguage); } catch (error) { /* private window */ }
+                }
                 document.documentElement.lang = currentLanguage;
                 document.getElementById("languageSelect").value = currentLanguage;
                 document.querySelectorAll("[data-i18n]").forEach(element => {
@@ -2689,7 +2716,7 @@ async def read_index():
                 syncPracticeControls();
             }
 
-            applyLanguage(localStorage.getItem("mandarinUiLanguage") || "en");
+            applyLanguage(savedLanguage() || detectBrowserLanguage(), Boolean(savedLanguage()));
 
             // A full-screen "working" layer for the slow steps (assessment, calibration): a small spinner at the bottom of
             // the page goes unnoticed. It appears only if the step lasts more than a moment, and cannot be dismissed.
