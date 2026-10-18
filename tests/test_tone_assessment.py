@@ -284,15 +284,15 @@ class PartialCreditPayloadTests(unittest.TestCase):
     def result(self):
         audio, spans = tone_audio([([200, 200, 200, 200], 0.35)] * 3)          # three level syllables
         syllables = [{"char": c, "start": s, "end": e, "phones": [], "nucleus": (s, e), "alignment_ok": True}
-                     for c, (s, e) in zip("媽媽罵", spans)]                      # the last one should fall (T4)
-        result = tp.verify_utterance(audio, SR, "媽媽罵", self.CAL, alignment=syllables, config=CONFIG)
+                     for c, (s, e) in zip("天天罵", spans)]                      # the last one should fall (T4)
+        result = tp.verify_utterance(audio, SR, "天天罵", self.CAL, alignment=syllables, config=CONFIG)
         self.assertEqual([s["status"] for s in result["syllables"]], ["likely_correct", "likely_correct", "practice"])
         return result
 
     def payload(self, **kwargs):
-        return ta.build_payload(self.result(), groups=[("媽媽罵", 0, 3)], word_annotation_status="matched",
+        return ta.build_payload(self.result(), groups=[("天天罵", 0, 3)], word_annotation_status="matched",
                                 boundaries_from="test", practice_mode="custom", sample_id="custom",
-                                target_script="媽媽罵", audio_quality={"passed": True, "reasons": []}, **kwargs)
+                                target_script="天天罵", audio_quality={"passed": True, "reasons": []}, **kwargs)
 
     def test_a_mostly_correct_phrase_is_yellow_in_sentence_mode_but_the_syllable_still_says_practice(self):
         payload = self.payload(partial_credit=True)

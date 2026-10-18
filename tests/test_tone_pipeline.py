@@ -569,7 +569,7 @@ class EndToEndTests(unittest.TestCase):
         second = (spans[0][1] + 0.05, spans[0][1] + 0.35)
         syllables = [{"char": "媽", "start": spans[0][0], "end": spans[0][1], "phones": [], "nucleus": None},
                      {"char": "媽", "start": second[0], "end": second[1], "phones": [], "nucleus": None}]
-        result = tp.verify_utterance(audio, SR, "媽媽", self.CAL, alignment=syllables, config=CONFIG)
+        result = tp.verify_utterance(audio, SR, "天天", self.CAL, alignment=syllables, config=CONFIG)
         self.assertEqual([s["status"] for s in result["syllables"]], ["likely_correct", "insufficient_evidence"])
         self.assertEqual(result["feedback"], CONFIG["feedback"]["insufficient_evidence"])
 
@@ -820,7 +820,7 @@ class JumpsCountOnlyInsideSyllablesTests(unittest.TestCase):
         audio = self.joined([[260] * 3, [105] * 3])           # 15 st apart, with no gap between the syllables
         syllables = [{"char": "媽", "start": 0.2, "end": 0.5, "phones": [], "nucleus": None},
                      {"char": "媽", "start": 0.5, "end": 0.8, "phones": [], "nucleus": None}]
-        result = tp.verify_utterance(audio, SR, "媽媽", self.CAL, alignment=syllables, config=CONFIG)
+        result = tp.verify_utterance(audio, SR, "天天", self.CAL, alignment=syllables, config=CONFIG)
         diagnostics = result["f0_extraction"]
         self.assertEqual(diagnostics["octave_jumps_in_segments"], 0)
         self.assertTrue(diagnostics["stable"])
@@ -940,7 +940,7 @@ class BoundarySearchTests(unittest.TestCase):
     def test_no_segmentation_can_rescue_a_genuinely_wrong_tone(self):
         # Both syllables are expected level (T1) but the speaker falls steadily all the way through.
         falling = np.linspace(8, -8, 90)
-        contexts = capt_core.expected_tone_contexts(["媽媽"])
+        contexts = capt_core.expected_tone_contexts(["天天"])
         extraction, clean = make_track(falling)
         found, info = tp.search_boundaries(self.syllables(45), contexts, clean, self.with_search(True))
         results = [tp.verify_syllable(s, c, extraction, clean, self.with_search(True), SPEAKER, True)
@@ -1196,7 +1196,7 @@ class ScoringWindowRulesTests(unittest.TestCase):
         self.assertEqual(guarded["scoring_window_ms"], [0, 240])                # the last 20% of 300 ms was left out
 
     def test_the_tail_guard_only_touches_clause_final_syllables_and_the_listed_tones(self):
-        inside = capt_core.expected_tone_contexts(["媽媽"])[0]
+        inside = capt_core.expected_tone_contexts(["天天"])[0]
         self.assertFalse(inside["is_clause_final"])
         guarded = self.status(inside, self.level_with_final_lowering(), self.config(final_tail_guard=self.TAIL))
         self.assertNotIn("scoring_window_ms", guarded)
@@ -1256,7 +1256,7 @@ class ScoringWindowRulesTests(unittest.TestCase):
 
 
 class ReduplicationTests(unittest.TestCase):
-    """tone.soften_reduplication: the second character of 看看 / 謝謝 cannot be accused (it is read lightly)."""
+    """tone.soften_reduplication: the second character of 漸漸 / 慢慢 cannot be accused (it is read lightly)."""
 
     def run_pair(self, text, config):
         contexts = capt_core.expected_tone_contexts([text])
@@ -1274,17 +1274,17 @@ class ReduplicationTests(unittest.TestCase):
         return config
 
     def test_the_context_marks_only_the_second_character_of_a_repeated_pair(self):
-        for text in ("看看", "謝謝"):
+        for text in ("漸漸", "慢慢"):
             contexts = capt_core.expected_tone_contexts([text])
             self.assertEqual([c["is_reduplicated"] for c in contexts], [False, True])
         self.assertEqual([c["is_reduplicated"] for c in capt_core.expected_tone_contexts(["看書"])], [False, False])
-        across = capt_core.expected_tone_contexts(["看看"], phrase_end_indices=[1])
+        across = capt_core.expected_tone_contexts(["漸漸"], phrase_end_indices=[1])
         self.assertEqual([c["is_reduplicated"] for c in across], [False, False])             # two words: not a repeated pair
 
     def test_only_the_second_character_is_protected_and_only_when_configured(self):
-        first, second = self.run_pair("看看", CONFIG)
+        first, second = self.run_pair("漸漸", CONFIG)
         self.assertEqual((first["status"], second["status"]), ("practice", "practice"))     # today both are accused
-        first, second = self.run_pair("看看", self.softened())
+        first, second = self.run_pair("漸漸", self.softened())
         self.assertEqual(first["status"], "practice")                                       # the first keeps its full tone
         self.assertEqual(second["status"], "insufficient_evidence")
         self.assertIn("reduplicated_second_syllable", second["reasons"])

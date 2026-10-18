@@ -115,6 +115,21 @@ TAIWAN_WORD_TONES = {
     "妹妹": [4, 5],
     "弟弟": [4, 5],
 }
+# Everyday words whose LAST syllable is read light (neutral tone) in Taiwan Mandarin, as a learner is taught and hears them: 認識 rèn‧shi, 朋友 péng‧you, 謝謝 xiè‧xie.
+# pypinyin cannot give these (it has no light-tone information for most of them, and its phrase dictionary is keyed by Simplified characters), so without
+# this list the page printed 認識 as "rèn shí". The first syllable keeps pypinyin's tone. A light syllable is not scored. Words the textbook itself prints with a full
+# tone (窗戶 chuānghù, 家具 jiājù, 客廳 kètīng, the (miàn) of 上面/下面 ...) must NOT be listed: tests/test_light_words.py checks the Chapter 5 book pinyin.
+LIGHT_FINAL_WORDS = tuple("""
+爸爸 媽媽 奶奶 爺爺 叔叔 伯伯 舅舅 姑姑 嬸嬸 娃娃 寶寶 星星 謝謝 拜拜
+看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
+朋友 認識 喜歡 知道 東西 先生 學生 太太 小姐 師傅 丈夫 兄弟 親戚 姑娘 時候 意思 漂亮 舒服 清楚 明白 休息 麻煩 地方 客氣
+眼睛 耳朵 頭髮 脾氣 便宜 暖和 熱鬧 打算 行李 玻璃 豆腐 葡萄 蘿蔔 嘴巴 腦袋 屁股 生意 名字 晚上 早上 蘑菇 風箏
+石頭 木頭 舌頭 骨頭 枕頭 饅頭 拳頭 指頭 甜頭 念頭 外頭 裡頭 上頭 下頭 前頭 後頭
+記得 懂得 值得 曉得 認得
+""".split())
+# A listed word is not light when it starts a longer word in which it is read in full: 東西南北 (the directions), not 東西 (things).
+LIGHT_NOT_BEFORE = {"東西": "南北"}
+
 # These compounds are often followed by a pause: keep the final syllable at Tone 3 instead of applying sandhi to the next character.
 PHRASE_BREAK_AFTER = ["所以", "哪裡"]
 _NUMERAL_CHARS = set("第零二三四五六七八九十兩")
@@ -124,6 +139,13 @@ def _base_tones(clause):
     if len(pinyin) != len(clause):
         pinyin = [lazy_pinyin(c, style=Style.TONE3, neutral_tone_with_five=True)[0] for c in clause]
     tones = [int(p[-1]) if p and p[-1].isdigit() else None for p in pinyin]
+    for word in LIGHT_FINAL_WORDS:
+        pos = clause.find(word)
+        while pos != -1:
+            end = pos + len(word)
+            if end >= len(clause) or clause[end] not in LIGHT_NOT_BEFORE.get(word, ""):
+                tones[end - 1] = 5
+            pos = clause.find(word, end)
     for word, word_tones in TAIWAN_WORD_TONES.items():
         pos = clause.find(word)
         while pos != -1:
