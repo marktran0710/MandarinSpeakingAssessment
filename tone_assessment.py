@@ -283,6 +283,7 @@ def phrase_f0(contour, start_sec, end_sec, baseline_hz):
     window_voiced = int(np.isfinite(st[window]).sum())
     return {
         "duration_sec": round(float(times[selected[-1]]) + step - origin, 3),
+        "origin_sec": round(origin, 3),                       # recording time of offset 0 (the first voiced frame): lets a chart place syllables on its axis
         "aligned_window_sec": [round(start_sec, 3), round(end_sec, 3)],
         "frame_count": int(len(selected)),
         "voiced_frame_count": int(np.isfinite(st[selected]).sum()),
