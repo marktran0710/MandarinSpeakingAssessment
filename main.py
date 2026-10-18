@@ -4152,20 +4152,38 @@ async def read_index():
                 return { range: at(0.9) - at(0.1), median: at(0.5) };
             }
 
-            // How far the tone moves in the guide. Where the learner is not there yet (Okay / Needs practice) it is the basic shape to aim for, sized from their own
-            // range; where the tone is already right it follows what they did, so the guide never contradicts a "Good".
-            function guideAmplitude(tone, syllable, range) {
-                const basic = { 2: clampNumber(0.5 * range, 2.5, 6), 3: clampNumber(0.4 * range, 2, 5), 4: clampNumber(0.8 * range, 4, 9) }[tone] || 0;
-                if (syllable.status !== "likely_correct") return basic;
-                const delta = Number(syllable.early_to_late_delta_st), dip = Number(syllable.fall_before_min_st);
-                if (tone === 4 && Number.isFinite(delta)) return clampNumber(delta, 0.5, 9);
-                if (tone === 2 && Number.isFinite(delta)) return clampNumber(-delta, 0.5, 6);
-                if (tone === 3 && Number.isFinite(dip)) return clampNumber(dip, 1, 6);
-                return basic;
+            // The guide is built from four numbers of the learner's own syllable: where it starts and ends and its lowest and highest point (start_st, end_st, min_st, max_st:
+            // semitones around their median, measured over the judged part). A tone 4 falls from their highest to their lowest point, a tone 2 rises from the lowest to the
+            // highest, a tone 1 stays level, a tone 3 dips to the lowest. So the guide lies in the range the learner really used and follows their line closely. A syllable that is
+            // not right yet (Okay / Needs practice) gets at least a basic movement (otherwise a flat line would "fall" by a hair); one that is right keeps the learner's own size,
+            // so the guide never contradicts a "Good".
+            const MIN_GUIDE_MOVEMENT = { 2: 2.5, 3: 2, 4: 4 };
+
+            function shapeFromFourPoints(tone, syllable) {
+                const start = Number(syllable.start_st), end = Number(syllable.end_st), lowest = Number(syllable.min_st), highest = Number(syllable.max_st);
+                if (![start, end, lowest, highest].every(Number.isFinite)) return null;
+                const middle = (lowest + highest) / 2;
+                const wanted = syllable.status === "likely_correct" ? 0.3 : (MIN_GUIDE_MOVEMENT[tone] || 0);
+                const half = Math.max((highest - lowest) / 2, wanted / 2);
+                const low = middle - half, high = middle + half;
+                const inside = value => clampNumber(value, low, high);
+                if (tone === 1) {
+                    const level = inside((start + end) / 2);
+                    return [[0, level], [1, level]];
+                }
+                if (tone === 2) return [[0, low], [1, high]];
+                if (tone === 3) return [[0, inside(start)], [clampNumber(Number(syllable.min_position) || 0.5, 0.3, 0.7), low], [1, low + 0.35 * (high - low)]];
+                if (tone === 4) return [[0, high], [1, low]];
+                return null;
             }
 
-            // One guide per scored syllable, drawn over the part that is judged (the vowel) at the height of the learner's own pitch there (their median where nothing
-            // was measured): the tones are judged by their shape, not by how high the speaker sits.
+            // Without those four numbers (a syllable the analysis could not measure) the shape is drawn at the learner's own height, sized from their pitch range.
+            function fallbackShape(tone, level, range) {
+                const amplitude = { 2: clampNumber(0.5 * range, 2.5, 6), 3: clampNumber(0.4 * range, 2, 5), 4: clampNumber(0.8 * range, 4, 9) }[tone] || 0;
+                return EXPECTED_TONE_SHAPES[tone].map(([along, height]) => [along, level + height * amplitude]);
+            }
+
+            // One guide per scored syllable, drawn over the part that is judged (the vowel).
             function expectedToneSpans(phrase) {
                 const origin = Number(phrase.phrase_f0?.origin_sec);
                 if (!Number.isFinite(origin) || !Array.isArray(phrase.syllable_diagnostics)) return [];
@@ -4177,14 +4195,14 @@ async def read_index():
                     const start = Number(segment.start_ms) / 1000 - origin, end = Number(segment.end_ms) / 1000 - origin;
                     const whole = [Number(syllable.start_ms) / 1000 - origin, Number(syllable.end_ms) / 1000 - origin];
                     if (EXPECTED_TONE_SHAPES[tone] && Number.isFinite(start) && Number.isFinite(end) && end > start) {
-                        const measured = (phrase.phrase_f0.contour || []).filter(point => Number.isFinite(point.relative_semitone) && point.offset_sec >= start && point.offset_sec <= end)
-                            .map(point => point.relative_semitone);
-                        const level = measured.length ? measured.reduce((sum, value) => sum + value, 0) / measured.length : median;
-                        const amplitude = guideAmplitude(tone, syllable, range);
-                        spans.push({
-                            tone, start, end, centre: (whole[0] + whole[1]) / 2, character: syllable.character, status: syllable.status,
-                            shape: EXPECTED_TONE_SHAPES[tone].map(([along, height]) => [along, level + height * amplitude])
-                        });
+                        let shape = shapeFromFourPoints(tone, syllable);
+                        if (!shape) {
+                            const measured = (phrase.phrase_f0.contour || []).filter(point => Number.isFinite(point.relative_semitone) && point.offset_sec >= start && point.offset_sec <= end)
+                                .map(point => point.relative_semitone);
+                            const level = measured.length ? measured.reduce((sum, value) => sum + value, 0) / measured.length : median;
+                            shape = fallbackShape(tone, level, range);
+                        }
+                        spans.push({ tone, start, end, centre: (whole[0] + whole[1]) / 2, character: syllable.character, status: syllable.status, shape });
                     }
                 }
                 return spans;
