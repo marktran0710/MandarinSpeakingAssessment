@@ -45,9 +45,16 @@ class WordCardsPickTheGraphTests(unittest.TestCase):
         self.assertIn("input, select, textarea, audio", handler)
         self.assertIn("movePhrase(", handler)
 
-    def test_the_page_only_scrolls_when_the_graph_is_out_of_view(self):
+    def test_changing_the_word_never_moves_the_page(self):
         select = SOURCE[SOURCE.index("function selectPhrase(index)"): SOURCE.index("function movePhrase(")]
-        self.assertIn('block: "nearest"', select)
+        self.assertNotIn("scrollIntoView", select)
+        self.assertNotIn("scrollTo", select)
+
+    def test_the_graph_takes_the_width_of_the_panel_and_is_drawn_again_when_the_window_changes(self):
+        chart = SOURCE[SOURCE.index("function renderPhrasePitchChart("): SOURCE.index("function phrasesOf(")]
+        self.assertIn('document.getElementById("pitchChart")?.clientWidth', chart)
+        self.assertNotIn("const width = 620", chart)
+        self.assertIn('window.addEventListener("resize"', SOURCE)
 
 
 if __name__ == "__main__":

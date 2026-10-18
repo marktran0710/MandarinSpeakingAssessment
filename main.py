@@ -1146,7 +1146,8 @@ async def read_index():
             .pitch-swatch.expected { border-color: #8fb4dc; border-top-width: 5px; }
             .pitch-toggle { display: inline-flex; align-items: center; gap: 6px; margin-left: 14px; font-size: 14px; }
             .pitch-chart { overflow-x: auto; margin: 12px 0; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
-            .pitch-chart svg { display: block; width: 100%; height: 180px; }
+            .pitch-chart svg { display: block; width: 100%; height: auto; }
+            #pitchChart { min-height: 210px; }
             .pitch-chart .reference-line { fill: none; stroke: #2367b0; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
             .pitch-chart .expected-line { fill: none; stroke: #8fb4dc; stroke-width: 6; stroke-opacity: 0.75; stroke-linecap: round; stroke-linejoin: round; }
             .pitch-chart .expected-char { fill: #2d3748; font-size: 15px; }
@@ -4233,10 +4234,13 @@ async def read_index():
                     yMax = Math.max(2, Math.ceil(Math.max(...values)));
                 }
                 if (yMax <= yMin) yMax = yMin + 1;
-                const width = 620, height = 180, plotLeft = 48, plotRight = width - 18;
+                const available = Math.round(document.getElementById("pitchChart")?.clientWidth || 0);
+                const width = Math.max(560, Math.min(1400, available || 620));        // the width of the panel, so a computer screen is not drawn like a phone
+                const height = width >= 900 ? 300 : width >= 700 ? 260 : 210;
+                const plotLeft = 52, plotRight = width - 20, plotTop = 22, plotHeight = height - 90;
                 let lines = "";
                 for (let tick = 0; tick <= 4; tick++) {
-                    const y = 18 + tick * 26;
+                    const y = plotTop + tick * plotHeight / 4;
                     const value = yMax - (yMax - yMin) * tick / 4;
                     lines += `<line class="pitch-grid" x1="${plotLeft}" y1="${y}" x2="${plotRight}" y2="${y}"></line>`;
                     lines += `<text class="pitch-label" x="${plotLeft - 6}" y="${y + 4}" text-anchor="end">${useHz || useMidi ? value.toFixed(0) : value.toFixed(1)}</text>`;
@@ -4245,13 +4249,13 @@ async def read_index():
                     const xOf = offset => plotLeft + Math.min(1, Math.max(0, offset / duration)) * (plotRight - plotLeft);
                     for (const span of spans) {
                         const points = span.shape.map(([along, semitones]) => {
-                            const y = 18 + (yMax - inChartUnit(semitones)) * 104 / (yMax - yMin);
+                            const y = plotTop + (yMax - inChartUnit(semitones)) * plotHeight / (yMax - yMin);
                             return `${xOf(span.start + along * (span.end - span.start)).toFixed(1)},${y.toFixed(1)}`;
                         });
                         lines += `<polyline class="expected-line" points="${points.join(" ")}"><title>${t("expectedLine")}: T${span.tone}</title></polyline>`;
                         const centre = xOf(span.centre).toFixed(1);
-                        lines += `<text class="expected-char" x="${centre}" y="146" text-anchor="middle">${span.character}</text>`;
-                        lines += `<text class="expected-tone" x="${centre}" y="163" text-anchor="middle">T${span.tone}</text>`;
+                        lines += `<text class="expected-char" x="${centre}" y="${plotTop + plotHeight + 28}" text-anchor="middle">${span.character}</text>`;
+                        lines += `<text class="expected-tone" x="${centre}" y="${plotTop + plotHeight + 46}" text-anchor="middle">T${span.tone}</text>`;
                     }
                 }
                 let segment = [];
@@ -4264,7 +4268,7 @@ async def read_index():
                         continue;
                     }
                     const x = plotLeft + Math.min(1, Math.max(0, Number(point.offset_sec) / duration)) * (plotRight - plotLeft);
-                    const y = 18 + (yMax - value) * 104 / (yMax - yMin);
+                    const y = plotTop + (yMax - value) * plotHeight / (yMax - yMin);
                     segment.push(`${x.toFixed(1)},${y.toFixed(1)}`);
                 }
                 if (segment.length) segments.push(segment);
@@ -4323,13 +4327,18 @@ async def read_index():
                 const phrases = phrasesOf(lastAssessment);
                 if (!phrases.length) return;
                 selectedPhrase = Math.min(phrases.length - 1, Math.max(0, index));
-                renderPitchPanel();
-                document.getElementById("pitchPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });     // only when the graph is not already in view
+                renderPitchPanel();                              // the page stays where it is: the graph is right under the cards
             }
 
             function movePhrase(step) {
                 selectPhrase(selectedPhrase + step);
             }
+
+            let pitchResizeTimer = null;
+            window.addEventListener("resize", () => {                       // the graph is drawn for the width of the panel: draw it again when the window changes
+                clearTimeout(pitchResizeTimer);
+                pitchResizeTimer = setTimeout(() => { if (lastAssessment) renderPitchPanel(); }, 150);
+            });
 
             document.getElementById("resultCard").addEventListener("keydown", event => {
                 if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
