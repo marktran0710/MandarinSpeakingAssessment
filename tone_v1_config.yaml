@@ -30,12 +30,12 @@ calibration:
   # Recording-level quality gate. A failed gate raises CalibrationError; no profile is created.
   min_duration_sec: 4.9       # "5 s" with tolerance for decoder rounding
   max_duration_sec: 12.0
-  # Steady voice (AC and CC agree) needed in the whole recording. Real learners reading the five sounds twice at a normal pace land at 2.1-2.4 s
-  # (Thanh Xuan 2.14, Obed 2.43; a stretched reference recording gives 4.4), so the old 2.0 s refused people by a hair: Obed's second try,
-  # 15 s after a saved one, got "too little voicing" while speaking loudly. Loudness is not what is measured. Below preferred_voiced_sec the profile is
-  # saved with a warning in the calibration log.
-  min_voiced_sec: 1.2
-  preferred_voiced_sec: 2.0
+  # Steady voice (AC and CC agree) needed in the whole recording: 1 s is enough for a median and a pitch range. Real learners reading the five sounds twice
+  # at a normal pace land at 2.1-2.4 s (Thanh Xuan 2.14, Obed 2.43; a stretched reference recording gives 4.4), so the old 2.0 s gate refused people by a hair
+  # (Obed's second try, 15 s after a saved one, while speaking loudly: loudness is not what is measured). 1.2 s until 2026-10-18, 1.0 s on request.
+  # Below preferred_voiced_sec the profile is saved with a warning in the calibration log (equal to the gate: no warning band).
+  min_voiced_sec: 1.0
+  preferred_voiced_sec: 1.0
   min_stable_frames: 30
   max_clipped_fraction: 0.005
   clip_level: 0.99

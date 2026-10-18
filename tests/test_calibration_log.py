@@ -135,7 +135,7 @@ class RefusalMeasurementsTests(unittest.TestCase):
         response, line = self.logged(audio, rate)
         self.assertEqual(response.status_code, 422)
         self.assertEqual((line["outcome"], line["reason"]), ("refused", "too_little_voicing"))
-        self.assertLess(line["voiced_sec"], 1.2)
+        self.assertLess(line["voiced_sec"], 1.0)
         self.assertGreater(line["stable_frames"], 0)
         self.assertIn("ac_cc_agreement", line)
 
@@ -145,27 +145,32 @@ class RefusalMeasurementsTests(unittest.TestCase):
 
 
 class ShortButUsableRecordingTests(unittest.TestCase):
-    """Real learners produce 2.1-2.4 s of steady voice for the five sounds twice; 1.2 s is enough for a profile (it used to be 2.0)."""
+    """Real learners produce 2.1-2.4 s of steady voice for the five sounds twice; 1 s is enough for a profile (the gate was 2.0 s)."""
 
-    def test_the_gate_is_1_2_seconds_with_a_preferred_2_0(self):
+    def test_the_gate_is_one_second(self):
         cal = main.tone_assessment.get_config()["calibration"]
-        self.assertEqual((cal["min_voiced_sec"], cal["preferred_voiced_sec"]), (1.2, 2.0))
+        self.assertEqual((cal["min_voiced_sec"], cal["preferred_voiced_sec"]), (1.0, 1.0))
 
-    def test_a_recording_with_between_1_2_and_2_seconds_of_voice_is_saved_with_a_warning(self):
+    def test_a_recording_with_about_one_to_two_seconds_of_voice_is_saved(self):
         samples, rate = five_sounds_twice()
-        voiced_by_length = {}
-        for seconds in (1.2, 1.5, 1.8, 2.2, 2.6):                         # a growing part of the recording, padded with silence to 6 s
+        saved = {}
+        for seconds in (1.0, 1.3, 1.6, 1.9):                              # a growing part of the recording, padded with silence to 6 s
             audio = np.zeros(6 * rate)
             audio[:int(seconds * rate)] = samples[:int(seconds * rate)]
             try:
-                profile = main.tone_pipeline.calibrate_voice(audio, rate, main.tone_assessment.get_config())
-                voiced_by_length[seconds] = (profile["quality"]["voiced_sec"], profile["warnings"])
+                saved[seconds] = main.tone_pipeline.calibrate_voice(audio, rate, main.tone_assessment.get_config())["quality"]["voiced_sec"]
             except main.tone_pipeline.CalibrationError:
-                voiced_by_length[seconds] = None
-        short = [v for v in voiced_by_length.values() if v and 1.2 <= v[0] < 2.0]
-        self.assertTrue(short, voiced_by_length)                            # at least one length lands in the newly accepted band
-        for voiced, warnings in short:
-            self.assertTrue(any("Only" in w and "steady voice" in w for w in warnings), (voiced, warnings))
+                saved[seconds] = None
+        usable = [v for v in saved.values() if v is not None and 1.0 <= v < 2.0]
+        self.assertTrue(usable, saved)                                      # the band the old 2.0 s gate refused is now accepted
+
+    def test_half_a_second_of_voice_is_still_refused(self):
+        samples, rate = five_sounds_twice()
+        audio = np.zeros(6 * rate)
+        audio[:int(0.5 * rate)] = samples[:int(0.5 * rate)]
+        with self.assertRaises(main.tone_pipeline.CalibrationError) as caught:
+            main.tone_pipeline.calibrate_voice(audio, rate, main.tone_assessment.get_config())
+        self.assertEqual(caught.exception.reason, "too_little_voicing")
 
 
 class QuietMessageTests(unittest.TestCase):
