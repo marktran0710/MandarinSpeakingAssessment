@@ -66,60 +66,53 @@ class ProgressTests(StoreCase):
         learner = self.attempt("Mei", "5-1-1", 5, 0, 5)                     # 50
         self.attempt("Mei", "5-1-1", 9, 0, 1)                               # 90
         self.attempt("Mei", "5-1-1", 6, 2, 2)                               # 70: the latest, not the best
-        progress = self.store.progress(learner)
-        entry = progress["lessons"]["5-1-1"]
+        entry = self.store.progress(learner)["lessons"]["5-1-1"]
         self.assertEqual((entry["attempts"], entry["best"], entry["last"]), (3, 90, 70))
         self.assertTrue(entry["last_at"])
 
-    def test_own_text_marks_no_lesson_but_is_among_the_recent_results(self):
+    def test_different_lessons_have_their_own_latest_result(self):
+        learner = self.attempt("Mei", "5-1-1", 9, 0, 1)                     # 90
+        self.attempt("Mei", "5-1-2", 5, 0, 5)                               # 50
+        self.attempt("Mei", "C5-5-1-I1-W001", 2, 0, 0, script="你好")        # 100: a Chapter 5 word is a lesson too
+        lessons = self.store.progress(learner)["lessons"]
+        self.assertEqual({key: value["last"] for key, value in lessons.items()}, {"5-1-1": 90, "5-1-2": 50, "C5-5-1-I1-W001": 100})
+
+    def test_own_text_is_not_a_lesson(self):
         learner = self.attempt("Mei", "custom", 4, 0, 0, script="我愛你")
-        progress = self.store.progress(learner)
-        self.assertEqual(progress["lessons"], {})
-        self.assertEqual([(r["sample_id"], r["mode"], r["script"], r["points"]) for r in progress["recent"]], [("custom", "custom", "我愛你", 100)])
+        self.assertEqual(self.store.progress(learner), {"lessons": {}})
 
-    def test_chapter_5_words_are_told_apart_from_book_sentences(self):
-        learner = self.attempt("Mei", "C5-5-1-I1-W001", 2, 0, 0, script="你好")
-        self.attempt("Mei", "5-1-1", 3, 0, 1, script="友美")
-        modes = {r["sample_id"]: r["mode"] for r in self.store.progress(learner)["recent"]}
-        self.assertEqual(modes, {"C5-5-1-I1-W001": "chapter5_word", "5-1-1": "book"})
-
-    def test_an_attempt_without_a_good_syllable_is_not_a_result(self):
-        learner = self.attempt("Mei", "5-1-1", 0, 8, 0)                     # silence / a failed alignment: all Okay
-        progress = self.store.progress(learner)
-        self.assertEqual(progress["lessons"], {})                            # it marks nothing ...
-        self.assertEqual(progress["recent"][0]["points"], None)              # ... and shows no points
-
-    def test_the_recent_results_are_newest_first_and_limited(self):
-        learner = None
-        for number in range(12):
-            learner = self.attempt("Mei", f"5-1-{number + 1}", 10 - number // 2, 0, number // 2, script=f"句{number}")
-        recent = self.store.progress(learner)["recent"]
-        self.assertEqual(len(recent), 10)
-        self.assertEqual([r["script"] for r in recent][:3], ["句11", "句10", "句9"])
-        self.assertEqual(len(self.store.progress(learner, recent_limit=3)["recent"]), 3)
+    def test_an_attempt_without_a_good_syllable_is_not_a_result_and_leaves_the_earlier_one_standing(self):
+        learner = self.attempt("Mei", "5-1-1", 8, 0, 2)                     # 80
+        self.attempt("Mei", "5-1-1", 0, 8, 0)                               # silence / a failed alignment: all Okay
+        entry = self.store.progress(learner)["lessons"]["5-1-1"]
+        self.assertEqual((entry["attempts"], entry["last"]), (1, 80))
+        self.assertEqual(self.store.progress(self.attempt("Lin", "5-1-2", 0, 8, 0))["lessons"], {})
 
     def test_a_learner_sees_only_their_own_attempts(self):
         mine = self.attempt("Mei", "5-1-1", 5, 0, 5)
         self.attempt("Lin", "5-1-2", 10)
-        progress = self.store.progress(mine)
-        self.assertEqual(list(progress["lessons"]), ["5-1-1"])
-        self.assertEqual(self.store.progress("nobody"), {"lessons": {}, "recent": []})
+        self.assertEqual(list(self.store.progress(mine)["lessons"]), ["5-1-1"])
+        self.assertEqual(self.store.progress("nobody"), {"lessons": {}})
 
     def test_the_endpoint_answers_for_a_learner_and_for_nobody(self):
         mine = self.attempt("Mei", "5-1-1", 5, 0, 5)
         with mock.patch.object(main, "practice_store", self.store):
             known = asyncio.run(main.get_progress(student_id=mine))
             anonymous = asyncio.run(main.get_progress())
-        self.assertEqual(known["lessons"]["5-1-1"]["best"], 50)
-        self.assertEqual(anonymous, {"lessons": {}, "recent": []})
+        self.assertEqual(known["lessons"]["5-1-1"]["last"], 50)
+        self.assertEqual(anonymous, {"lessons": {}})
 
 
 class PageTests(unittest.TestCase):
-    KEYS = ("resultRetry", "resultNext", "itemProgress", "itemNotPracticed", "recentTitle", "recentEmpty", "recentPoints")
+    KEYS = ("resultRetry", "resultNext", "itemProgress", "itemNotPracticed")
 
     def test_every_language_has_the_new_texts(self):
         for key in self.KEYS:
             self.assertEqual(len(re.findall(r"\b%s: " % key, SOURCE)), 5, key)
+
+    def test_there_is_no_list_of_recent_results_any_more(self):
+        for gone in ("recentCard", "recentList", "recentTitle", "renderRecent"):
+            self.assertNotIn(gone, SOURCE, gone)
 
     def test_the_result_card_has_a_read_again_and_a_next_button(self):
         card = SOURCE[SOURCE.index('<div id="resultCard"'): SOURCE.index('<div id="pronunciationResults">')]
@@ -128,11 +121,12 @@ class PageTests(unittest.TestCase):
         self.assertIn('id="nextItemBtn"', card)
         self.assertIn('onclick="goToNextItem()"', card)
 
-    def test_the_lists_are_marked_and_the_progress_is_loaded_after_each_assessment(self):
-        self.assertIn("loadProgress();                                      // the attempt is now a mark and a recent result", SOURCE)
+    def test_the_lists_are_marked_with_the_latest_result_and_the_progress_is_loaded_after_each_assessment(self):
+        self.assertIn("loadProgress();                                      // the attempt is now the latest result of that sentence", SOURCE)
         self.assertIn("function renderItemProgress()", SOURCE)
         self.assertIn("fetch(`/api/progress?student_id=${encodeURIComponent(activeStudent.id)}`)", SOURCE)
-        self.assertIn('id="recentList"', SOURCE)
+        self.assertIn("`✓ ${done.last}% · ${label}`", SOURCE)
+        self.assertIn('t("itemProgress", { last: done.last, when: relativeTime(done.last_at) })', SOURCE)
 
 
 if __name__ == "__main__":

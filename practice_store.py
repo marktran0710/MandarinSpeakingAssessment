@@ -284,34 +284,32 @@ class PracticeStore:
             me = {"rank": None, "name": names[viewer_id], "accuracy": accuracy, "lessons": lessons, "needed": ACCURACY_MIN_LESSONS - lessons}
         return {"top": top, "me": me, "players": len(rows), "min_lessons": ACCURACY_MIN_LESSONS}
 
-    def progress(self, student_id, recent_limit=10):
-        """What one learner has practised: per lesson (a book sentence or a Chapter 5 word) how many attempts, the best and the latest points, and
-        the latest attempts newest first (own text included, as "custom"). Points are 100 x (Good + half of the Okay ones) / all syllables of the
-        attempt; an attempt without a single Good syllable (silence, a failed alignment) is not a result: it marks no lesson and shows no points.
-        Returns {"lessons": {sample_id: {attempts, best, last, last_at}}, "recent": [{sample_id, mode, script, points, created_at}]}."""
+    def progress(self, student_id):
+        """What one learner has practised: per lesson (a book sentence or a Chapter 5 word) how many attempts, the best and the LATEST points and
+        when the latest was. Points are 100 x (Good + half of the Okay ones) / all syllables of the attempt; an attempt without a single Good
+        syllable (silence, a failed alignment) is not a result and marks nothing; own text has no lesson.
+        Returns {"lessons": {sample_id: {attempts, best, last, last_at}}}."""
         with self._connection() as connection:
             rows = connection.execute(
-                "SELECT sample_id, target_script, summary_json, created_at FROM practice_attempts WHERE student_id = ? ORDER BY created_at, rowid",
+                "SELECT sample_id, summary_json, created_at FROM practice_attempts WHERE student_id = ? AND sample_id <> 'custom' ORDER BY created_at, rowid",
                 (student_id,),
             ).fetchall()
-        lessons, recent = {}, []
+        lessons = {}
         for row in rows:
             try:
                 counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
             except (ValueError, AttributeError):
-                counts = {}
+                continue
             good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
             total = good + okay + practice
-            points = round(100.0 * (good + 0.5 * okay) / total) if good >= 1 and total >= 1 else None
-            sample_id = row["sample_id"]
-            mode = "custom" if sample_id == "custom" else "chapter5_word" if str(sample_id).startswith("C5-") else "book"
-            if mode != "custom" and points is not None:
-                entry = lessons.setdefault(sample_id, {"attempts": 0, "best": 0, "last": 0, "last_at": ""})
-                entry["attempts"] += 1
-                entry["best"] = max(entry["best"], points)
-                entry["last"], entry["last_at"] = points, row["created_at"]
-            recent.append({"sample_id": sample_id, "mode": mode, "script": row["target_script"], "points": points, "created_at": row["created_at"]})
-        return {"lessons": lessons, "recent": recent[::-1][:recent_limit]}
+            if good < 1 or total < 1:
+                continue
+            points = round(100.0 * (good + 0.5 * okay) / total)
+            entry = lessons.setdefault(row["sample_id"], {"attempts": 0, "best": 0, "last": 0, "last_at": ""})
+            entry["attempts"] += 1
+            entry["best"] = max(entry["best"], points)
+            entry["last"], entry["last_at"] = points, row["created_at"]
+        return {"lessons": lessons}
 
     def get_student(self, student_id):
         with self._connection() as connection:
