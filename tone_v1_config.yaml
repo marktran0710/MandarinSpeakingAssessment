@@ -312,16 +312,16 @@ levels:
                                     # 2.0 would give most of that gain (12.5%) for 3.3% false accepts; 1.5: 10.4% and 7.4%.
     sentence:
       tone:
-        t4_by_duration:
-          short_ms: 180
-          medium_ms: 300
-          tiny_ms: 140
-          min_fall_tiny_st: 0.6
-          min_fall_short_st: 0.9
-          min_fall_medium_st: 1.3
-          min_fall_long_st: 1.7
+        t4_by_duration:               # Easy: ONE bar, 0.5 st, for every length (was 0.6 / 0.9 / 1.3 / 1.7 until 2026-10-18, on request: a tone 4 that falls even a little
+          short_ms: 180               # is accepted; Good needs 82% of the bar, so ~0.41 st). Measured 2026-10-18: learner jull's tone-4 syllables Good 72.2 -> 78.3%,
+          medium_ms: 300              # Needs practice 28 -> 24 of 230; teachers' sentences, correct reading Good 93.2 -> 93.2%; native tone 1 read where a tone 4 was
+          tiny_ms: 140                # asked accepted 2 -> 6%, native tone 2 7 -> 12% (a dip with a weak rise). 0.17 (Good from 0.14 st, inside the pitch tracker's noise)
+          min_fall_tiny_st: 0.5       # would have given 82.6% but accepted a native tone 1 as tone 4 in 13% of the cases; 0.8: 77.0% and 3%.
+          min_fall_short_st: 0.5
+          min_fall_medium_st: 0.5
+          min_fall_long_st: 0.5
           require_end_below_start: true
-        t4_before_t4:
+        t4_before_t4:                 # (with a 0.5 bar the relaxation changes nothing: it never makes a bar stricter, and the 0.8 floor only holds up a lowered bar)
           relaxation_st: 0.5
           floor_st: 0.8
           next_tones: [1, 4]
