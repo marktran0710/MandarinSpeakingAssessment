@@ -528,6 +528,23 @@ async def admin_page(request: Request):
             .danger { background: #b42318; }
             .danger:hover { background: #912018; }
             button:disabled { opacity: 0.6; cursor: wait; }
+            .admin-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 14px; padding: 10px 12px; background: white; border: 1px solid #d8e1ea; border-radius: 10px; }
+            .view-tabs { display: flex; gap: 6px; }
+            .view-tabs button { background: #edf2f7; color: #2d3748; }
+            .view-tabs button.active { background: #2b6cb0; color: white; }
+            #feedbackFilters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+            #feedbackFilters[hidden], #feedbackList[hidden], #users[hidden] { display: none; }
+            #feedbackFilters label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+            #feedbackFilters input[type="search"], #feedbackFilters select { font: inherit; padding: 4px 6px; border: 1px solid #cbd5e0; border-radius: 6px; }
+            #feedbackSummary { flex: 1 1 100%; }
+            #feedbackList { display: grid; gap: 10px; }
+            .feedback-card { border: 1px solid #d8e1ea; border-radius: 10px; background: white; padding: 12px 14px; }
+            .feedback-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+            .feedback-stars { color: #d69e2e; letter-spacing: 1px; font-size: 16px; }
+            .feedback-stars .off { color: #cbd5e0; }
+            .feedback-who { font-weight: 650; }
+            .feedback-text { margin: 8px 0 6px; white-space: pre-wrap; }
+            .feedback-card audio { width: 100%; height: 34px; margin-top: 8px; }
             audio { width: min(420px, 100%); margin-top: 8px; }
             button { border: 0; border-radius: 6px; padding: 9px 13px; background: #2b6cb0; color: white; font-weight: 600; cursor: pointer; }
             @media (max-width: 560px) { header, .user-header { align-items: flex-start; flex-direction: column; } }
@@ -550,8 +567,31 @@ async def admin_page(request: Request):
             <div><h1>Practice results</h1><div class="muted">Users, assessment output, saved audio and feedback</div></div>
             <div><button type="button" onclick="loadDashboard()">Refresh</button> <button id="logoutBtn" type="button" onclick="logoutAdmin()">Log out</button></div>
         </header>
+        <div class="admin-tools">
+            <div class="view-tabs" role="tablist" aria-label="View">
+                <button type="button" id="tabAll" class="active" role="tab" aria-selected="true" onclick="setAdminView('all')">All results</button>
+                <button type="button" id="tabFeedback" role="tab" aria-selected="false" onclick="setAdminView('feedback')">Ratings &amp; comments</button>
+            </div>
+            <div id="feedbackFilters" hidden>
+                <label><input type="checkbox" id="onlyComments" onchange="renderAdminView()"> Only with a comment</label>
+                <label>Rating
+                    <select id="ratingFilter" onchange="renderAdminView()">
+                        <option value="">All</option>
+                        <option value="5">5 stars</option>
+                        <option value="4">4 stars</option>
+                        <option value="3">3 stars</option>
+                        <option value="2">2 stars</option>
+                        <option value="1">1 star</option>
+                        <option value="low">3 stars or lower</option>
+                    </select>
+                </label>
+                <label>User <input type="search" id="userFilter" placeholder="name" oninput="renderAdminView()"></label>
+                <span id="feedbackSummary" class="muted" role="status"></span>
+            </div>
+        </div>
         <p id="loadStatus" role="status">Loading results...</p>
         <main id="users"></main>
+        <main id="feedbackList" hidden></main>
         </div>
         <script>
             const ADMIN_PREAUTHENTICATED = __ADMIN_PREAUTHENTICATED__;
@@ -723,6 +763,94 @@ async def admin_page(request: Request):
                 }
             }
 
+            // Every rating/comment the learners left, newest first. filters: { onlyComments, rating ("" | "1".."5" | "low"), user (part of a name) }.
+            function collectFeedback(users, filters) {
+                const wanted = String((filters && filters.user) || "").trim().toLowerCase();
+                const rows = [];
+                for (const user of users || []) {
+                    if (wanted && !String(user.name || "").toLowerCase().includes(wanted)) continue;
+                    for (const attempt of user.attempts || []) {
+                        const feedback = attempt.feedback;
+                        if (!feedback) continue;
+                        const comment = String(feedback.comment || "").trim();
+                        if (filters && filters.onlyComments && !comment) continue;
+                        const rating = Number(feedback.rating);
+                        if (filters && filters.rating === "low" && !(rating <= 3)) continue;
+                        if (filters && filters.rating && filters.rating !== "low" && rating !== Number(filters.rating)) continue;
+                        rows.push({ user, attempt, rating, comment, created_at: feedback.created_at || attempt.created_at });
+                    }
+                }
+                rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+                const total = rows.reduce((sum, row) => sum + row.rating, 0);
+                return {
+                    rows,
+                    summary: { count: rows.length, average: rows.length ? total / rows.length : null, withComments: rows.filter(row => row.comment).length }
+                };
+            }
+
+            function renderFeedbackCard(row) {
+                const card = el("article", undefined, "feedback-card");
+                const head = el("div", undefined, "feedback-head");
+                const stars = el("span", undefined, "feedback-stars");
+                stars.setAttribute("aria-label", `${row.rating} out of 5`);
+                for (let n = 1; n <= 5; n++) stars.append(el("span", "★", n <= row.rating ? "" : "off"));
+                head.append(stars, el("span", row.user.name, "feedback-who"), el("span", dateLabel(row.created_at), "muted"));
+                card.append(head);
+                card.append(el("div", row.comment || "No comment", row.comment ? "feedback-text" : "feedback-text muted"));
+                const summary = row.attempt.summary || {};
+                const sourceLabel = row.attempt.practice_mode === "custom" ? "Custom text"
+                    : row.attempt.practice_mode === "chapter5_word" ? `Chapter 5 ${row.attempt.practice_item?.script || row.attempt.target_script}`
+                    : `Sample ${row.attempt.sample_id}`;
+                card.append(el("div", `${sourceLabel} · ${row.attempt.target_script || "—"} · Good ${summary.likely_correct || 0} · Okay ${summary.insufficient_evidence ?? summary.uncertain ?? 0} · Practice ${summary.practice || 0}`, "muted"));
+                if (row.attempt.audio_url) {
+                    const audio = document.createElement("audio");
+                    audio.controls = true;
+                    audio.preload = "none";
+                    audio.src = row.attempt.audio_url;
+                    audio.setAttribute("aria-label", `Recording that got this rating, ${row.user.name}`);
+                    card.append(audio);
+                }
+                return card;
+            }
+
+            let adminData = null;
+            let adminView = "all";
+            try { adminView = localStorage.getItem("adminView") === "feedback" ? "feedback" : "all"; } catch (error) { /* private window */ }
+
+            function setAdminView(view) {
+                adminView = view === "feedback" ? "feedback" : "all";
+                try { localStorage.setItem("adminView", adminView); } catch (error) { /* private window */ }
+                renderAdminView();
+            }
+
+            function renderAdminView() {
+                const feedbackView = adminView === "feedback";
+                for (const [id, active] of [["tabAll", !feedbackView], ["tabFeedback", feedbackView]]) {
+                    document.getElementById(id).classList.toggle("active", active);
+                    document.getElementById(id).setAttribute("aria-selected", String(active));
+                }
+                document.getElementById("feedbackFilters").hidden = !feedbackView;
+                document.getElementById("feedbackList").hidden = !feedbackView;
+                document.getElementById("users").hidden = feedbackView;
+                const status = document.getElementById("loadStatus");
+                if (!adminData) return;
+                if (!feedbackView) {
+                    status.textContent = adminData.users.length ? `${adminData.users.length} users` : "No users yet.";
+                    return;
+                }
+                const found = collectFeedback(adminData.users, {
+                    onlyComments: document.getElementById("onlyComments").checked,
+                    rating: document.getElementById("ratingFilter").value,
+                    user: document.getElementById("userFilter").value
+                });
+                document.getElementById("feedbackList").replaceChildren(...found.rows.map(renderFeedbackCard));
+                const { count, average, withComments } = found.summary;
+                document.getElementById("feedbackSummary").textContent = count
+                    ? `${count} rating${count === 1 ? "" : "s"} · average ${average.toFixed(2)} · ${withComments} with a comment`
+                    : "Nothing matches these filters.";
+                status.textContent = "";
+            }
+
             async function loadDashboard() {
                 const status = document.getElementById("loadStatus");
                 status.textContent = "Loading results...";
@@ -738,8 +866,8 @@ async def admin_page(request: Request):
                     if (!response.ok) throw new Error("Could not load results.");
                     const users = document.getElementById("users");
                     users.replaceChildren(...data.users.map(renderUser));
-                    status.textContent = `${data.users.length} users`;
-                    if (!data.users.length) status.textContent = "No users yet.";
+                    adminData = data;
+                    renderAdminView();
                 } catch (error) {
                     status.textContent = error.message || "Could not load results.";
                 }
