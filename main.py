@@ -3,6 +3,8 @@ import hashlib
 import hmac
 import json
 import os
+import re
+import sys
 import secrets
 import shutil
 import tempfile
@@ -12,6 +14,8 @@ from threading import Lock
 
 import opencc
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Response, Depends
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -29,6 +33,25 @@ user_archive = UserArchive.from_env()
 
 # Initialize the FastAPI app
 app = FastAPI(title="Taiwan Mandarin CAPT API")
+
+
+@app.exception_handler(RequestValidationError)
+async def explain_rejected_request(request: Request, exc: RequestValidationError):
+    """A 422 from FastAPI itself (the request did not even reach our code) used to leave one bare line in the console. Say what was missing, and for a
+    voice calibration also write it into the user's calibration log: the usual cause is an upload that arrived without its audio (a connection or
+    proxy that cut the body, a browser that stopped before the recording was ready)."""
+    problems = [f"{'.'.join(str(part) for part in error.get('loc', ()))}: {error.get('type')}" for error in exc.errors()]
+    length = request.headers.get("content-length")
+    print(f"[422] {request.method} {request.url.path} rejected before it reached the handler: {'; '.join(problems)} (content-length {length})", file=sys.stderr)
+    match = re.fullmatch(r"/api/students/([0-9a-f]+)/voice-calibration", request.url.path)
+    if match:
+        try:
+            student = practice_store.get_student(match.group(1))
+            if student is not None:
+                user_archive.archive_calibration(student, {"outcome": "no_audio_received", "problems": problems, "content_length": length})
+        except Exception as error:                      # explaining must never break the answer
+            print(f"Warning: could not log the rejected calibration request: {error}", file=sys.stderr)
+    return await request_validation_exception_handler(request, exc)
 ASSESSMENT_LOCK = Lock()
 
 

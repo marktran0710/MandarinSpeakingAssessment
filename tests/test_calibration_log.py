@@ -144,6 +144,45 @@ class RefusalMeasurementsTests(unittest.TestCase):
         self.assertEqual((line["voiced_sec"], line["stable_frames"]), (0.0, 0))
 
 
+class RejectedRequestTests(unittest.TestCase):
+    """A calibration upload that arrives without its audio is rejected by FastAPI before our code runs: it must still leave a line in the user's log."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.archive = UserArchive(self.folder.name)
+        self.store = PracticeStore(Path(self.folder.name) / "practice.sqlite3", Path(self.folder.name) / "recordings")
+        for name, value in (("practice_store", self.store), ("user_archive", self.archive)):
+            patcher = mock.patch.object(main, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.student = self.store.create_or_get_student("no-audio", "foreigner")
+
+    def reject(self, path):
+        import asyncio
+        from fastapi.exceptions import RequestValidationError
+        from starlette.requests import Request
+        request = Request({"type": "http", "method": "POST", "path": path, "headers": [(b"content-length", b"187")], "query_string": b""})
+        error = RequestValidationError([{"type": "missing", "loc": ("body", "file"), "msg": "Field required", "input": None}])
+        return asyncio.run(main.explain_rejected_request(request, error))
+
+    def lines(self):
+        return [json.loads(line) for f in Path(self.folder.name).glob("*/calibration_log.jsonl") for line in f.read_text(encoding="utf-8").splitlines()]
+
+    def test_the_answer_is_still_the_normal_422_and_the_log_says_no_audio_arrived(self):
+        response = self.reject(f"/api/students/{self.student['id']}/voice-calibration")
+        self.assertEqual(response.status_code, 422)
+        (line,) = self.lines()
+        self.assertEqual(line["outcome"], "no_audio_received")
+        self.assertEqual(line["content_length"], "187")
+        self.assertEqual(line["problems"], ["body.file: missing"])
+
+    def test_other_routes_and_unknown_students_leave_no_calibration_line(self):
+        self.assertEqual(self.reject("/api/feedback").status_code, 422)
+        self.assertEqual(self.reject("/api/students/00000000000000000000000000000000/voice-calibration").status_code, 422)
+        self.assertEqual(self.lines(), [])
+
+
 class ShortButUsableRecordingTests(unittest.TestCase):
     """Real learners produce 2.1-2.4 s of steady voice for the five sounds twice; 1 s is enough for a profile (the gate was 2.0 s)."""
 
