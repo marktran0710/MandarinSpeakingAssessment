@@ -38,10 +38,10 @@ class LevelConfigTests(unittest.TestCase):
         self.assertEqual(easy["confidence"]["practice_min_window_ms"], 130)
         self.assertEqual(easy["confidence"]["unstable_scope"], "syllable")
         self.assertEqual(std["tone"]["t4_by_duration"]["min_fall_short_st"], 1.2)
-        self.assertEqual(easy["tone"]["t4_by_duration"]["min_fall_short_st"], 0.21)
+        self.assertEqual(easy["tone"]["t4_by_duration"]["min_fall_short_st"], 0.48)
         self.assertEqual((std["tone"]["t4_by_duration"]["tiny_ms"], std["tone"]["t4_by_duration"]["min_fall_tiny_st"]), (140, 0.9))
-        self.assertEqual((easy["tone"]["t4_by_duration"]["tiny_ms"], easy["tone"]["t4_by_duration"]["min_fall_tiny_st"]), (140, 0.14))
-        self.assertEqual([easy["tone"]["t4_by_duration"][k] for k in ("min_fall_tiny_st", "min_fall_short_st", "min_fall_medium_st", "min_fall_long_st")], [0.14, 0.21, 0.3, 0.4])      # a longer syllable still needs a bigger fall
+        self.assertEqual((easy["tone"]["t4_by_duration"]["tiny_ms"], easy["tone"]["t4_by_duration"]["min_fall_tiny_st"]), (140, 0.32))
+        self.assertEqual([easy["tone"]["t4_by_duration"][k] for k in ("min_fall_tiny_st", "min_fall_short_st", "min_fall_medium_st", "min_fall_long_st")], [0.32, 0.48, 0.69, 0.91])      # a longer syllable still needs a bigger fall
         self.assertTrue(easy["tone"]["t4_by_duration"]["require_end_below_start"])
         self.assertEqual(easy["tone"]["t4_before_t4"], {"relaxation_st": 0.5, "floor_st": 0.8, "next_tones": [1, 4]})
         self.assertEqual([rule["set"]["t2_min_rise_st"] for rule in easy["tone"]["left_context"]], [1.6, 1.6])
