@@ -1532,10 +1532,10 @@ async def read_index():
         <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
             <h2 id="leaderboardTitle" data-i18n="leaderboardTitle">Top 10</h2>
             <div class="board-tabs" role="tablist" aria-label="Top 10">
-                <button type="button" id="boardTabPoints" class="active" role="tab" aria-selected="true" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
-                <button type="button" id="boardTabAccuracy" role="tab" aria-selected="false" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
+                <button type="button" id="boardTabAccuracy" class="active" role="tab" aria-selected="true" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
+                <button type="button" id="boardTabPoints" role="tab" aria-selected="false" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
             </div>
-            <p id="leaderboardHelp" class="upload-hint" data-i18n="leaderboardHelp">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
+            <p id="leaderboardHelp" class="upload-hint">Accuracy: over all your attempts at sentences and words, the share of syllables that were Good (an Okay one counts &frac12;), out of 100.</p>
             <ol id="leaderboardList" class="leaderboard-list"></ol>
             <p id="leaderboardEmpty" class="upload-hint" hidden>No scores yet. Be the first!</p>
             <p id="leaderboardMe" class="leaderboard-me" hidden></p>
@@ -2722,6 +2722,7 @@ async def read_index():
                 syncPracticeModeUI();
                 if (selectedPracticeMode() === "chapter5_word" && chapter5WordItems.length) renderChapter5WordItem();
                 if (lastAssessment) renderVisualResults(lastAssessment);
+                renderBoardHeader();
                 if (lastLeaderboard) renderLeaderboard(lastLeaderboard);
                 syncResultButtons();
                 renderItemProgress();
@@ -3158,11 +3159,11 @@ async def read_index():
                 }
             }
 
-            // The leaderboard: two boards, "points" (the best attempt of every sentence added up) and "accuracy" (their average out of 100, from 5 sentences on).
+            // The leaderboard: two boards, "accuracy" first (the share of Good syllables over every attempt, Okay = half, from 5 sentences on) and "points" (the best attempt of every sentence added up).
             // The server works both out from every saved attempt; the tab the learner looks at is remembered in this browser.
             let lastLeaderboard = null;
-            let boardView = "points";
-            try { boardView = localStorage.getItem("leaderboardView") === "accuracy" ? "accuracy" : "points"; } catch (error) { /* private window */ }
+            let boardView = "accuracy";                      // the accuracy board comes first; a learner who picked the points board keeps it
+            try { boardView = localStorage.getItem("leaderboardView") === "points" ? "points" : "accuracy"; } catch (error) { /* private window */ }
 
             function setBoardView(view) {
                 boardView = view === "accuracy" ? "accuracy" : "points";
@@ -3170,16 +3171,23 @@ async def read_index():
                 renderLeaderboard(lastLeaderboard);
             }
 
-            function renderLeaderboard(data) {
-                lastLeaderboard = data;
+            // The tabs and the explanation under them follow the chosen board (and the language), also before the first answer of the server has arrived.
+            function renderBoardHeader() {
                 const byAccuracy = boardView === "accuracy";
                 for (const [id, active] of [["boardTabPoints", !byAccuracy], ["boardTabAccuracy", byAccuracy]]) {
                     document.getElementById(id).classList.toggle("active", active);
                     document.getElementById(id).setAttribute("aria-selected", String(active));
                 }
+                const minLessons = (lastLeaderboard && lastLeaderboard.accuracy && lastLeaderboard.accuracy.min_lessons) || 5;
+                document.getElementById("leaderboardHelp").textContent = byAccuracy ? t("leaderboardHelpAccuracy", { n: minLessons }) : t("leaderboardHelp");
+            }
+
+            function renderLeaderboard(data) {
+                lastLeaderboard = data;
+                const byAccuracy = boardView === "accuracy";
+                renderBoardHeader();
                 const board = byAccuracy ? ((data && data.accuracy) || {}) : (data || {});
                 const minLessons = (data && data.accuracy && data.accuracy.min_lessons) || 5;
-                document.getElementById("leaderboardHelp").textContent = byAccuracy ? t("leaderboardHelpAccuracy", { n: minLessons }) : t("leaderboardHelp");
                 const list = document.getElementById("leaderboardList");
                 list.replaceChildren();
                 const top = board.top || [];
