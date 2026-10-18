@@ -328,6 +328,12 @@ async def create_student_profile(profile: StudentProfileInput):
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+@app.get("/api/leaderboard")
+async def get_leaderboard(student_id: str = ""):
+    """The top 10 learners by points (see PracticeStore.leaderboard); `student_id` (optional) adds the caller's own rank."""
+    return practice_store.leaderboard(student_id or None)
+
+
 @app.get("/api/students/{student_id}")
 async def get_student_profile(student_id: str):
     profile = practice_store.get_student(student_id)
@@ -1079,6 +1085,23 @@ async def read_index():
             .sample-audio-section label { margin: 0; font-size: 13px; color: #4a5568; flex: 0 0 auto; }
             .sample-audio-section audio { flex: 1 1 220px; width: auto; height: 36px; margin: 0; }
                 .sample-audio-section .upload-hint, .sample-audio-error { flex: 1 1 100%; margin: 0; }
+            .page-grid { display: block; }
+            .leaderboard h2 { margin: 0 0 6px; font-size: 1.05rem; }
+            .leaderboard-list { list-style: none; margin: 8px 0 0; padding: 0; }
+            .leaderboard-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 8px; }
+            .leaderboard-row:nth-child(odd) { background: #f7fafc; }
+            .leaderboard-row.me, .leaderboard-me { background: #ebf8ff; font-weight: 600; }
+            .leaderboard-rank { color: #718096; font-variant-numeric: tabular-nums; text-align: right; }
+            .leaderboard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .leaderboard-points { font-variant-numeric: tabular-nums; }
+            .leaderboard-lessons { display: block; font-size: 11px; font-weight: 400; color: #718096; text-align: right; }
+            .leaderboard-me { margin: 10px 0 0; padding: 8px; border-radius: 8px; }
+            .leaderboard-me[hidden] { display: none; }
+            @media (min-width: 1280px) {
+                body { max-width: 1400px; }
+                .page-grid { display: grid; grid-template-columns: minmax(0, 1040px) 300px; gap: 20px; align-items: start; justify-content: center; }
+                .leaderboard { position: sticky; top: 18px; }
+            }
             .custom-sample { margin: 8px 0 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
             .custom-sample[hidden], .custom-sample audio[hidden] { display: none; }
             .custom-sample audio { flex: 1 1 220px; width: auto; height: 36px; margin: 0; }
@@ -1114,6 +1137,7 @@ async def read_index():
         </style>
     </head>
     <body>
+        <div class="page-grid"><div class="page-main">
         <div class="card" id="studentCard">
             <div class="student-heading">
                 <h2 data-i18n="speakerProfile">Speaker profile</h2>
@@ -1138,7 +1162,7 @@ async def read_index():
         <dialog id="speakerDialog" aria-labelledby="speakerDialogTitle" aria-describedby="speakerDialogDescription">
             <h2 id="speakerDialogTitle" data-i18n="speakerProfile">Speaker profile</h2>
             <p id="speakerDialogDescription" data-i18n="profilePrompt">Enter your name and participant group before speaking practice.</p>
-            <p class="upload-hint" data-i18n="profileHint">Use a name that distinguishes you from others in the same group; matching name and group reuse the same practice history.</p>
+            <p class="upload-hint" data-i18n="profileHint">Use a name that distinguishes you from other people; the same name always continues the same practice history.</p>
             <form id="studentForm" onsubmit="saveStudentProfile(event)">
                 <div class="profile-fields">
                     <label for="studentName"><span data-i18n="name">Name</span>
@@ -1334,6 +1358,15 @@ async def read_index():
                 <p id="feedbackStatus" role="status" aria-live="polite"></p>
             </section>
         </div>
+        </div>
+        <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
+            <h2 id="leaderboardTitle" data-i18n="leaderboardTitle">Top 10</h2>
+            <p class="upload-hint" data-i18n="leaderboardHelp">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
+            <ol id="leaderboardList" class="leaderboard-list"></ol>
+            <p id="leaderboardEmpty" class="upload-hint" data-i18n="leaderboardEmpty" hidden>No scores yet. Be the first!</p>
+            <p id="leaderboardMe" class="leaderboard-me" hidden></p>
+        </aside>
+        </div>
 
 
 
@@ -1385,7 +1418,7 @@ async def read_index():
                     lengthShorter: "It sounds like some words of the sentence were left out. Please read the whole text on screen.",
                     lengthDifferent: "What you said doesn\u2019t seem to match the sentence shown. Please read exactly the text on screen.",
                     profilePrompt: "Enter your name and participant group before speaking practice.",
-                    profileHint: "Use a name that distinguishes you from others in the same group; matching name and group reuse the same practice history.",
+                    profileHint: "Use a name that distinguishes you from other people; the same name always continues the same practice history.",
                     name: "Name", participantGroup: "Participant group", chooseOne: "Choose one...", taiwanese: "Taiwanese", foreigner: "Foreigner",
                     continue: "Continue", cancel: "Cancel", appTitle: "Taiwan Mandarin Pronunciation Practice",
             practiceInstructions: "Choose a lesson sample or enter your own Mandarin text, then record yourself reading it:",
@@ -1405,6 +1438,13 @@ async def read_index():
             customSampleNote: "A computer voice reading your text a little slowly. It is only a guide; a word may sound slightly different from a teacher\u2019s reading.",
             customSampleError: "The sample could not be made. Try again.",
             customSampleUnavailable: "The sample voice is not available on this server.",
+            leaderboardTitle: "Top 10",
+            leaderboardHelp: "Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one \u00bd), added up. Your own text does not count.",
+            leaderboardEmpty: "No scores yet. Be the first!",
+            leaderboardPoints: "{n} pts",
+            leaderboardLessons: "{n} lessons",
+            leaderboardMeRank: "You: #{rank} \u00b7 {points} pts",
+            leaderboardMeNone: "Practice a lesson to join the board.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1526,7 +1566,7 @@ async def read_index():
                     lengthShorter: "聽起來句子裡有些字沒有唸到。請把畫面上的整句唸完。",
                     lengthDifferent: "你唸的內容似乎和畫面上的句子不一樣。請照畫面上的文字唸。",
                     profilePrompt: "請先輸入姓名和參與者類別，再開始口說練習。",
-                    profileHint: "請使用能區分同組使用者的姓名；姓名和類別相同時會沿用同一份練習紀錄。",
+                    profileHint: "請使用能和其他人區分的姓名；輸入相同的姓名就會沿用同一份練習紀錄。",
                     name: "姓名", participantGroup: "參與者類別", chooseOne: "請選擇…", taiwanese: "台灣人", foreigner: "外國人",
                     continue: "繼續", cancel: "取消", appTitle: "台灣華語發音練習",
                     practiceInstructions: "選擇課本範例，或輸入自己的華語文本，再依照內容錄音：",
@@ -1546,6 +1586,13 @@ async def read_index():
                     customSampleNote: "電腦語音會稍微放慢朗讀你的文本，僅供參考，個別詞的唸法可能與老師略有不同。",
                     customSampleError: "無法製作範例，請再試一次。",
                     customSampleUnavailable: "這台伺服器沒有可用的範例語音。",
+                    leaderboardTitle: "前十名",
+                    leaderboardHelp: "積分：每一課取最好的一次（Good 音節算 1，Okay 算 \u00bd），全部相加。自己輸入的文本不計分。",
+                    leaderboardEmpty: "還沒有成績，來當第一名吧！",
+                    leaderboardPoints: "{n} 分",
+                    leaderboardLessons: "{n} 課",
+                    leaderboardMeRank: "你：第 {rank} 名\u30fb{points} 分",
+                    leaderboardMeNone: "練習一課就能上榜。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -1666,7 +1713,7 @@ async def read_index():
                     lengthShorter: "Có vẻ bạn đã bỏ sót một số từ của câu. Hãy đọc đầy đủ nội dung trên màn hình.",
                     lengthDifferent: "Nội dung bạn đọc có vẻ không khớp với câu hiển thị. Hãy đọc đúng nội dung trên màn hình.",
                     profilePrompt: "Nhập tên và nhóm người tham gia trước khi luyện nói.",
-                    profileHint: "Hãy dùng tên giúp phân biệt bạn với người khác trong cùng nhóm; cùng tên và nhóm sẽ dùng chung lịch sử luyện tập.",
+                    profileHint: "Hãy dùng tên giúp phân biệt bạn với người khác; nhập cùng một tên thì luôn tiếp tục lịch sử luyện tập cũ.",
                     name: "Tên", participantGroup: "Nhóm người tham gia", chooseOne: "Chọn một mục...", taiwanese: "Người Đài Loan", foreigner: "Người nước ngoài",
                     continue: "Tiếp tục", cancel: "Hủy", appTitle: "Luyện phát âm tiếng Quan Thoại Đài Loan",
                     practiceInstructions: "Chọn bài mẫu hoặc nhập văn bản tiếng Trung của riêng bạn, rồi đọc và ghi âm:",
@@ -1686,6 +1733,13 @@ async def read_index():
                     customSampleNote: "Giọng máy đọc chậm văn bản của bạn. Chỉ để tham khảo; một số từ có thể nghe hơi khác so với giáo viên đọc.",
                     customSampleError: "Không tạo được âm thanh mẫu. Hãy thử lại.",
                     customSampleUnavailable: "Máy chủ này chưa có giọng đọc mẫu.",
+                    leaderboardTitle: "Top 10",
+                    leaderboardHelp: "Điểm: lấy lượt tốt nhất của mỗi bài (âm Good tính 1, Okay tính \u00bd), cộng lại. Văn bản tự nhập không tính.",
+                    leaderboardEmpty: "Chưa có điểm nào. Hãy là người đầu tiên!",
+                    leaderboardPoints: "{n} điểm",
+                    leaderboardLessons: "{n} bài",
+                    leaderboardMeRank: "Bạn: hạng {rank} \u00b7 {points} điểm",
+                    leaderboardMeNone: "Luyện một bài để có tên trên bảng.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -1810,7 +1864,7 @@ async def read_index():
                     lengthShorter: "Sepertinya ada kata dalam kalimat yang terlewat. Bacalah seluruh teks di layar.",
                     lengthDifferent: "Yang Anda ucapkan tampaknya tidak sesuai dengan kalimat yang ditampilkan. Bacalah persis teks di layar.",
                     profilePrompt: "Masukkan nama dan kelompok peserta sebelum latihan berbicara.",
-                    profileHint: "Gunakan nama yang membedakan Anda dari orang lain di kelompok yang sama; nama dan kelompok yang sama akan memakai riwayat latihan yang sama.",
+                    profileHint: "Gunakan nama yang membedakan Anda dari orang lain; nama yang sama akan selalu melanjutkan riwayat latihan yang sama.",
                     name: "Nama",
                     participantGroup: "Kelompok peserta",
                     chooseOne: "Pilih salah satu...",
@@ -1845,6 +1899,13 @@ async def read_index():
                     customSampleNote: "Suara komputer membacakan teks Anda dengan agak pelan. Hanya sebagai panduan; beberapa kata bisa terdengar sedikit berbeda dari bacaan guru.",
                     customSampleError: "Contoh tidak dapat dibuat. Coba lagi.",
                     customSampleUnavailable: "Suara contoh tidak tersedia di server ini.",
+                    leaderboardTitle: "10 Teratas",
+                    leaderboardHelp: "Poin: percobaan terbaik tiap pelajaran (suku kata Good bernilai 1, Okay \u00bd), dijumlahkan. Teks sendiri tidak dihitung.",
+                    leaderboardEmpty: "Belum ada skor. Jadilah yang pertama!",
+                    leaderboardPoints: "{n} poin",
+                    leaderboardLessons: "{n} pelajaran",
+                    leaderboardMeRank: "Anda: peringkat {rank} \u00b7 {points} poin",
+                    leaderboardMeNone: "Latih satu pelajaran untuk masuk papan.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2059,7 +2120,7 @@ async def read_index():
                     lengthShorter: "ऐसा लगता है कि वाक्य के कुछ शब्द छूट गए। कृपया स्क्रीन पर लिखा पूरा पाठ पढ़ें।",
                     lengthDifferent: "आपने जो बोला वह स्क्रीन पर दिए वाक्य से मेल नहीं खाता लगता। कृपया स्क्रीन पर लिखा पाठ ठीक वैसा ही पढ़ें।",
                     profilePrompt: "बोलने का अभ्यास शुरू करने से पहले अपना नाम और प्रतिभागी समूह दर्ज करें।",
-                    profileHint: "ऐसा नाम चुनें जो आपको उसी समूह के दूसरे लोगों से अलग पहचान दे; एक ही नाम और समूह होने पर वही अभ्यास-इतिहास इस्तेमाल होगा।",
+                    profileHint: "ऐसा नाम चुनें जो आपको दूसरे लोगों से अलग पहचान दे; वही नाम डालने पर पुराना अभ्यास-इतिहास ही जारी रहेगा।",
                     name: "नाम",
                     participantGroup: "प्रतिभागी समूह",
                     chooseOne: "कोई एक चुनें...",
@@ -2094,6 +2155,13 @@ async def read_index():
                     customSampleNote: "कंप्यूटर की आवाज़ आपका पाठ थोड़ा धीमे पढ़ती है। यह केवल मार्गदर्शन है; कुछ शब्द शिक्षक के पढ़ने से थोड़ा अलग लग सकते हैं।",
                     customSampleError: "नमूना नहीं बन सका। फिर कोशिश करें।",
                     customSampleUnavailable: "इस सर्वर पर नमूना आवाज़ उपलब्ध नहीं है।",
+                    leaderboardTitle: "शीर्ष 10",
+                    leaderboardHelp: "अंक: हर पाठ का सबसे अच्छा प्रयास (Good अक्षर-खंड = 1, Okay = \u00bd), जोड़कर। आपका अपना पाठ नहीं गिना जाता।",
+                    leaderboardEmpty: "अभी कोई अंक नहीं। पहले बनिए!",
+                    leaderboardPoints: "{n} अंक",
+                    leaderboardLessons: "{n} पाठ",
+                    leaderboardMeRank: "आप: #{rank} \u00b7 {points} अंक",
+                    leaderboardMeNone: "बोर्ड में आने के लिए एक पाठ का अभ्यास करें।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -2396,6 +2464,7 @@ async def read_index():
                 syncPracticeModeUI();
                 if (selectedPracticeMode() === "chapter5_word" && chapter5WordItems.length) renderChapter5WordItem();
                 if (lastAssessment) renderVisualResults(lastAssessment);
+                if (lastLeaderboard) renderLeaderboard(lastLeaderboard);
                 const status = document.getElementById("status");
                 if (status.dataset.translation) {
                     const savedStatus = JSON.parse(status.dataset.translation);
@@ -2825,6 +2894,59 @@ async def read_index():
                 }
             }
 
+            // The leaderboard (top 10 by points; the server works the points out from every saved attempt).
+            let lastLeaderboard = null;
+
+            function renderLeaderboard(data) {
+                lastLeaderboard = data;
+                const list = document.getElementById("leaderboardList");
+                list.replaceChildren();
+                const top = (data && data.top) || [];
+                document.getElementById("leaderboardEmpty").hidden = top.length > 0;
+                top.forEach(row => {
+                    const item = document.createElement("li");
+                    item.className = "leaderboard-row" + (row.is_me ? " me" : "");
+                    const rank = document.createElement("span");
+                    rank.className = "leaderboard-rank";
+                    rank.textContent = String(row.rank);
+                    const name = document.createElement("span");
+                    name.className = "leaderboard-name";
+                    name.textContent = row.name;
+                    name.title = row.name;
+                    const points = document.createElement("span");
+                    points.className = "leaderboard-points";
+                    points.textContent = t("leaderboardPoints", { n: row.points });
+                    const lessons = document.createElement("span");
+                    lessons.className = "leaderboard-lessons";
+                    lessons.textContent = t("leaderboardLessons", { n: row.lessons });
+                    points.appendChild(lessons);
+                    item.append(rank, name, points);
+                    list.appendChild(item);
+                });
+                const me = document.getElementById("leaderboardMe");
+                const mine = data && data.me;
+                const inTop = top.some(row => row.is_me);
+                if (!activeStudent) {
+                    me.hidden = true;
+                } else if (mine && !inTop) {
+                    me.textContent = t("leaderboardMeRank", { rank: mine.rank, points: mine.points });
+                    me.hidden = false;
+                } else if (!mine) {
+                    me.textContent = t("leaderboardMeNone");
+                    me.hidden = false;
+                } else {
+                    me.hidden = true;
+                }
+            }
+
+            async function loadLeaderboard() {
+                try {
+                    const query = activeStudent ? `?student_id=${encodeURIComponent(activeStudent.id)}` : "";
+                    const response = await fetch(`/api/leaderboard${query}`);
+                    if (response.ok) renderLeaderboard(await response.json());
+                } catch (error) { /* the board simply stays as it was */ }
+            }
+
             function handleScriptInput() {
                 if (selectedPracticeMode() !== "custom") return;
                 const script = document.getElementById("scriptInput").value;
@@ -2844,6 +2966,7 @@ async def read_index():
             }
 
             applyLanguage(savedLanguage() || detectBrowserLanguage(), Boolean(savedLanguage()));
+            loadLeaderboard();
 
             // A full-screen "working" layer for the slow steps (assessment, calibration): a small spinner at the bottom of
             // the page goes unnoticed. It appears only if the step lasts more than a moment, and cannot be dismissed.
@@ -2982,6 +3105,7 @@ async def read_index():
                 }
                 syncVoiceCalibrationUI();
                 syncPracticeControls();
+                loadLeaderboard();                                       // "You" is a different person now
             }
 
             function calibrationDismissKey(studentId) {
@@ -3416,6 +3540,7 @@ async def read_index():
                         throw new Error(detail);
                     }
                     renderVisualResults(data);
+                    loadLeaderboard();                                   // the attempt may have moved the learner up
                     showFeedbackPanel(data.saved_attempt?.id);
                     showStatus(data.reference_pitch_warning ? `${t("assessmentSaved")} ${data.reference_pitch_warning}` : t("assessmentSaved"), false, data.reference_pitch_warning ? null : { key: "assessmentSaved", variables: {} });
                 } catch (error) {

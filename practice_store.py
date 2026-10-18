@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import os
 import shutil
 import sqlite3
@@ -23,6 +24,10 @@ ALLOWED_GROUPS = {"taiwanese", "foreigner"}
 
 def _now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+# Accounts made by tests and tools: never on the leaderboard.
+LEADERBOARD_HIDDEN_NAMES = re.compile(r"^(mandarin-speaking|cal-log-|cal log$|lvl-api|tts-check|strict-check|no-audio|measured)", re.IGNORECASE)
 
 
 def _normalize_name(name):
@@ -204,6 +209,51 @@ class PracticeStore:
         if student is not None:
             student["voice_calibration"] = self.get_voice_calibration(student["id"])
         return student
+
+    def leaderboard(self, viewer_id=None, limit=10):
+        """The best-scoring learners. A lesson (a book sentence or a Chapter 5 word) is worth 0-100 points: the BEST attempt at it,
+        100 x (Good syllables + half of the Okay ones) / all syllables; the points of all lessons add up. Own text does not count (a single easy
+        character would give full points), nor does an attempt without a single Good syllable (silence, a failed alignment: all Okay).
+        Returns {"top": [{rank, name, points, lessons, is_me}], "me": {rank, name, points, lessons} or None, "players": n}; `me` is only
+        filled for the viewer, and ids are never given out."""
+        with self._connection() as connection:
+            rows = connection.execute(
+                """SELECT s.id, s.name, a.sample_id, a.summary_json FROM practice_attempts a JOIN students s ON s.id = a.student_id
+                   WHERE a.sample_id <> 'custom'"""
+            ).fetchall()
+            created = {r["id"]: r["created_at"] for r in connection.execute("SELECT id, created_at FROM students")}
+        best = {}                                              # (student, lesson) -> best points
+        names = {}
+        for row in rows:
+            if LEADERBOARD_HIDDEN_NAMES.match(row["name"] or ""):
+                continue
+            try:
+                counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
+            except (ValueError, AttributeError):
+                continue
+            good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
+            total = good + okay + practice
+            if good < 1 or total < 1:
+                continue
+            points = 100.0 * (good + 0.5 * okay) / total
+            key = (row["id"], row["sample_id"])
+            best[key] = max(best.get(key, 0.0), points)
+            names[row["id"]] = row["name"]
+        totals = {}
+        for (student, _lesson), points in best.items():
+            entry = totals.setdefault(student, [0.0, 0])
+            entry[0] += points
+            entry[1] += 1
+        ranked = sorted(totals.items(), key=lambda kv: (-round(kv[1][0]), -kv[1][1], created.get(kv[0], ""), names[kv[0]]))
+        results = []
+        for student, (points, lessons) in ranked:
+            shown = int(round(points))
+            rank = 1 + sum(1 for other in results if other["points"] > shown)              # equal points share a rank
+            results.append({"student": student, "rank": rank, "name": names[student], "points": shown, "lessons": lessons})
+        top = [{"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"], "is_me": r["student"] == viewer_id}
+               for r in results[:limit]]
+        me = next(({"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"]} for r in results if r["student"] == viewer_id), None)
+        return {"top": top, "me": me, "players": len(results)}
 
     def get_student(self, student_id):
         with self._connection() as connection:
