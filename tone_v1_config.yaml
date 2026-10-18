@@ -312,14 +312,14 @@ levels:
                                     # 2.0 would give most of that gain (12.5%) for 3.3% false accepts; 1.5: 10.4% and 7.4%.
     sentence:
       tone:
-        t4_by_duration:               # Easy, on request 2026-10-18: the old shape (a longer syllable needs a bigger fall) with the smallest bar cut from 0.6 to 0.25 and the
-          short_ms: 180               # others scaled by the same factor (0.25 / 0.6 = 0.42): 0.6 / 0.9 / 1.3 / 1.7 -> 0.25 / 0.38 / 0.54 / 0.71. Good needs 82% of a bar.
-          medium_ms: 300              # Measured (jull's 230 tone-4 syllables Good | native tone 1 / tone 2 accepted as a tone 4; the teachers' correct readings stay 93.2% Good):
-          tiny_ms: 140                # old 72.2% | 2% / 7%;  this 77.8% | 6% / 11%;  the same 0.25 for every length 82.2% | 10% / 13%;  the old steps with 0.35 taken off
-          min_fall_tiny_st: 0.25      # (0.25 / 0.55 / 0.95 / 1.35) 74.8% | 2% / 9%.
-          min_fall_short_st: 0.38
-          min_fall_medium_st: 0.54
-          min_fall_long_st: 0.71
+        t4_by_duration:               # Easy, on request 2026-10-18: the old shape (a longer syllable needs a bigger fall) with the smallest bar cut from 0.6 to 0.14 and the
+          short_ms: 180               # others scaled by the same factor (0.14 / 0.6 = 0.23): 0.6 / 0.9 / 1.3 / 1.7 -> 0.14 / 0.21 / 0.30 / 0.40. Good needs 82% of a bar, so a
+          medium_ms: 300              # tone 4 of any length is Good from ~0.11 - 0.33 st; the pitch tracker's own noise is ~0.1 - 0.3 st. It was 0.25 / 0.38 / 0.54 / 0.71 for a
+          tiny_ms: 140                # few minutes: jull's 230 tone-4 syllables 77.8% Good, a native tone 1 / tone 2 accepted as a tone 4 6% / 11% (old bars 72.2%, 2% / 7%).
+          min_fall_tiny_st: 0.14
+          min_fall_short_st: 0.21
+          min_fall_medium_st: 0.30
+          min_fall_long_st: 0.40
           require_end_below_start: true
         t4_before_t4:                 # (with a bar below the floor the relaxation changes nothing: it never makes a bar stricter, and the 0.8 floor only holds up a lowered bar)
           relaxation_st: 0.5
