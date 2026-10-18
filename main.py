@@ -334,6 +334,12 @@ async def get_leaderboard(student_id: str = ""):
     return practice_store.leaderboard(student_id or None)
 
 
+@app.get("/api/progress")
+async def get_progress(student_id: str = ""):
+    """What the learner has practised (marks for the sentence and word lists) and their latest results; see PracticeStore.progress."""
+    return practice_store.progress(student_id) if student_id else {"lessons": {}, "recent": []}
+
+
 @app.get("/api/students/{student_id}")
 async def get_student_profile(student_id: str):
     profile = practice_store.get_student(student_id)
@@ -1228,10 +1234,28 @@ async def read_index():
             .board-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
             .board-tabs button { flex: 1; padding: 6px 8px; font-size: 13px; background: #edf2f7; color: #2d3748; }
             .board-tabs button.active { background: #2b6cb0; color: white; }
+            .recent { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+            .recent[hidden] { display: none; }
+            .recent h3 { margin: 0 0 6px; font-size: 0.95rem; }
+            .recent-list { list-style: none; margin: 0; padding: 0; }
+            .recent-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: baseline; width: 100%; padding: 5px 8px; border-radius: 8px; background: transparent; color: inherit; font-size: 14px; font-weight: 400; text-align: left; }
+            .recent-row:hover:not(:disabled), .recent-row:focus-visible { background: #edf2f7; }
+            .recent-row:disabled { cursor: default; opacity: 1; }
+            .recent-script { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .recent-points { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+            .recent-time { display: block; font-size: 11px; font-weight: 400; color: #718096; }
+            .result-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+            .result-actions button { padding: 9px 16px; font-size: 15px; }
+            .result-actions .retry-btn.recording { background-color: #1a4f80; animation: pulse 1.2s infinite; }
+            .result-actions .next-item-btn { background: #edf2f7; color: #2d3748; }
+            .result-actions .next-item-btn:disabled { opacity: 0.5; }
+            .item-progress { margin: 6px 0 0; }
+            .item-progress.practiced { color: #276749; font-weight: 600; }
+            #practiceMode { scroll-margin-top: 12px; }
             @media (min-width: 1280px) {
                 body { max-width: 1400px; }
                 .page-grid { display: grid; grid-template-columns: minmax(0, 1040px) 300px; gap: 20px; align-items: start; justify-content: center; }
-                .leaderboard { position: sticky; top: 18px; }
+                .leaderboard { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow-y: auto; }
             }
             .custom-sample { margin: 8px 0 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
             .custom-sample[hidden], .custom-sample audio[hidden] { display: none; }
@@ -1406,6 +1430,7 @@ async def read_index():
                 <p id="customTextHint" class="upload-hint" data-i18n="customTextHint" hidden>Enter any Mandarin text. It does not need to appear in a textbook.</p>
                 <textarea id="scriptInput" rows="2" readonly oninput="handleScriptInput()" data-i18n-placeholder="customTextPlaceholder"></textarea>
                 <div id="transcriptDisplay" class="transcript" aria-label="Matching script with pinyin" data-i18n-aria-label="scriptWithPinyin"></div>
+                <p id="itemProgress" class="upload-hint item-progress" role="status" hidden></p>
                 <p id="chapter5OptionalHint" class="upload-hint" hidden></p>
                 <label id="pinyinToggle" class="pinyin-toggle">
                     <input type="checkbox" id="showPinyin" checked onchange="refreshPinyinDisplay()">
@@ -1452,6 +1477,10 @@ async def read_index():
                     <h2 data-i18n="resultsTitle">Reading practice results</h2>
                     <p id="targetScriptDisplay" style="color: #718096; margin: 0;"></p>
                 </div>
+                <div class="result-actions">
+                    <button type="button" id="retryBtn" class="retry-btn" onclick="toggleRecording()">Read again</button>
+                    <button type="button" id="nextItemBtn" class="next-item-btn" onclick="goToNextItem()" data-i18n="resultNext">Next</button>
+                </div>
             </div>
 
             <div id="pronunciationResults"></div>
@@ -1488,6 +1517,10 @@ async def read_index():
                 </form>
                 <p id="feedbackStatus" role="status" aria-live="polite"></p>
             </section>
+            <div class="result-actions">
+                <button type="button" class="retry-btn" onclick="toggleRecording()">Read again</button>
+                <button type="button" class="next-item-btn" onclick="goToNextItem()" data-i18n="resultNext">Next</button>
+            </div>
         </div>
         </div>
         <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
@@ -1500,6 +1533,11 @@ async def read_index():
             <ol id="leaderboardList" class="leaderboard-list"></ol>
             <p id="leaderboardEmpty" class="upload-hint" hidden>No scores yet. Be the first!</p>
             <p id="leaderboardMe" class="leaderboard-me" hidden></p>
+            <section id="recentCard" class="recent" aria-labelledby="recentTitle" hidden>
+                <h3 id="recentTitle" data-i18n="recentTitle">My recent results</h3>
+                <ol id="recentList" class="recent-list"></ol>
+                <p id="recentEmpty" class="upload-hint" data-i18n="recentEmpty" hidden>Your results will appear here.</p>
+            </section>
         </aside>
         </div>
 
@@ -1528,6 +1566,7 @@ async def read_index():
             let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
+            let progressData = { lessons: {}, recent: [] };   // what the learner has practised (from /api/progress): marks for the lists, latest results
             let sampleTouched = false;                      // the learner picked a sample themselves: the page stops choosing the starting one
             let chapter5WordItems = [];
             let chapter5Categories = [];
@@ -1583,11 +1622,18 @@ async def read_index():
             leaderboardMeNone: "Practice a sentence to join the board.",
             boardTabPoints: "Points",
             boardTabAccuracy: "Accuracy",
-            leaderboardHelpAccuracy: "Accuracy: the average of the best attempt of each sentence (a Good syllable counts 1, an Okay one \u00bd), out of 100. You need at least {n} sentences. Your own text does not count.",
+            leaderboardHelpAccuracy: "Accuracy: over all your attempts at sentences and words, the share of syllables that were Good (an Okay one counts \u00bd), out of 100. You need at least {n} sentences. Your own text does not count.",
             leaderboardEmptyAccuracy: "Nobody has done {n} sentences yet.",
             leaderboardAccuracy: "{n}%",
             leaderboardMeAccuracyRank: "You: #{rank} \u00b7 {accuracy}%",
             leaderboardMeAccuracyNeed: "Practice {n} more sentence(s) to join the accuracy board.",
+            resultRetry: "Read again",
+            resultNext: "Next",
+            itemProgress: "Practised {n}× · best {best}% · latest {last}%",
+            itemNotPracticed: "Not practised yet.",
+            recentTitle: "My recent results",
+            recentEmpty: "Your results will appear here.",
+            recentPoints: "{n}%",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1738,11 +1784,18 @@ async def read_index():
                     leaderboardMeNone: "練習一句就能上榜。",
                     boardTabPoints: "積分",
                     boardTabAccuracy: "準確率",
-                    leaderboardHelpAccuracy: "準確率：每一句取最好的一次（Good 音節算 1，Okay 算 \u00bd），再取平均（滿分 100）。至少要練 {n} 句。自己輸入的文本不計分。",
+                    leaderboardHelpAccuracy: "準確率：你所有句子與單字練習中，Good 音節的比例（Okay 算 \u00bd），滿分 100。至少要練 {n} 句。自己輸入的文本不計分。",
                     leaderboardEmptyAccuracy: "還沒有人練滿 {n} 句。",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "你：第 {rank} 名\u30fb{accuracy}%",
                     leaderboardMeAccuracyNeed: "再練 {n} 句就能上準確率榜。",
+                    resultRetry: "再讀一次",
+                    resultNext: "下一個",
+                    itemProgress: "已練習 {n} 次・最佳 {best}%・最近 {last}%",
+                    itemNotPracticed: "還沒練習過。",
+                    recentTitle: "我的最近成績",
+                    recentEmpty: "成績會顯示在這裡。",
+                    recentPoints: "{n}%",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -1892,11 +1945,18 @@ async def read_index():
                     leaderboardMeNone: "Luyện một câu để có tên trên bảng.",
                     boardTabPoints: "Điểm",
                     boardTabAccuracy: "Độ chính xác",
-                    leaderboardHelpAccuracy: "Độ chính xác: trung bình lượt tốt nhất của mỗi câu (âm Good tính 1, Okay tính \u00bd), trên thang 100. Cần ít nhất {n} câu. Văn bản tự nhập không tính.",
+                    leaderboardHelpAccuracy: "Độ chính xác: trên tất cả các lượt luyện câu và từ của bạn, tỉ lệ âm Good (Okay tính \u00bd), trên thang 100. Cần ít nhất {n} câu. Văn bản tự nhập không tính.",
                     leaderboardEmptyAccuracy: "Chưa ai luyện đủ {n} câu.",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Bạn: hạng {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Luyện thêm {n} câu để vào bảng độ chính xác.",
+                    resultRetry: "Đọc lại",
+                    resultNext: "Tiếp theo",
+                    itemProgress: "Đã luyện {n} lần · tốt nhất {best}% · gần nhất {last}%",
+                    itemNotPracticed: "Chưa luyện.",
+                    recentTitle: "Kết quả gần đây của tôi",
+                    recentEmpty: "Kết quả của bạn sẽ hiện ở đây.",
+                    recentPoints: "{n}%",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -2065,11 +2125,18 @@ async def read_index():
                     leaderboardMeNone: "Latih satu kalimat untuk masuk papan.",
                     boardTabPoints: "Poin",
                     boardTabAccuracy: "Akurasi",
-                    leaderboardHelpAccuracy: "Akurasi: rata-rata percobaan terbaik tiap kalimat (suku kata Good bernilai 1, Okay \u00bd), dari 100. Perlu minimal {n} kalimat. Teks sendiri tidak dihitung.",
+                    leaderboardHelpAccuracy: "Akurasi: dari semua percobaan kalimat dan kata Anda, bagian suku kata Good (Okay dihitung \u00bd), dari 100. Perlu minimal {n} kalimat. Teks sendiri tidak dihitung.",
                     leaderboardEmptyAccuracy: "Belum ada yang menyelesaikan {n} kalimat.",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Anda: peringkat {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Latih {n} kalimat lagi untuk masuk papan akurasi.",
+                    resultRetry: "Baca lagi",
+                    resultNext: "Berikutnya",
+                    itemProgress: "Sudah dilatih {n}× · terbaik {best}% · terakhir {last}%",
+                    itemNotPracticed: "Belum dilatih.",
+                    recentTitle: "Hasil terbaru saya",
+                    recentEmpty: "Hasil Anda akan muncul di sini.",
+                    recentPoints: "{n}%",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2328,11 +2395,18 @@ async def read_index():
                     leaderboardMeNone: "बोर्ड में आने के लिए एक वाक्य का अभ्यास करें।",
                     boardTabPoints: "अंक",
                     boardTabAccuracy: "सटीकता",
-                    leaderboardHelpAccuracy: "सटीकता: हर वाक्य के सबसे अच्छे प्रयास का औसत (Good अक्षर-खंड = 1, Okay = \u00bd), 100 में से। कम से कम {n} वाक्य ज़रूरी हैं। अपना लिखा पाठ नहीं गिना जाता।",
+                    leaderboardHelpAccuracy: "सटीकता: आपके सभी वाक्य और शब्द प्रयासों में Good अक्षर-खंडों का अनुपात (Okay = \u00bd), 100 में से। कम से कम {n} वाक्य ज़रूरी हैं। अपना लिखा पाठ नहीं गिना जाता।",
                     leaderboardEmptyAccuracy: "अभी तक किसी ने {n} वाक्य पूरे नहीं किए।",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "आप: #{rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "सटीकता बोर्ड में आने के लिए {n} और वाक्य अभ्यास करें।",
+                    resultRetry: "फिर से पढ़ें",
+                    resultNext: "अगला",
+                    itemProgress: "{n} बार अभ्यास · सर्वश्रेष्ठ {best}% · अंतिम {last}%",
+                    itemNotPracticed: "अभी अभ्यास नहीं किया।",
+                    recentTitle: "मेरे हाल के परिणाम",
+                    recentEmpty: "आपके परिणाम यहाँ दिखेंगे।",
+                    recentPoints: "{n}%",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -2636,6 +2710,9 @@ async def read_index():
                 if (selectedPracticeMode() === "chapter5_word" && chapter5WordItems.length) renderChapter5WordItem();
                 if (lastAssessment) renderVisualResults(lastAssessment);
                 if (lastLeaderboard) renderLeaderboard(lastLeaderboard);
+                renderRecent();
+                syncResultButtons();
+                renderItemProgress();
                 const status = document.getElementById("status");
                 if (status.dataset.translation) {
                     const savedStatus = JSON.parse(status.dataset.translation);
@@ -2789,7 +2866,11 @@ async def read_index():
                 const select = document.getElementById("sampleSelect");
                 const selectedId = select.value;
                 select.replaceChildren();
-                sampleLessons.forEach(sample => select.add(new Option(t("lessonOption", sample), sample.id)));
+                sampleLessons.forEach(sample => {
+                    const done = progressData.lessons[sample.id];
+                    const label = t("lessonOption", sample);
+                    select.add(new Option(done ? `✓ ${done.best}% · ${label}` : label, sample.id));       // a practised sentence: a tick and the best points
+                });
                 if (sampleLessons.some(sample => sample.id === selectedId)) select.value = selectedId;
             }
 
@@ -3141,6 +3222,150 @@ async def read_index():
                 } catch (error) { /* the board simply stays as it was */ }
             }
 
+            // What this learner has practised: a tick and the best points in the sentence list, a line under the script, and their latest results.
+            async function loadProgress() {
+                if (!activeStudent) {
+                    progressData = { lessons: {}, recent: [] };
+                } else {
+                    try {
+                        const response = await fetch(`/api/progress?student_id=${encodeURIComponent(activeStudent.id)}`);
+                        if (response.ok) progressData = await response.json();
+                    } catch (error) { /* the marks simply stay as they were */ }
+                }
+                if (sampleLessons.length && !isRecording) refreshSampleOptions();
+                renderItemProgress();
+                renderRecent();
+            }
+
+            function renderItemProgress() {
+                const line = document.getElementById("itemProgress");
+                const id = selectedPracticeMode() === "custom" ? "" : selectedPracticeSampleId();
+                if (!activeStudent || !id) {
+                    line.hidden = true;
+                    return;
+                }
+                const done = progressData.lessons[id];
+                line.textContent = done ? t("itemProgress", { n: done.attempts, best: done.best, last: done.last }) : t("itemNotPracticed");
+                line.classList.toggle("practiced", Boolean(done));
+                line.hidden = false;
+            }
+
+            function relativeTime(iso) {
+                const then = Date.parse(iso);
+                if (!Number.isFinite(then)) return "";
+                const seconds = Math.round((then - Date.now()) / 1000);
+                try {
+                    const formatter = new Intl.RelativeTimeFormat(currentLanguage, { numeric: "auto" });
+                    for (const [unit, size] of [["day", 86400], ["hour", 3600], ["minute", 60]]) {
+                        if (Math.abs(seconds) >= size) return formatter.format(Math.round(seconds / size), unit);
+                    }
+                    return formatter.format(Math.min(seconds, 0), "second");
+                } catch (error) {
+                    return new Date(then).toLocaleString();
+                }
+            }
+
+            function renderRecent() {
+                const card = document.getElementById("recentCard");
+                card.hidden = !activeStudent;
+                if (!activeStudent) return;
+                const list = document.getElementById("recentList");
+                list.replaceChildren();
+                const recent = progressData.recent || [];
+                document.getElementById("recentEmpty").hidden = recent.length > 0;
+                recent.forEach(entry => {
+                    const item = document.createElement("li");
+                    const row = document.createElement("button");
+                    row.type = "button";
+                    row.className = "recent-row";
+                    const script = document.createElement("span");
+                    script.className = "recent-script";
+                    const text = String(entry.script || "");
+                    script.textContent = text.length > 18 ? `${text.slice(0, 18)}…` : text;
+                    script.title = text;
+                    const points = document.createElement("span");
+                    points.className = "recent-points";
+                    points.textContent = entry.points === null ? "–" : t("recentPoints", { n: entry.points });
+                    const when = document.createElement("span");
+                    when.className = "recent-time";
+                    when.textContent = relativeTime(entry.created_at);
+                    points.appendChild(when);
+                    row.append(script, points);
+                    row.disabled = entry.mode === "custom";                  // own text is shown, but there is no list entry to go back to
+                    row.addEventListener("click", () => openRecent(entry));
+                    item.appendChild(row);
+                    list.appendChild(item);
+                });
+            }
+
+            // Back to a sentence or word from the latest results.
+            function openRecent(entry) {
+                if (isProcessing || isRecording || isSavingStudent || entry.mode === "custom") return;
+                if (entry.mode === "book") {
+                    if (!sampleLessons.some(sample => sample.id === entry.sample_id)) return;
+                    document.querySelector('input[name="practiceMode"][value="book"]').checked = true;
+                    document.getElementById("sampleSelect").value = entry.sample_id;
+                    sampleTouched = true;
+                } else {
+                    const index = chapter5WordItems.findIndex(item => item.word_key === entry.sample_id);
+                    if (index < 0) return;
+                    document.querySelector('input[name="practiceMode"][value="chapter5_word"]').checked = true;
+                    chapter5CategoryFilter = "";
+                    document.getElementById("chapter5CategorySelect").value = "";
+                    chapter5WordIndex = index;
+                }
+                changePracticeMode();
+                scrollToPractice();
+            }
+
+            function scrollToPractice() {
+                document.getElementById("practiceMode").scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+
+            // "Read again" is the record / stop button of the top of the page, "Next" the next sentence (or word) of the list: both sit under the results,
+            // so the learner neither re-selects nor scrolls back up.
+            function hasNextItem() {
+                const mode = selectedPracticeMode();
+                if (mode === "book") {
+                    const select = document.getElementById("sampleSelect");
+                    return select.selectedIndex >= 0 && select.selectedIndex < select.options.length - 1 && sampleLessons.length > 0;
+                }
+                if (mode === "chapter5_word") {
+                    const visible = filteredChapter5WordIndexes();
+                    const position = visible.indexOf(chapter5WordIndex);
+                    return position >= 0 && position < visible.length - 1;
+                }
+                return false;
+            }
+
+            function syncResultButtons() {
+                const busy = isProcessing || isRecording || isSavingStudent;
+                const recordDisabled = document.getElementById("recordBtn").disabled;
+                document.querySelectorAll(".retry-btn").forEach(button => {
+                    button.textContent = isRecording ? t("recordingStop") : t("resultRetry");
+                    button.classList.toggle("recording", isRecording);
+                    button.disabled = recordDisabled;
+                });
+                const next = hasNextItem();
+                document.querySelectorAll(".next-item-btn").forEach(button => {
+                    button.hidden = selectedPracticeMode() === "custom";
+                    button.disabled = busy || !next;
+                });
+            }
+
+            function goToNextItem() {
+                if (isProcessing || isRecording || isSavingStudent || !hasNextItem()) return;
+                if (selectedPracticeMode() === "chapter5_word") {
+                    moveChapter5Word(1);
+                } else {
+                    const select = document.getElementById("sampleSelect");
+                    select.selectedIndex += 1;
+                    sampleTouched = true;
+                    selectSample();
+                }
+                scrollToPractice();
+            }
+
             function handleScriptInput() {
                 if (selectedPracticeMode() !== "custom") return;
                 const script = document.getElementById("scriptInput").value;
@@ -3300,6 +3525,7 @@ async def read_index():
                 syncVoiceCalibrationUI();
                 syncPracticeControls();
                 loadLeaderboard();                                       // "You" is a different person now
+                loadProgress();
                 if (profile && !sampleTouched && sampleLessons.length && selectedPracticeMode() === "book") applyStartSample();
             }
 
@@ -3618,6 +3844,8 @@ async def read_index():
                 document.getElementById("recordedAudio").controls = !isRecording;
                 fileInput.disabled = busy || !canPractice;
                 document.getElementById("uploadBtn").disabled = busy || !canPractice || !hasScript || Boolean(audioFileError(fileInput.files[0]));
+                syncResultButtons();
+                renderItemProgress();
             }
 
             function selectedPracticeSampleId(mode = selectedPracticeMode()) {
@@ -3736,6 +3964,7 @@ async def read_index():
                     }
                     renderVisualResults(data);
                     loadLeaderboard();                                   // the attempt may have moved the learner up
+                    loadProgress();                                      // the attempt is now a mark and a recent result
                     showFeedbackPanel(data.saved_attempt?.id);
                     showStatus(data.reference_pitch_warning ? `${t("assessmentSaved")} ${data.reference_pitch_warning}` : t("assessmentSaved"), false, data.reference_pitch_warning ? null : { key: "assessmentSaved", variables: {} });
                 } catch (error) {

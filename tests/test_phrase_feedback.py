@@ -112,7 +112,7 @@ class NoCorruptedTextTests(unittest.TestCase):
 
     def test_no_word_in_the_pages_is_broken_by_question_marks(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
-        source = source.replace("/api/pinyin?text=", "").replace("/api/tts-sample?text=", "")      # a URL query is not a broken word
+        source = source.replace("/api/pinyin?text=", "").replace("/api/tts-sample?text=", "").replace("/api/progress?student_id=", "")      # a URL query is not a broken word
         broken = re.findall(r'[^\W\d_]\?[^\W\d_]|"\?{2,}', source)           # a letter glued to ?, or a text that is all ??
         self.assertEqual(broken, [])
 

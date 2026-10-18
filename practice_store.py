@@ -224,6 +224,8 @@ class PracticeStore:
             ).fetchall()
             created = {r["id"]: r["created_at"] for r in connection.execute("SELECT id, created_at FROM students")}
         best = {}                                              # (student, lesson) -> best points
+        pooled = {}                                            # student -> [Good, Okay, all syllables] over EVERY attempt (the accuracy board)
+        lesson_sets = {}                                       # student -> the lessons they have an attempt at
         names = {}
         for row in rows:
             if LEADERBOARD_HIDDEN_NAMES.match(row["name"] or ""):
@@ -240,6 +242,11 @@ class PracticeStore:
             key = (row["id"], row["sample_id"])
             best[key] = max(best.get(key, 0.0), points)
             names[row["id"]] = row["name"]
+            sums = pooled.setdefault(row["id"], [0, 0, 0])
+            sums[0] += good
+            sums[1] += okay
+            sums[2] += total
+            lesson_sets.setdefault(row["id"], set()).add(row["sample_id"])
         totals = {}
         for (student, _lesson), points in best.items():
             entry = totals.setdefault(student, [0.0, 0])
@@ -254,15 +261,16 @@ class PracticeStore:
         top = [{"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"], "is_me": r["student"] == viewer_id}
                for r in results[:limit]]
         me = next(({"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"]} for r in results if r["student"] == viewer_id), None)
-        return {"top": top, "me": me, "players": len(results), "accuracy": self._accuracy_board(totals, names, created, viewer_id, limit)}
+        return {"top": top, "me": me, "players": len(results), "accuracy": self._accuracy_board(pooled, lesson_sets, names, created, viewer_id, limit)}
 
     @staticmethod
-    def _accuracy_board(totals, names, created, viewer_id, limit):
-        """The second board: the average points of a learner's lessons (their best attempt of each, 0-100), so a learner who did many lessons
-        and one who did a few compare fairly. It needs ACCURACY_MIN_LESSONS lessons (one perfect sentence must not win); below that the learner
-        sees how many more are needed. Equal averages (to one decimal) share a rank."""
-        averages = {student: (round(points / lessons, 1), lessons) for student, (points, lessons) in totals.items()}
-        eligible = sorted(((student, accuracy, lessons) for student, (accuracy, lessons) in averages.items() if lessons >= ACCURACY_MIN_LESSONS),
+    def _accuracy_board(pooled, lesson_sets, names, created, viewer_id, limit):
+        """The second board: the learner's accuracy over EVERY attempt, counted in syllables: 100 x (Good + half of the Okay ones) / all syllables
+        of all their attempts at book sentences and Chapter 5 words (own text, and attempts without a single Good syllable, do not count: as on the
+        points board). Reading a sentence again does not hide the first try. It needs ACCURACY_MIN_LESSONS different lessons (one perfect sentence
+        must not win); below that the learner sees how many more are needed. Equal accuracies (to one decimal) share a rank."""
+        accuracy_of = {student: (round(100.0 * (good + 0.5 * okay) / total, 1), len(lesson_sets[student])) for student, (good, okay, total) in pooled.items()}
+        eligible = sorted(((student, accuracy, lessons) for student, (accuracy, lessons) in accuracy_of.items() if lessons >= ACCURACY_MIN_LESSONS),
                           key=lambda row: (-row[1], -row[2], created.get(row[0], ""), names[row[0]]))
         rows = []
         for student, accuracy, lessons in eligible:
@@ -271,10 +279,39 @@ class PracticeStore:
         top = [{"rank": r["rank"], "name": r["name"], "accuracy": r["accuracy"], "lessons": r["lessons"], "is_me": r["student"] == viewer_id}
                for r in rows[:limit]]
         me = next(({"rank": r["rank"], "name": r["name"], "accuracy": r["accuracy"], "lessons": r["lessons"]} for r in rows if r["student"] == viewer_id), None)
-        if me is None and viewer_id in averages:                                            # has lessons, but not enough of them yet
-            accuracy, lessons = averages[viewer_id]
+        if me is None and viewer_id in accuracy_of:                                         # has lessons, but not enough of them yet
+            accuracy, lessons = accuracy_of[viewer_id]
             me = {"rank": None, "name": names[viewer_id], "accuracy": accuracy, "lessons": lessons, "needed": ACCURACY_MIN_LESSONS - lessons}
         return {"top": top, "me": me, "players": len(rows), "min_lessons": ACCURACY_MIN_LESSONS}
+
+    def progress(self, student_id, recent_limit=10):
+        """What one learner has practised: per lesson (a book sentence or a Chapter 5 word) how many attempts, the best and the latest points, and
+        the latest attempts newest first (own text included, as "custom"). Points are 100 x (Good + half of the Okay ones) / all syllables of the
+        attempt; an attempt without a single Good syllable (silence, a failed alignment) is not a result: it marks no lesson and shows no points.
+        Returns {"lessons": {sample_id: {attempts, best, last, last_at}}, "recent": [{sample_id, mode, script, points, created_at}]}."""
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT sample_id, target_script, summary_json, created_at FROM practice_attempts WHERE student_id = ? ORDER BY created_at, rowid",
+                (student_id,),
+            ).fetchall()
+        lessons, recent = {}, []
+        for row in rows:
+            try:
+                counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
+            except (ValueError, AttributeError):
+                counts = {}
+            good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
+            total = good + okay + practice
+            points = round(100.0 * (good + 0.5 * okay) / total) if good >= 1 and total >= 1 else None
+            sample_id = row["sample_id"]
+            mode = "custom" if sample_id == "custom" else "chapter5_word" if str(sample_id).startswith("C5-") else "book"
+            if mode != "custom" and points is not None:
+                entry = lessons.setdefault(sample_id, {"attempts": 0, "best": 0, "last": 0, "last_at": ""})
+                entry["attempts"] += 1
+                entry["best"] = max(entry["best"], points)
+                entry["last"], entry["last_at"] = points, row["created_at"]
+            recent.append({"sample_id": sample_id, "mode": mode, "script": row["target_script"], "points": points, "created_at": row["created_at"]})
+        return {"lessons": lessons, "recent": recent[::-1][:recent_limit]}
 
     def get_student(self, student_id):
         with self._connection() as connection:
