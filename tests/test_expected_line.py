@@ -28,7 +28,7 @@ class PhraseContourTests(unittest.TestCase):
 
 class ExpectedToneLineTests(unittest.TestCase):
     def test_every_language_has_the_new_texts(self):
-        for key in ("showExpectedTone", "expectedLine"):
+        for key in ("showExpectedTone", "expectedLine", "expectedNote"):
             self.assertEqual(len(re.findall(r"\b%s: " % key, SOURCE)), 5, key)
 
     def test_the_pitch_controls_have_a_switch_and_a_legend_entry(self):
@@ -36,6 +36,12 @@ class ExpectedToneLineTests(unittest.TestCase):
         self.assertIn('id="showExpectedTone"', controls)
         self.assertIn('onchange="toggleExpectedTone()"', controls)
         self.assertIn('class="pitch-swatch expected"', controls)
+
+    def test_the_guide_is_off_until_the_learner_switches_it_on_and_comes_with_a_caveat(self):
+        controls = SOURCE[SOURCE.index('<div class="pitch-controls">'): SOURCE.index('<div id="clausesContainer">')]
+        self.assertNotRegex(controls, r'id="showExpectedTone"[^>]*checked')
+        self.assertIn('localStorage.getItem("showExpectedTone") === "1"', SOURCE)
+        self.assertIn('data-i18n="expectedNote"', controls)
 
     def test_the_four_tones_have_a_shape_and_the_neutral_tone_has_none(self):
         shapes = SOURCE[SOURCE.index("const EXPECTED_TONE_SHAPES = {"): SOURCE.index("function expectedToneSpans(")]

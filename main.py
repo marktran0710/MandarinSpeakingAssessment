@@ -1488,11 +1488,12 @@ async def read_index():
                         <option value="hz" data-i18n="f0Hz">F0 (Hz)</option>
                         <option value="midi" data-i18n="midiNote">MIDI note</option>
                     </select>
-                    <label class="pitch-toggle"><input type="checkbox" id="showExpectedTone" checked onchange="toggleExpectedTone()"><span data-i18n="showExpectedTone">Show the expected tone behind my pitch</span></label>
+                    <label class="pitch-toggle"><input type="checkbox" id="showExpectedTone" onchange="toggleExpectedTone()"><span data-i18n="showExpectedTone">Show the expected tone behind my pitch</span></label>
                     <div class="pitch-legend">
                         <span class="pitch-key"><i class="pitch-swatch learner" aria-hidden="true"></i><span data-i18n="recordingLine">Your pitch contour</span></span>
                         <span class="pitch-key"><i class="pitch-swatch expected" aria-hidden="true"></i><span data-i18n="expectedLine">Expected tone (schematic guide)</span></span>
                     </div>
+                    <p class="pitch-note" data-i18n="expectedNote">The expected tone is only a schematic guide.</p>
                     <p class="pitch-note" data-i18n="pitchNote">Tone feedback uses only your pitch contour; sample audio is not scored.</p>
                 </div>
                 <div id="clausesContainer"></div>
@@ -1635,6 +1636,7 @@ async def read_index():
                     recordingLine: "Your pitch contour",
                     showExpectedTone: "Show the expected tone behind my pitch",
                     expectedLine: "Expected tone (schematic guide)",
+                    expectedNote: "The expected tone is only a schematic guide. The feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds, so a line that looks close can still be Okay, and a small difference can still be Good.",
                     pitchNote: "Tone feedback uses your pitch contour only. Sample audio is not scored.", quickFeedback: "Quick feedback",
                     feedbackQuestion: "How helpful was this practice? 1 = not helpful, 5 = very helpful.",
                     feedbackImprove: "Anything we should improve? (optional)", feedbackPlaceholder: "Share a short comment", sendFeedback: "Send feedback",
@@ -1796,6 +1798,7 @@ async def read_index():
                     recordingLine: "你的音高曲線",
                     showExpectedTone: "在我的音高後面顯示預期聲調",
                     expectedLine: "預期聲調（示意圖）",
+                    expectedNote: "預期聲調只是示意。回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音，所以看起來接近的曲線仍可能是「還可以」，小差異也可能是「良好」。",
                     pitchNote: "評估只使用你的音高曲線；範例音訊不會用來評分。", quickFeedback: "快速回饋",
                     feedbackQuestion: "這次練習對你有幫助嗎？1 = 沒幫助，5 = 非常有幫助。",
                     feedbackImprove: "你覺得哪些地方可以改進？（選填）", feedbackPlaceholder: "請簡短留言", sendFeedback: "送出回饋",
@@ -1956,6 +1959,7 @@ async def read_index():
                     recordingLine: "Đường cao độ của bạn",
                     showExpectedTone: "Hiện thanh điệu mong đợi phía sau đường cao độ của tôi",
                     expectedLine: "Thanh điệu mong đợi (đường minh họa)",
+                    expectedNote: "Đường thanh điệu mong đợi chỉ là hình minh họa. Phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh, nên đường trông gần giống vẫn có thể là “Tạm ổn”, còn khác biệt nhỏ vẫn có thể là “Tốt”.",
                     pitchNote: "Phản hồi thanh điệu chỉ dựa trên đường cao độ của bạn; âm thanh mẫu không dùng để chấm.", quickFeedback: "Phản hồi nhanh",
                     feedbackQuestion: "Buổi luyện tập này hữu ích thế nào? 1 = không hữu ích, 5 = rất hữu ích.",
                     feedbackImprove: "Bạn muốn chúng tôi cải thiện điều gì? (không bắt buộc)", feedbackPlaceholder: "Viết nhận xét ngắn", sendFeedback: "Gửi phản hồi",
@@ -2148,6 +2152,7 @@ async def read_index():
                     recordingLine: "Kontur nada suara Anda",
                     showExpectedTone: "Tampilkan nada yang diharapkan di belakang kontur saya",
                     expectedLine: "Nada yang diharapkan (panduan skematis)",
+                    expectedNote: "Garis nada yang diharapkan hanya panduan skematis. Umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya, jadi garis yang tampak dekat tetap bisa “Cukup”, dan perbedaan kecil tetap bisa “Bagus”.",
                     pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
                     quickFeedback: "Masukan singkat",
                     feedbackQuestion: "Seberapa membantu latihan ini? 1 = tidak membantu, 5 = sangat membantu.",
@@ -2417,6 +2422,7 @@ async def read_index():
                     recordingLine: "आपकी पिच रेखा",
                     showExpectedTone: "मेरी पिच के पीछे अपेक्षित स्वर दिखाएँ",
                     expectedLine: "अपेक्षित स्वर (योजनाबद्ध मार्गदर्शन)",
+                    expectedNote: "अपेक्षित स्वर केवल एक योजनाबद्ध मार्गदर्शन है। फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है, इसलिए पास दिखने वाली रेखा भी “ठीक-ठाक” हो सकती है और छोटा अंतर भी “बढ़िया” हो सकता है।",
                     pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
                     quickFeedback: "त्वरित प्रतिक्रिया",
                     feedbackQuestion: "यह अभ्यास कितना उपयोगी रहा? 1 = उपयोगी नहीं, 5 = बहुत उपयोगी।",
@@ -4131,8 +4137,10 @@ async def read_index():
                 return spans;
             }
 
+            // Off until the learner switches it on: the verdict also weighs length, voicing and context (and its bars are forgiving), so a guide drawn at full size
+            // next to a "Good" shallow fall, or next to an "Okay" that looks right, would read as a wrong verdict.
             function showExpectedToneChoice() {
-                try { return localStorage.getItem("showExpectedTone") !== "0"; } catch (error) { return true; }
+                try { return localStorage.getItem("showExpectedTone") === "1"; } catch (error) { return false; }
             }
 
             function toggleExpectedTone() {
