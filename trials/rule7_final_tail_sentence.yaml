@@ -1,6 +1,0 @@
-# Rule 7: clause-final tones 1/2/3 are judged without the last 20% of the syllable (final lowering). Sentence practice only.
-sentence:
-  tone:
-    final_tail_guard:
-      trim_frac: 0.2
-      tones: [1, 2, 3]

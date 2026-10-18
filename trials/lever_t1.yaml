@@ -1,4 +1,0 @@
-# One lever at a time (2026-10-17), on top of production: Tone 1 shape only: |delta| 2.5, range 5.0 (learners are flatter, not wider).
-tone:
-  t1_max_delta_st: 2.5
-  t1_max_range_st: 5.0

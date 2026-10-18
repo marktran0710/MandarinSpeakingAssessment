@@ -1,9 +1,9 @@
 """
 Compare tone-decision settings on the same recordings, without touching tone_v1_config.yaml.
 
-    python compare_configs.py trials/user_config_a.yaml
-    python compare_configs.py trials/user_config_a.yaml --split          # also each top-level section on its own
-    python compare_configs.py trials/a.yaml trials/b.yaml --suite word sentence
+    python compare_configs.py candidate.yaml
+    python compare_configs.py candidate.yaml --split          # also each top-level section on its own
+    python compare_configs.py candidate_a.yaml candidate_b.yaml --suite word sentence
 
 A trial file holds the sections/keys of tone_v1_config.yaml it wants to change (tone:, confidence:, ...); the baseline
 (the current file) is always run first. Three suites, each with its own question:
@@ -285,8 +285,8 @@ def main():
     parser.add_argument("--suite", nargs="+", choices=SUITES, default=list(SUITES))
     parser.add_argument("--split", action="store_true", help="also run each top-level section of each trial on its own")
     parser.add_argument("--limit", type=int, default=None, help="first N recordings of the sentence and synthetic suites (smoke test)")
-    parser.add_argument("--base", default=None, help="YAML merged into EVERY config, the baseline included (e.g. trials/_legacy_dict_base.yaml: "
-                                                      "the older dictionary, so alignment caches made before a dictionary change stay valid)")
+    parser.add_argument("--base", default=None, help="YAML merged into EVERY config, the baseline included "
+                                                      "(e.g. a shared dictionary override for compatible alignment caches)")
     parser.add_argument("--cache-root", default=str(DEFAULT_CACHE_ROOT))
     parser.add_argument("--out", default=None, help="folder for report.json / report.md (default outputs/config_trials/<time>)")
     args = parser.parse_args()

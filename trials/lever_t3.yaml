@@ -1,6 +1,0 @@
-# One lever at a time (2026-10-17), on top of production: Tone 3 shape only: fall 1.5, full rise 1.5, low point 20-85%.
-tone:
-  t3_min_fall_st: 1.5
-  t3_min_full_rise_st: 1.5
-  t3_min_position: 0.20
-  t3_max_position: 0.85

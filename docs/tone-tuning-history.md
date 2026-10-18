@@ -1,5 +1,7 @@
 # Rule trials - results (2026-10-17)
 
+> Historical development notes, not validation of the current release. The trial YAML files were removed during repository cleanup after the runtime configuration stabilized. Paths under `trials/` below refer to files in Git history; recover a historical file before using an old reproduction command. The active configuration is `tone_v1_config.yaml`.
+
 Everything below was measured against the production config of that moment: single words unchanged from the golden snapshot;
 sentence profile = 130 ms floor for "Needs practice" + the two tone-4 rules (`t4_by_duration`, `t4_before_t4`). The left-context
 rule for tone 2 (best variant, "either 2.0 st") was added afterwards: sentences now 91.8% Good / 7 false alarms.

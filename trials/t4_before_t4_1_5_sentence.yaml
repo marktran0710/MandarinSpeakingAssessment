@@ -1,5 +1,0 @@
-# Same, with a more generous 1.5 st for the first tone 4 of a pair.
-sentence:
-  tone:
-    t4_before_t4:
-      min_fall_st: 1.5

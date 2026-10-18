@@ -43,18 +43,6 @@ class TrialConfigTests(unittest.TestCase):
             self.assertEqual(ta.get_config("sentence")["confidence"]["practice_min_window_ms"], 130)   # sentence value kept
         self.assertEqual(ta.get_config()["tone"]["t4_min_fall_st"], 3.0)
 
-    def test_the_shipped_trial_files_load(self):
-        import yaml
-        root = Path(__file__).resolve().parents[1] / "trials"
-        for name in ("user_config_a.yaml", "t4_by_duration_sentence.yaml", "t4_tiny_off.yaml", "repair_off.yaml", "t4_by_duration_proxy.yaml", "half_t3_only.yaml",
-                     "t4_before_t4_sentence.yaml", "t4_before_t4_1_5_sentence.yaml", "t4_both_rules_sentence.yaml",
-                     "rule7_final_tail_sentence.yaml", "rule7_final_tail_30_sentence.yaml", "rule9_carryover_sentence.yaml",
-                     "rule9_carryover_strong_sentence.yaml", "rule8_short_130_sentence.yaml", "rule8_short_180_sentence.yaml",
-                     "rules_combined_sentence.yaml", "rule10_reduplication_sentence.yaml",
-                     "rules_recommended_sentence.yaml", "final_config_as_pasted.yaml", "good_065.yaml", "good_060.yaml", "lever_match065.yaml", "lever_match060.yaml", "lever_quality060.yaml", "lever_t1.yaml", "lever_t2.yaml", "lever_t3.yaml", "lever_t4.yaml", "non_native_fit.yaml", "t4_floor_100.yaml", "t1_asym.yaml", "t1_asym_175.yaml", "t1_asym_20.yaml", "t1_asym_23.yaml", "t4_steady_70.yaml", "t1t4_70.yaml", "t1t4_85.yaml", "t1t4_final.yaml", "t4ctx_05.yaml", "t4ctx_08.yaml", "t4gen_03_ctx_05.yaml", "t4gen_05_ctx_05.yaml", "t4gen_03_ctx_05_floor08.yaml", "guard_soft_50.yaml", "guard_soft_40.yaml", "guard_raise_40.yaml", "t3_low_register.yaml", "easy_80.yaml", "easy_65.yaml", "_legacy_dict_base.yaml", "jump_trim_40.yaml", "jump_trim_60.yaml", "unstable_scope_syllable.yaml", "unstable_scope_syllable_q060.yaml", "lever_quality055.yaml", "lever_quality050.yaml", "non_native_fit_with_shapes.yaml", "final_config_keep_decisions.yaml", "final_config_thresholds_only.yaml", "final_config_geomean_only.yaml", "user_ruleset_b.yaml", "half_t3_end_as_okay.yaml", "user_config_c.yaml", "user_config_c_floor130.yaml",
-                     "left_context_t2_prev12_20_sentence.yaml", "left_context_t2_prev12_15_sentence.yaml", "left_context_t2_end3_20_sentence.yaml", "left_context_t2_either_20_sentence.yaml"):
-            self.assertIsInstance(yaml.safe_load((root / name).read_text(encoding="utf-8")), dict, name)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,0 @@
-# By where the previous syllable's pitch ended: a tone 2 after a syllable that ended 3 st or more above the speaker's median needs 2.0 st.
-sentence:
-  tone:
-    left_context:
-      - when: {tone: 2, previous_end_min_st: 3.0}
-        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}

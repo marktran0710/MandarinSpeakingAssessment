@@ -1,6 +1,0 @@
-# Rule 9: do not trust the first 15% (at most 40 ms) of a syllable that has a neighbour on its left. Sentence practice only.
-sentence:
-  tone:
-    carryover_trim:
-      frac: 0.15
-      max_ms: 40

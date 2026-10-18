@@ -1,6 +1,0 @@
-# Left-context rule: a tone 2 right after a tone 1 or a tone 2 (which end high) needs only a 2.0 st rise, and its low point may come later.
-sentence:
-  tone:
-    left_context:
-      - when: {tone: 2, previous: [1, 2]}
-        set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}

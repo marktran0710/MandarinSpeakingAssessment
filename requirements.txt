@@ -1,0 +1,14 @@
+# Direct application dependencies from the working Python 3.12 environment.
+# MFA runs in its own environment; see README.md.
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+python-multipart==0.0.32
+numpy==2.5.4
+scipy==1.18.1
+praat-parselmouth==0.4.7
+opencc-python-reimplemented==0.1.7
+pypinyin==0.55.0
+PyYAML==6.0.3
+pydub==0.25.1
+jieba==0.42.1

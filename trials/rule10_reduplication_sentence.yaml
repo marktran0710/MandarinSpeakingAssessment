@@ -1,4 +1,0 @@
-# Rule 10: the second character of a repeated pair (看看, 謝謝) is read lightly and can never be 'Needs practice'. Sentence practice only.
-sentence:
-  tone:
-    soften_reduplication: true

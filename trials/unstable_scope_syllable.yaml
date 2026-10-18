@@ -1,5 +1,0 @@
-# The unstable-pitch-track penalty (quality x 0.75) applies only to the syllables whose own segment has a jump, not to the whole
-# recording (2026-10-17). Thresholds untouched. Learner recordings are noisier, and in an 11-syllable sentence ONE jump dragged every
-# syllable under the 0.65 quality bar (21 of the 26 learner syllables a quality-0.60 bar would have rescued were such collateral cases).
-confidence:
-  unstable_scope: syllable

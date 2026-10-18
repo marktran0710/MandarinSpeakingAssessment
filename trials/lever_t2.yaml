@@ -1,4 +1,0 @@
-# One lever at a time (2026-10-17), on top of production: Tone 2 shape only: rise 2.0, low point up to 85% of the syllable.
-tone:
-  t2_min_rise_st: 2.0
-  t2_max_min_position: 0.85

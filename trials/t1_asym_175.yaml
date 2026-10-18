@@ -1,5 +1,0 @@
-# Tone 1 Good while it falls at most about 1.75 st (1.45 + 0.3), zero at 2.45 (2026-10-17). Sentences only.
-sentence:
-  tone:
-    t1_max_fall_st: 1.45
-    t1_fall_width_st: 1.0
