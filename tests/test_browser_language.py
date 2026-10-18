@@ -50,6 +50,16 @@ class PageWiringTests(unittest.TestCase):
         self.assertIn("function applyLanguage(language, remember = true) {", SOURCE)
         self.assertRegex(SOURCE, r"function changeLanguage\(language\) \{\s*applyLanguage\(language\);")           # the picker still stores the learner's choice
 
+    def test_the_speaker_profile_window_has_its_own_language_picker_with_the_same_languages_in_step_with_the_page(self):
+        dialog = SOURCE[SOURCE.index('<dialog id="speakerDialog"'): SOURCE.index("</dialog>", SOURCE.index('<dialog id="speakerDialog"'))]
+        page = SOURCE[SOURCE.index('<select id="languageSelect"'): SOURCE.index("</select>", SOURCE.index('<select id="languageSelect"'))]
+        picker = dialog[dialog.index('<select id="dialogLanguage"'): dialog.index("</select>", dialog.index('<select id="dialogLanguage"'))]
+        self.assertIn('onchange="changeLanguage(this.value)"', picker)                          # the same function: the choice is remembered and applied at once
+        self.assertEqual(re.findall(r'value="([^"]+)"', picker), re.findall(r'value="([^"]+)"', page))
+        self.assertIn('document.getElementById("dialogLanguage").value = currentLanguage;', SOURCE)   # it starts on the language the page has (the browser's on a first visit)
+        opening = SOURCE[SOURCE.index("function openStudentDialog("): SOURCE.index("function closeStudentDialog(")]
+        self.assertLess(opening.index("form.reset();"), opening.index("dialogLanguage"))                   # ... also after the form was reset (which picks the first option)
+
     def test_the_server_never_looks_at_the_ip_address_for_the_language(self):
         self.assertNotIn("geoip", SOURCE.lower())
         self.assertNotIn("x-forwarded-for", SOURCE.lower())

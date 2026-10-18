@@ -1321,6 +1321,15 @@ async def read_index():
             <p class="upload-hint" data-i18n="profileHint">Use a name that distinguishes you from other people; the same name always continues the same practice history.</p>
             <form id="studentForm" onsubmit="saveStudentProfile(event)">
                 <div class="profile-fields">
+                    <label for="dialogLanguage"><span data-i18n="language">Language</span>
+                        <select id="dialogLanguage" onchange="changeLanguage(this.value)" aria-label="Language">
+                            <option value="en">English</option>
+                            <option value="zh-TW" data-i18n="languageZh">Traditional Chinese</option>
+                            <option value="vi" data-i18n="languageVi">Vietnamese</option>
+                            <option value="id">Bahasa Indonesia</option>
+                            <option value="hi">हिन्दी</option>
+                        </select>
+                    </label>
                     <label for="studentName"><span data-i18n="name">Name</span>
                         <input type="text" id="studentName" maxlength="100" autocomplete="name" required>
                     </label>
@@ -2696,6 +2705,7 @@ async def read_index():
                 }
                 document.documentElement.lang = currentLanguage;
                 document.getElementById("languageSelect").value = currentLanguage;
+                document.getElementById("dialogLanguage").value = currentLanguage;         // the picker of the profile window shows the same language (the browser's on a first visit)
                 document.querySelectorAll("[data-i18n]").forEach(element => {
                     element.textContent = t(element.dataset.i18n);
                 });
@@ -3692,6 +3702,7 @@ async def read_index():
                 form.reset();
                 document.getElementById("studentName").value = profile?.name || "";
                 document.getElementById("studentGroup").value = profile?.group_type || "";
+                document.getElementById("dialogLanguage").value = currentLanguage;           // form.reset() put it back on the first option: show the language the page is in
                 document.getElementById("speakerFormError").textContent = "";
                 document.getElementById("cancelProfileBtn").hidden = !activeStudent;
                 if (!dialog.open) dialog.showModal();
