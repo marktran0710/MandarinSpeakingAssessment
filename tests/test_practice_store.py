@@ -19,11 +19,42 @@ class PracticeStoreTests(unittest.TestCase):
     def test_profile_is_reused_for_same_name_and_group(self):
         first = self.store.create_or_get_student("  Mei   Lin ", "taiwanese")
         second = self.store.create_or_get_student("mei lin", "taiwanese")
-        another_group = self.store.create_or_get_student("Mei Lin", "foreigner")
 
         self.assertEqual(first["id"], second["id"])
-        self.assertNotEqual(first["id"], another_group["id"])
         self.assertEqual(self.store.get_student(first["id"])["name"], "Mei Lin")
+
+    def test_a_name_that_exists_is_continued_whatever_group_is_chosen(self):
+        first = self.store.create_or_get_student("Mei Lin", "taiwanese")
+        again = self.store.create_or_get_student("MEI  lin", "foreigner")
+
+        self.assertEqual(first["id"], again["id"])                       # no second profile with the same name
+        self.assertEqual(again["group_type"], "taiwanese")               # the profile keeps the group it was made with
+        with self.store._connection() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM students").fetchone()[0], 1)
+
+    def test_the_database_itself_refuses_a_second_profile_with_the_same_name(self):
+        self.store.create_or_get_student("Mei Lin", "taiwanese")
+        with self.store._connection() as connection:
+            with self.assertRaises(sqlite3.IntegrityError):
+                connection.execute("INSERT INTO students (id, name, normalized_name, group_type, created_at, last_seen_at) VALUES ('x', 'MEI LIN', 'mei lin', 'foreigner', 'a', 'a')")
+
+    def test_an_older_database_with_the_name_in_both_groups_still_works_and_prefers_the_chosen_group(self):
+        root = Path(self.temp_dir.name)
+        legacy = root / "legacy.sqlite3"
+        connection = sqlite3.connect(legacy)
+        connection.executescript("""
+            CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, normalized_name TEXT NOT NULL,
+                group_type TEXT NOT NULL CHECK (group_type IN ('taiwanese', 'foreigner')), created_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
+                UNIQUE (normalized_name, group_type));
+            INSERT INTO students VALUES ('a', 'Lan', 'lan', 'taiwanese', '2026-01-01', '2026-01-01');
+            INSERT INTO students VALUES ('b', 'Lan', 'lan', 'foreigner', '2026-01-02', '2026-01-02');
+        """)
+        connection.commit()
+        connection.close()
+        store = PracticeStore(legacy, root / "legacy-recordings")                 # initialising must not fail on the duplicate
+        self.assertEqual(store.create_or_get_student("lan", "foreigner")["id"], "b")
+        self.assertEqual(store.create_or_get_student("lan", "taiwanese")["id"], "a")
+        self.assertEqual(store.create_or_get_student("new person", "taiwanese")["name"], "new person")
 
     def test_attempt_saves_original_audio_and_result_history(self):
         profile = self.store.create_or_get_student("Mei Lin", "taiwanese")

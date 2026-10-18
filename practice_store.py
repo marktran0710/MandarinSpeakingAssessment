@@ -103,6 +103,10 @@ class PracticeStore:
                     ON user_feedback(created_at DESC);
                 """
             )
+            try:
+                connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_unique_name ON students(normalized_name)")
+            except sqlite3.IntegrityError:
+                pass            # an older database that has one name in both groups keeps working: create_or_get_student prefers the chosen group
 
         self._recover_account_deletions()
 
@@ -177,20 +181,25 @@ class PracticeStore:
         normalized_name = _normalize_name(name)
         now = _now()
         with self._connection() as connection:
-            connection.execute(
-                """INSERT OR IGNORE INTO students
-                   (id, name, normalized_name, group_type, created_at, last_seen_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (uuid.uuid4().hex, name, normalized_name, group_type, now, now),
-            )
-            connection.execute(
-                "UPDATE students SET last_seen_at = ? WHERE normalized_name = ? AND group_type = ?",
-                (now, normalized_name, group_type),
-            )
+            # A name belongs to ONE profile, whichever group is chosen: someone who types a name that already exists simply continues as that profile (its group
+            # stays as it was). Profiles made before this rule, with the same name in both groups, still resolve: the one of the chosen group first.
             row = connection.execute(
-                "SELECT * FROM students WHERE normalized_name = ? AND group_type = ?",
+                "SELECT * FROM students WHERE normalized_name = ? ORDER BY (group_type = ?) DESC, created_at LIMIT 1",
                 (normalized_name, group_type),
             ).fetchone()
+            if row is None:
+                connection.execute(
+                    """INSERT OR IGNORE INTO students
+                       (id, name, normalized_name, group_type, created_at, last_seen_at)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (uuid.uuid4().hex, name, normalized_name, group_type, now, now),
+                )
+                row = connection.execute(
+                    "SELECT * FROM students WHERE normalized_name = ? ORDER BY (group_type = ?) DESC, created_at LIMIT 1",
+                    (normalized_name, group_type),
+                ).fetchone()
+            connection.execute("UPDATE students SET last_seen_at = ? WHERE id = ?", (now, row["id"]))
+            row = connection.execute("SELECT * FROM students WHERE id = ?", (row["id"],)).fetchone()
         student = self._student_dict(row)
         if student is not None:
             student["voice_calibration"] = self.get_voice_calibration(student["id"])
