@@ -37,14 +37,20 @@ class ExpectedToneLineTests(unittest.TestCase):
         self.assertIn('onchange="toggleExpectedTone()"', controls)
         self.assertIn('class="pitch-swatch expected"', controls)
 
-    def test_the_guide_is_off_until_the_learner_switches_it_on_and_comes_with_a_caveat(self):
+    def test_the_guide_is_on_until_the_learner_switches_it_off_and_comes_with_a_caveat(self):
         controls = SOURCE[SOURCE.index('<div class="pitch-controls">'): SOURCE.index('<div id="clausesContainer">')]
-        self.assertNotRegex(controls, r'id="showExpectedTone"[^>]*checked')
-        self.assertIn('localStorage.getItem("showExpectedTone") === "1"', SOURCE)
+        self.assertRegex(controls, r'id="showExpectedTone"[^>]*checked')
+        self.assertIn('localStorage.getItem("showExpectedTone") !== "0"', SOURCE)
         self.assertIn('data-i18n="expectedNote"', controls)
 
+    def test_the_guide_is_built_from_the_learners_own_pitch(self):
+        guide = SOURCE[SOURCE.index("function learnerPitchRange("): SOURCE.index("function showExpectedToneChoice()")]
+        self.assertIn("syllable.status !== \"likely_correct\"", guide)             # not there yet: the basic shape to aim for
+        self.assertIn("early_to_late_delta_st", guide)                              # already right: it follows what the learner did
+        self.assertIn("measured.reduce(", guide)                                    # at the height of the learner's own pitch over the syllable
+
     def test_the_four_tones_have_a_shape_and_the_neutral_tone_has_none(self):
-        shapes = SOURCE[SOURCE.index("const EXPECTED_TONE_SHAPES = {"): SOURCE.index("function expectedToneSpans(")]
+        shapes = SOURCE[SOURCE.index("const EXPECTED_TONE_SHAPES = {"): SOURCE.index("const clampNumber")]
         for tone in ("1:", "2:", "3:", "4:"):
             self.assertIn(tone, shapes)
         self.assertNotIn("5:", shapes)

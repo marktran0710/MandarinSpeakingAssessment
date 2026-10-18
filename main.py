@@ -1488,12 +1488,12 @@ async def read_index():
                         <option value="hz" data-i18n="f0Hz">F0 (Hz)</option>
                         <option value="midi" data-i18n="midiNote">MIDI note</option>
                     </select>
-                    <label class="pitch-toggle"><input type="checkbox" id="showExpectedTone" onchange="toggleExpectedTone()"><span data-i18n="showExpectedTone">Show the expected tone behind my pitch</span></label>
+                    <label class="pitch-toggle"><input type="checkbox" id="showExpectedTone" checked onchange="toggleExpectedTone()"><span data-i18n="showExpectedTone">Show the expected tone behind my pitch</span></label>
                     <div class="pitch-legend">
                         <span class="pitch-key"><i class="pitch-swatch learner" aria-hidden="true"></i><span data-i18n="recordingLine">Your pitch contour</span></span>
-                        <span class="pitch-key"><i class="pitch-swatch expected" aria-hidden="true"></i><span data-i18n="expectedLine">Expected tone (schematic guide)</span></span>
+                        <span class="pitch-key"><i class="pitch-swatch expected" aria-hidden="true"></i><span data-i18n="expectedLine">Expected tone (guide from your own pitch)</span></span>
                     </div>
-                    <p class="pitch-note" data-i18n="expectedNote">The expected tone is only a schematic guide.</p>
+                    <p class="pitch-note" data-i18n="expectedNote">The guide is drawn from your own pitch.</p>
                     <p class="pitch-note" data-i18n="pitchNote">Tone feedback uses only your pitch contour; sample audio is not scored.</p>
                 </div>
                 <div id="clausesContainer"></div>
@@ -1635,8 +1635,8 @@ async def read_index():
                     viewPitch: "View your pitch graph (optional)", pitchDisplay: "Pitch display:", relativePitch: "Relative pitch (semitones)", f0Hz: "F0 (Hz)",
                     recordingLine: "Your pitch contour",
                     showExpectedTone: "Show the expected tone behind my pitch",
-                    expectedLine: "Expected tone (schematic guide)",
-                    expectedNote: "The expected tone is only a schematic guide. The feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds, so a line that looks close can still be Okay, and a small difference can still be Good.",
+                    expectedLine: "Expected tone (guide from your own pitch)",
+                    expectedNote: "The guide is drawn from your own pitch: where a tone is already right it follows your line, where it is not it shows a basic shape to aim for. It is only a guide: the feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds.",
                     pitchNote: "Tone feedback uses your pitch contour only. Sample audio is not scored.", quickFeedback: "Quick feedback",
                     feedbackQuestion: "How helpful was this practice? 1 = not helpful, 5 = very helpful.",
                     feedbackImprove: "Anything we should improve? (optional)", feedbackPlaceholder: "Share a short comment", sendFeedback: "Send feedback",
@@ -1797,8 +1797,8 @@ async def read_index():
                     viewPitch: "查看你的音高圖（選填）", pitchDisplay: "音高顯示：", relativePitch: "相對音高（半音）", f0Hz: "基頻（Hz）",
                     recordingLine: "你的音高曲線",
                     showExpectedTone: "在我的音高後面顯示預期聲調",
-                    expectedLine: "預期聲調（示意圖）",
-                    expectedNote: "預期聲調只是示意。回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音，所以看起來接近的曲線仍可能是「還可以」，小差異也可能是「良好」。",
+                    expectedLine: "預期聲調（依你自己的音高）",
+                    expectedNote: "這條參考線是依你自己的音高畫的：聲調已經正確的地方，它會貼著你的曲線；還不正確的地方，它會畫出一個基本的目標形狀。它只是參考，回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音。",
                     pitchNote: "評估只使用你的音高曲線；範例音訊不會用來評分。", quickFeedback: "快速回饋",
                     feedbackQuestion: "這次練習對你有幫助嗎？1 = 沒幫助，5 = 非常有幫助。",
                     feedbackImprove: "你覺得哪些地方可以改進？（選填）", feedbackPlaceholder: "請簡短留言", sendFeedback: "送出回饋",
@@ -1958,8 +1958,8 @@ async def read_index():
                     viewPitch: "Xem đường cao độ của bạn (tùy chọn)", pitchDisplay: "Hiển thị cao độ:", relativePitch: "Cao độ tương đối (semitone)", f0Hz: "F0 (Hz)",
                     recordingLine: "Đường cao độ của bạn",
                     showExpectedTone: "Hiện thanh điệu mong đợi phía sau đường cao độ của tôi",
-                    expectedLine: "Thanh điệu mong đợi (đường minh họa)",
-                    expectedNote: "Đường thanh điệu mong đợi chỉ là hình minh họa. Phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh, nên đường trông gần giống vẫn có thể là “Tạm ổn”, còn khác biệt nhỏ vẫn có thể là “Tốt”.",
+                    expectedLine: "Thanh điệu mong đợi (theo cao độ của chính bạn)",
+                    expectedNote: "Đường mong đợi được vẽ từ chính cao độ của bạn: chỗ thanh điệu đã đúng thì nó bám theo đường của bạn, chỗ chưa đúng thì nó vẽ hình cơ bản để bạn hướng tới. Đây chỉ là gợi ý: phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh.",
                     pitchNote: "Phản hồi thanh điệu chỉ dựa trên đường cao độ của bạn; âm thanh mẫu không dùng để chấm.", quickFeedback: "Phản hồi nhanh",
                     feedbackQuestion: "Buổi luyện tập này hữu ích thế nào? 1 = không hữu ích, 5 = rất hữu ích.",
                     feedbackImprove: "Bạn muốn chúng tôi cải thiện điều gì? (không bắt buộc)", feedbackPlaceholder: "Viết nhận xét ngắn", sendFeedback: "Gửi phản hồi",
@@ -2151,8 +2151,8 @@ async def read_index():
                     f0Hz: "F0 (Hz)",
                     recordingLine: "Kontur nada suara Anda",
                     showExpectedTone: "Tampilkan nada yang diharapkan di belakang kontur saya",
-                    expectedLine: "Nada yang diharapkan (panduan skematis)",
-                    expectedNote: "Garis nada yang diharapkan hanya panduan skematis. Umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya, jadi garis yang tampak dekat tetap bisa “Cukup”, dan perbedaan kecil tetap bisa “Bagus”.",
+                    expectedLine: "Nada yang diharapkan (berdasarkan nada Anda sendiri)",
+                    expectedNote: "Garis ini digambar dari nada Anda sendiri: bila nada sudah benar ia mengikuti garis Anda, bila belum ia menunjukkan bentuk dasar yang dituju. Ini hanya panduan: umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya.",
                     pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
                     quickFeedback: "Masukan singkat",
                     feedbackQuestion: "Seberapa membantu latihan ini? 1 = tidak membantu, 5 = sangat membantu.",
@@ -2421,8 +2421,8 @@ async def read_index():
                     f0Hz: "F0 (Hz)",
                     recordingLine: "आपकी पिच रेखा",
                     showExpectedTone: "मेरी पिच के पीछे अपेक्षित स्वर दिखाएँ",
-                    expectedLine: "अपेक्षित स्वर (योजनाबद्ध मार्गदर्शन)",
-                    expectedNote: "अपेक्षित स्वर केवल एक योजनाबद्ध मार्गदर्शन है। फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है, इसलिए पास दिखने वाली रेखा भी “ठीक-ठाक” हो सकती है और छोटा अंतर भी “बढ़िया” हो सकता है।",
+                    expectedLine: "अपेक्षित स्वर (आपकी अपनी पिच पर आधारित)",
+                    expectedNote: "यह रेखा आपकी अपनी पिच से बनी है: जहाँ स्वर सही है वहाँ यह आपकी रेखा के साथ चलती है, जहाँ नहीं है वहाँ लक्ष्य की एक बुनियादी आकृति दिखाती है। यह केवल मार्गदर्शन है: फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है।",
                     pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
                     quickFeedback: "त्वरित प्रतिक्रिया",
                     feedbackQuestion: "यह अभ्यास कितना उपयोगी रहा? 1 = उपयोगी नहीं, 5 = बहुत उपयोगी।",
@@ -4105,20 +4105,47 @@ async def read_index():
                 }
             }
 
-            // The shape each tone should have, in semitones (Chao's five levels, 2.5 st apart: 1 = -5 ... 5 = +5), left to right through the syllable. A guide
-            // drawn behind the learner's line, not a measurement: tone 1 high and level (55), tone 2 rising (35), tone 3 low with a small rise (214), tone 4
-            // falling (51). The neutral tone has no shape. The tones are judged by their shape, not by how high the speaker sits, so each shape is put at the
-            // height of the learner's own pitch over that syllable (their median when nothing was measured there).
+            // The shape of each tone as heights in units of the tone's own movement (a tone 4 falls by 1 unit: from +0.5 to -0.5), left to right through the syllable:
+            // tone 1 level (55), tone 2 rising (35), tone 3 a dip (214), tone 4 falling (51). The neutral tone has no shape.
             const EXPECTED_TONE_SHAPES = {
-                1: [[0, 5], [1, 5]],
-                2: [[0, 0], [1, 5]],
-                3: [[0, -2.5], [0.5, -5], [1, 0]],
-                4: [[0, 5], [1, -5]]
+                1: [[0, 0], [1, 0]],
+                2: [[0, -0.5], [1, 0.5]],
+                3: [[0, 1 / 3], [0.5, -2 / 3], [1, 1 / 3]],
+                4: [[0, 0.5], [1, -0.5]]
             };
 
+            const clampNumber = (value, low, high) => Math.min(high, Math.max(low, value));
+
+            // The pitch range of this speaker in this recording (semitones between their 10th and 90th percentile): the size of the shapes is taken from it.
+            function learnerPitchRange(data) {
+                const values = [];
+                for (const phrase of (data && data.phrases) || []) {
+                    for (const point of phrase.phrase_f0?.contour || []) if (Number.isFinite(point.relative_semitone)) values.push(point.relative_semitone);
+                }
+                if (values.length < 20) return { range: 8, median: 0 };
+                values.sort((a, b) => a - b);
+                const at = fraction => values[Math.min(values.length - 1, Math.floor(fraction * values.length))];
+                return { range: at(0.9) - at(0.1), median: at(0.5) };
+            }
+
+            // How far the tone moves in the guide. Where the learner is not there yet (Okay / Needs practice) it is the basic shape to aim for, sized from their own
+            // range; where the tone is already right it follows what they did, so the guide never contradicts a "Good".
+            function guideAmplitude(tone, syllable, range) {
+                const basic = { 2: clampNumber(0.5 * range, 2.5, 6), 3: clampNumber(0.4 * range, 2, 5), 4: clampNumber(0.8 * range, 4, 9) }[tone] || 0;
+                if (syllable.status !== "likely_correct") return basic;
+                const delta = Number(syllable.early_to_late_delta_st), dip = Number(syllable.fall_before_min_st);
+                if (tone === 4 && Number.isFinite(delta)) return clampNumber(delta, 0.5, 9);
+                if (tone === 2 && Number.isFinite(delta)) return clampNumber(-delta, 0.5, 6);
+                if (tone === 3 && Number.isFinite(dip)) return clampNumber(dip, 1, 6);
+                return basic;
+            }
+
+            // One guide per scored syllable, drawn over the part that is judged (the vowel) at the height of the learner's own pitch there (their median where nothing
+            // was measured): the tones are judged by their shape, not by how high the speaker sits.
             function expectedToneSpans(phrase) {
                 const origin = Number(phrase.phrase_f0?.origin_sec);
                 if (!Number.isFinite(origin) || !Array.isArray(phrase.syllable_diagnostics)) return [];
+                const { range, median } = learnerPitchRange(lastAssessment);
                 const spans = [];
                 for (const syllable of phrase.syllable_diagnostics) {
                     const tone = Number(syllable.expected_surface_tone);
@@ -4126,21 +4153,22 @@ async def read_index():
                     const start = Number(segment.start_ms) / 1000 - origin, end = Number(segment.end_ms) / 1000 - origin;
                     const whole = [Number(syllable.start_ms) / 1000 - origin, Number(syllable.end_ms) / 1000 - origin];
                     if (EXPECTED_TONE_SHAPES[tone] && Number.isFinite(start) && Number.isFinite(end) && end > start) {
-                        const shape = EXPECTED_TONE_SHAPES[tone];
                         const measured = (phrase.phrase_f0.contour || []).filter(point => Number.isFinite(point.relative_semitone) && point.offset_sec >= start && point.offset_sec <= end)
                             .map(point => point.relative_semitone);
-                        const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
-                        const shift = measured.length ? mean(measured) - mean(shape.map(([, semitones]) => semitones)) : 0;
-                        spans.push({ tone, start, end, centre: (whole[0] + whole[1]) / 2, character: syllable.character, shape: shape.map(([along, semitones]) => [along, semitones + shift]) });
+                        const level = measured.length ? measured.reduce((sum, value) => sum + value, 0) / measured.length : median;
+                        const amplitude = guideAmplitude(tone, syllable, range);
+                        spans.push({
+                            tone, start, end, centre: (whole[0] + whole[1]) / 2, character: syllable.character, status: syllable.status,
+                            shape: EXPECTED_TONE_SHAPES[tone].map(([along, height]) => [along, level + height * amplitude])
+                        });
                     }
                 }
                 return spans;
             }
 
-            // Off until the learner switches it on: the verdict also weighs length, voicing and context (and its bars are forgiving), so a guide drawn at full size
-            // next to a "Good" shallow fall, or next to an "Okay" that looks right, would read as a wrong verdict.
+            // On until the learner switches it off. The guide is built from their own pitch (see guideAmplitude), so it does not contradict a verdict.
             function showExpectedToneChoice() {
-                try { return localStorage.getItem("showExpectedTone") === "1"; } catch (error) { return false; }
+                try { return localStorage.getItem("showExpectedTone") !== "0"; } catch (error) { return true; }
             }
 
             function toggleExpectedTone() {
