@@ -104,7 +104,7 @@ class ProgressTests(StoreCase):
 
 
 class PageTests(unittest.TestCase):
-    KEYS = ("resultRetry", "resultNext", "itemProgress", "itemNotPracticed")
+    KEYS = ("resultPrevious", "resultNext", "itemProgress", "itemNotPracticed")
 
     def test_every_language_has_the_new_texts(self):
         for key in self.KEYS:
@@ -114,12 +114,14 @@ class PageTests(unittest.TestCase):
         for gone in ("recentCard", "recentList", "recentTitle", "renderRecent"):
             self.assertNotIn(gone, SOURCE, gone)
 
-    def test_the_result_card_has_a_read_again_and_a_next_button(self):
+    def test_the_result_card_has_a_previous_and_a_next_button_and_no_script_line(self):
         card = SOURCE[SOURCE.index('<div id="resultCard"'): SOURCE.index('<div id="pronunciationResults">')]
-        self.assertIn('id="retryBtn"', card)
-        self.assertIn('onclick="toggleRecording()"', card)                   # the same record / stop as the button at the top
+        self.assertIn('id="prevItemBtn"', card)
+        self.assertIn('onclick="goToPreviousItem()"', card)
         self.assertIn('id="nextItemBtn"', card)
         self.assertIn('onclick="goToNextItem()"', card)
+        for gone in ("retryBtn", "Read again", "targetScriptDisplay"):
+            self.assertNotIn(gone, SOURCE, gone)
 
     def test_the_lists_are_marked_with_the_latest_result_and_the_progress_is_loaded_after_each_assessment(self):
         self.assertIn("loadProgress();                                      // the attempt is now the latest result of that sentence", SOURCE)

@@ -1248,9 +1248,8 @@ async def read_index():
             .board-tabs button.active { background: #2b6cb0; color: white; }
             .result-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
             .result-actions button { padding: 9px 16px; font-size: 15px; }
-            .result-actions .retry-btn.recording { background-color: #1a4f80; animation: pulse 1.2s infinite; }
-            .result-actions .next-item-btn { background: #edf2f7; color: #2d3748; }
-            .result-actions .next-item-btn:disabled { opacity: 0.5; }
+            .result-actions .prev-item-btn, .result-actions .next-item-btn { background: #edf2f7; color: #2d3748; }
+            .result-actions .prev-item-btn:disabled, .result-actions .next-item-btn:disabled { opacity: 0.5; }
             .item-progress { margin: 6px 0 0; }
             .item-progress.practiced { color: #276749; font-weight: 600; }
             #practiceMode { scroll-margin-top: 12px; }
@@ -1475,12 +1474,9 @@ async def read_index():
         <!-- Visual results card -->
         <div id="resultCard" class="card" style="display: none;">
             <div class="results-header">
-                <div>
-                    <h2 class="sr-only" data-i18n="resultsTitle">Reading practice results</h2>
-                    <p id="targetScriptDisplay" style="color: #718096; margin: 0;"></p>
-                </div>
+                <h2 class="sr-only" data-i18n="resultsTitle">Reading practice results</h2>
                 <div class="result-actions">
-                    <button type="button" id="retryBtn" class="retry-btn" onclick="toggleRecording()">Read again</button>
+                    <button type="button" id="prevItemBtn" class="prev-item-btn" onclick="goToPreviousItem()" data-i18n="resultPrevious">Previous</button>
                     <button type="button" id="nextItemBtn" class="next-item-btn" onclick="goToNextItem()" data-i18n="resultNext">Next</button>
                 </div>
             </div>
@@ -1528,7 +1524,7 @@ async def read_index():
                 <p id="feedbackStatus" role="status" aria-live="polite"></p>
             </section>
             <div class="result-actions">
-                <button type="button" class="retry-btn" onclick="toggleRecording()">Read again</button>
+                <button type="button" class="prev-item-btn" onclick="goToPreviousItem()" data-i18n="resultPrevious">Previous</button>
                 <button type="button" class="next-item-btn" onclick="goToNextItem()" data-i18n="resultNext">Next</button>
             </div>
         </div>
@@ -1634,7 +1630,7 @@ async def read_index():
             leaderboardAccuracy: "{n}%",
             leaderboardMeAccuracyRank: "You: #{rank} \u00b7 {accuracy}%",
             leaderboardMeAccuracyNeed: "Practice {n} more sentence(s) to join the accuracy board.",
-            resultRetry: "Read again",
+            resultPrevious: "Previous",
             resultNext: "Next",
             itemProgress: "Latest result: {last}% \u00b7 {when}",
             itemNotPracticed: "Not practised yet.",
@@ -1798,7 +1794,7 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "你：第 {rank} 名\u30fb{accuracy}%",
                     leaderboardMeAccuracyNeed: "再練 {n} 句就能上準確率榜。",
-                    resultRetry: "再讀一次",
+                    resultPrevious: "上一個",
                     resultNext: "下一個",
                     itemProgress: "最近成績：{last}%\u30fb{when}",
                     itemNotPracticed: "還沒練習過。",
@@ -1961,7 +1957,7 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Bạn: hạng {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Luyện thêm {n} câu để vào bảng độ chính xác.",
-                    resultRetry: "Đọc lại",
+                    resultPrevious: "Trước",
                     resultNext: "Tiếp theo",
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
                     itemNotPracticed: "Chưa luyện.",
@@ -2143,7 +2139,7 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Anda: peringkat {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Latih {n} kalimat lagi untuk masuk papan akurasi.",
-                    resultRetry: "Baca lagi",
+                    resultPrevious: "Sebelumnya",
                     resultNext: "Berikutnya",
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
                     itemNotPracticed: "Belum dilatih.",
@@ -2415,7 +2411,7 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "आप: #{rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "सटीकता बोर्ड में आने के लिए {n} और वाक्य अभ्यास करें।",
-                    resultRetry: "फिर से पढ़ें",
+                    resultPrevious: "पिछला",
                     resultNext: "अगला",
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
                     itemNotPracticed: "अभी अभ्यास नहीं किया।",
@@ -3284,8 +3280,14 @@ async def read_index():
                 document.getElementById("practiceMode").scrollIntoView({ behavior: "smooth", block: "start" });
             }
 
-            // "Read again" is the record / stop button of the top of the page, "Next" the next sentence (or word) of the list: both sit under the results,
-            // so the learner neither re-selects nor scrolls back up.
+            // "Previous" and "Next" under the results go to the neighbouring sentence (or word) of the list, so the learner neither re-selects nor scrolls back up.
+            function hasPreviousItem() {
+                const mode = selectedPracticeMode();
+                if (mode === "book") return document.getElementById("sampleSelect").selectedIndex > 0 && sampleLessons.length > 0;
+                if (mode === "chapter5_word") return filteredChapter5WordIndexes().indexOf(chapter5WordIndex) > 0;
+                return false;
+            }
+
             function hasNextItem() {
                 const mode = selectedPracticeMode();
                 if (mode === "book") {
@@ -3302,31 +3304,34 @@ async def read_index():
 
             function syncResultButtons() {
                 const busy = isProcessing || isRecording || isSavingStudent;
-                const recordDisabled = document.getElementById("recordBtn").disabled;
-                document.querySelectorAll(".retry-btn").forEach(button => {
-                    button.textContent = isRecording ? t("recordingStop") : t("resultRetry");
-                    button.classList.toggle("recording", isRecording);
-                    button.disabled = recordDisabled;
+                const custom = selectedPracticeMode() === "custom";
+                const previous = hasPreviousItem(), next = hasNextItem();
+                document.querySelectorAll(".prev-item-btn").forEach(button => {
+                    button.hidden = custom;
+                    button.disabled = busy || !previous;
                 });
-                const next = hasNextItem();
                 document.querySelectorAll(".next-item-btn").forEach(button => {
-                    button.hidden = selectedPracticeMode() === "custom";
+                    button.hidden = custom;
                     button.disabled = busy || !next;
                 });
             }
 
-            function goToNextItem() {
-                if (isProcessing || isRecording || isSavingStudent || !hasNextItem()) return;
+            function goToItem(step) {
+                if (isProcessing || isRecording || isSavingStudent || !(step < 0 ? hasPreviousItem() : hasNextItem())) return;
                 if (selectedPracticeMode() === "chapter5_word") {
-                    moveChapter5Word(1);
+                    moveChapter5Word(step);
                 } else {
                     const select = document.getElementById("sampleSelect");
-                    select.selectedIndex += 1;
+                    select.selectedIndex += step;
                     sampleTouched = true;
                     selectSample();
                 }
                 scrollToPractice();
             }
+
+            function goToPreviousItem() { goToItem(-1); }
+
+            function goToNextItem() { goToItem(1); }
 
             function handleScriptInput() {
                 if (selectedPracticeMode() !== "custom") return;
@@ -4369,7 +4374,6 @@ async def read_index():
             function renderVisualResults(data) {
                 lastAssessment = data;
                 document.getElementById("resultCard").style.display = "block";
-                document.getElementById("targetScriptDisplay").innerText = t("scriptLabel", { script: data.target_script || "" });
 
                 const phrases = phrasesOf(data);
                 const statusLabels = {
