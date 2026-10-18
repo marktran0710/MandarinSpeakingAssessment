@@ -339,7 +339,7 @@ def calibrate_student_voice(student_id: str, file: UploadFile = File(...)):
                                                    "warnings": calibration.get("warnings")})
         return {"voice_calibration": saved, "pace_hint": pace_hint}
     except tone_pipeline.CalibrationError as exc:          # the page shows a specific, translated tip for each reason
-        user_archive.archive_calibration(student, {**seen, "outcome": "refused", "reason": exc.reason, "message": str(exc)})
+        user_archive.archive_calibration(student, {**seen, "outcome": "refused", "reason": exc.reason, "message": str(exc), **exc.details})
         return JSONResponse(status_code=422, content={"detail": str(exc), "reason": exc.reason})
     except ValueError as exc:
         user_archive.archive_calibration(student, {**seen, "outcome": "invalid", "message": str(exc)[:300]})
@@ -1389,7 +1389,7 @@ async def read_index():
                     calReasonClipped: "The sound was too loud and distorted. Move a little back from the microphone and try again.",
                     calReasonNoisy: "There was too much background noise. Try again in a quieter place.",
                     calReasonUnclear: "We couldn't follow your pitch clearly. Read all five sounds twice, calmly, and try again.",
-                    calReasonQuiet: "We heard too little voice. Speak out loud (a whisper doesn\u2019t work), say each sound a bit longer (m\u0101\u2011\u0101\u2011\u0101) and try again.",
+                    calReasonQuiet: "We found too little steady voice, and speaking louder doesn\u2019t help. Use your normal voice (not a whisper) and say each sound a bit longer, about half a second (m\u0101\u2011\u0101\u2011\u0101), then try again.",
                     calibrateVoice: "Calibrate voice", recalibrateVoice: "Recalibrate voice", voiceCalibrated: "Voice range personalized", voiceNotCalibrated: "Using a general pitch range",
                     profileSaveFailed: "Could not save speaker profile.", needProfile: "Enter your name and participant group first.",
                     chooseAudio: "Choose an audio file first.", unsupportedAudio: "Unsupported file format. Choose WAV, MP3, M4A, OGG, FLAC, or WebM.",
@@ -1525,7 +1525,7 @@ async def read_index():
                     calReasonClipped: "聲音太大而破音了。請離麥克風遠一點，再試一次。",
                     calReasonNoisy: "背景噪音太多。請到安靜的地方再試一次。",
                     calReasonUnclear: "無法清楚追蹤你的音高。請自然地把五個音讀兩遍，再試一次。",
-                    calReasonQuiet: "聽到的聲音太少。請出聲朗讀（氣音無法使用），把每個音唸長一點（m\u0101\u2011\u0101\u2011\u0101），再試一次。",
+                    calReasonQuiet: "偵測到的穩定聲音太少，大聲說並沒有幫助。請用平常的聲音（不要用氣音），把每個音唸長一點，約半秒（m\u0101\u2011\u0101\u2011\u0101），再試一次。",
                     calibrateVoice: "校準聲音", recalibrateVoice: "重新校準聲音", voiceCalibrated: "已個人化音高範圍", voiceNotCalibrated: "目前使用一般音高範圍",
                     profileSaveFailed: "無法儲存使用者資料。", needProfile: "請先輸入姓名和參與者類別。",
                     chooseAudio: "請先選擇音檔。", unsupportedAudio: "不支援此檔案格式。請選擇 WAV、MP3、M4A、OGG、FLAC 或 WebM。",
@@ -1660,7 +1660,7 @@ async def read_index():
                     calReasonClipped: "Âm thanh quá to và bị vỡ. Hãy lùi xa micro một chút rồi thử lại.",
                     calReasonNoisy: "Có quá nhiều tiếng ồn xung quanh. Hãy thử lại ở nơi yên tĩnh hơn.",
                     calReasonUnclear: "Chưa theo dõi rõ cao độ của bạn. Hãy đọc nhẹ nhàng cả năm âm hai lần rồi thử lại.",
-                    calReasonQuiet: "Nghe được quá ít giọng. Hãy nói thành tiếng (thì thầm không dùng được), kéo dài mỗi âm một chút (m\u0101\u2011\u0101\u2011\u0101) rồi thử lại.",
+                    calReasonQuiet: "Nghe được quá ít giọng ổn định, và nói to hơn không giúp được. Hãy dùng giọng bình thường (không thì thầm), kéo dài mỗi âm khoảng nửa giây (m\u0101\u2011\u0101\u2011\u0101) rồi thử lại.",
                     calibrateVoice: "Hiệu chuẩn giọng", recalibrateVoice: "Hiệu chuẩn lại giọng", voiceCalibrated: "Đã cá nhân hóa dải cao độ", voiceNotCalibrated: "Đang dùng dải cao độ mặc định",
                     profileSaveFailed: "Không thể lưu thông tin người nói.", needProfile: "Trước tiên hãy nhập tên và nhóm người tham gia.",
                     chooseAudio: "Trước tiên hãy chọn tệp âm thanh.", unsupportedAudio: "Định dạng tệp không được hỗ trợ. Chọn WAV, MP3, M4A, OGG, FLAC hoặc WebM.",
@@ -1840,7 +1840,7 @@ async def read_index():
                     calReasonClipped: "Suara terlalu keras dan pecah. Menjauhlah sedikit dari mikrofon lalu coba lagi.",
                     calReasonNoisy: "Terlalu banyak bising di sekitar. Coba lagi di tempat yang lebih tenang.",
                     calReasonUnclear: "Nada suara Anda belum bisa diikuti dengan jelas. Bacalah kelima bunyi dua kali dengan tenang lalu coba lagi.",
-                    calReasonQuiet: "Suara yang terdengar terlalu sedikit. Bicaralah dengan lantang (berbisik tidak bisa), panjangkan setiap bunyi sedikit (m\u0101\u2011\u0101\u2011\u0101), lalu coba lagi.",
+                    calReasonQuiet: "Suara yang stabil terlalu sedikit, dan bicara lebih keras tidak membantu. Gunakan suara normal (bukan berbisik), panjangkan setiap bunyi sekitar setengah detik (m\u0101\u2011\u0101\u2011\u0101), lalu coba lagi.",
                     calibrateVoice: "Kalibrasi suara",
                     recalibrateVoice: "Kalibrasi ulang suara",
                     voiceCalibrated: "Rentang suara sudah disesuaikan",
@@ -2084,7 +2084,7 @@ async def read_index():
                     calReasonClipped: "आवाज़ बहुत तेज़ होकर फट गई। माइक्रोफ़ोन से थोड़ा दूर हटकर फिर कोशिश करें।",
                     calReasonNoisy: "आसपास बहुत शोर था। किसी शांत जगह पर फिर कोशिश करें।",
                     calReasonUnclear: "आपकी पिच साफ़ पकड़ में नहीं आई। पाँचों ध्वनियाँ शांति से दो बार पढ़कर फिर कोशिश करें।",
-                    calReasonQuiet: "आवाज़ बहुत कम सुनाई दी। ज़ोर से बोलें (फुसफुसाना काम नहीं करता), हर ध्वनि को थोड़ा लंबा बोलें (m\u0101\u2011\u0101\u2011\u0101) और फिर कोशिश करें।",
+                    calReasonQuiet: "स्थिर आवाज़ बहुत कम मिली, और ज़ोर से बोलने से मदद नहीं मिलती। अपनी सामान्य आवाज़ में (फुसफुसाकर नहीं) हर ध्वनि को थोड़ा लंबा, लगभग आधा सेकंड, बोलें (m\u0101\u2011\u0101\u2011\u0101), फिर कोशिश करें।",
                     calibrateVoice: "आवाज़ कैलिब्रेट करें",
                     recalibrateVoice: "आवाज़ दोबारा कैलिब्रेट करें",
                     voiceCalibrated: "आवाज़ की सीमा आपके अनुसार सेट है",
@@ -2871,9 +2871,10 @@ async def read_index():
                 status.textContent = t(key, variables);
                 status.dataset.translation = JSON.stringify({ key, variables });
                 status.classList.toggle("error", isError);
-                status.classList.toggle("success", key === "calibrationSaved");
+                const saved = key === "calibrationSaved" || key === "calibrationSavedSlower";      // the "read slower" tip is a success too
+                status.classList.toggle("success", saved);
                 if (isError) calibrationOutcome = "error";
-                else if (key === "calibrationSaved") calibrationOutcome = "success";
+                else if (saved) calibrationOutcome = "success";
                 else calibrationOutcome = "";
                 setBusy(key === "calibrationProcessing", status.textContent);
                 if (isError && !calibrationHadError) {          // a failure must not trap the learner in the dialog

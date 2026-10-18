@@ -132,9 +132,10 @@ class AlignmentError(ValueError):
 class CalibrationError(ValueError):
     """The calibration recording is not good enough to build a speaker profile."""
 
-    def __init__(self, reason, message):
+    def __init__(self, reason, message, details=None):
         super().__init__(message)
         self.reason = reason
+        self.details = dict(details or {})          # what was measured, for the calibration log (a refusal used to say nothing but the reason)
 
 
 def load_config(path=None, overrides=None):
@@ -355,28 +356,34 @@ def calibrate_voice(samples, sample_rate, config=None):
     if not wide["both"].any():                    # no voiced frame at all (muted or unplugged microphone, silence): say that, not "pitch unclear"
         raise CalibrationError(
             "too_little_voicing",
-            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.")
+            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.",
+            {"voiced_sec": 0.0, "stable_frames": 0})
     agreement = float(wide["agree"].sum() / wide["both"].sum())
     if agreement < cal["hard_min_agreement"]:
         raise CalibrationError(
-            "ac_cc_disagree", "Pitch tracking was not reliable. Read the prompt clearly and try again.")
+            "ac_cc_disagree", "Pitch tracking was not reliable. Read the prompt clearly and try again.",
+            {"ac_cc_agreement": round(agreement, 3), "voiced_sec": round(float(wide["both"].sum()) * step, 2)})
 
     stable_hz, octave_rejected = reject_octave_candidates(wide["stable"][np.isfinite(wide["stable"])], config)
     voiced_sec = len(stable_hz) * step
     if len(stable_hz) < cal["min_stable_frames"] or voiced_sec < cal["min_voiced_sec"]:
         raise CalibrationError(
             "too_little_voicing",
-            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.")
+            "Not enough voiced speech was found (a whisper cannot be used). Speak the full prompt aloud.",
+            {"voiced_sec": round(voiced_sec, 2), "stable_frames": int(len(stable_hz)), "ac_cc_agreement": round(agreement, 3)})
 
     _, median_hnr = audio_prep.voicing_metrics(audio, sample_rate, config["audio_quality"]["voiced_min_hnr_db"])
     median_hnr = float("-inf") if median_hnr is None else median_hnr
     if median_hnr < cal["min_median_hnr_db"]:
-        raise CalibrationError("noisy", "The recording is too noisy or breathy. Record again in a quiet place.")
+        raise CalibrationError("noisy", "The recording is too noisy or breathy. Record again in a quiet place.",
+                               {"median_hnr_db": round(median_hnr, 1), "voiced_sec": round(voiced_sec, 2), "ac_cc_agreement": round(agreement, 3)})
 
     profile = build_profile(stable_hz, config)
     token_report = analyze_calibration_tokens(wide["times"], np.isfinite(wide["stable"]), config)
     warnings = list(token_report["warnings"])
     reliable = agreement >= cal["preferred_agreement"]
+    if voiced_sec < cal["preferred_voiced_sec"]:
+        warnings.append(f"Only {voiced_sec:.1f} s of steady voice was found; the profile may be less precise.")
     if not reliable:
         warnings.append("AC/CC agreement is below the preferred level; the profile may be less precise.")
     profile.update({

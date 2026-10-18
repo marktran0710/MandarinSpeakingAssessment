@@ -30,7 +30,12 @@ calibration:
   # Recording-level quality gate. A failed gate raises CalibrationError; no profile is created.
   min_duration_sec: 4.9       # "5 s" with tolerance for decoder rounding
   max_duration_sec: 12.0
-  min_voiced_sec: 2.0
+  # Steady voice (AC and CC agree) needed in the whole recording. Real learners reading the five sounds twice at a normal pace land at 2.1-2.4 s
+  # (Thanh Xuan 2.14, Obed 2.43; a stretched reference recording gives 4.4), so the old 2.0 s refused people by a hair: Obed's second try,
+  # 15 s after a saved one, got "too little voicing" while speaking loudly. Loudness is not what is measured. Below preferred_voiced_sec the profile is
+  # saved with a warning in the calibration log.
+  min_voiced_sec: 1.2
+  preferred_voiced_sec: 2.0
   min_stable_frames: 30
   max_clipped_fraction: 0.005
   clip_level: 0.99
@@ -76,7 +81,7 @@ sanity:
   # gated as octave_jump_in_segment unless the voiced fragment BEHIND the jump sits at an end of the syllable and lasts at most this
   # many ms: then the fragment is dropped and the rest is judged. 0 = off.
   jump_fragment_trim_ms: 40
-  # Measured 2026-10-17 (trials/jump_trim_40.yaml): words Good 93.7 -> 95.4%, teacher sentences 93.0 -> 94.1%, learners +18 Good of 888,
+  # Measured 2026-10-17: words Good 93.7 -> 95.4%, teacher sentences 93.0 -> 94.1%, learners +18 Good of 888,
   # the 520-clip stress test identical. A syllable (or recording) that needed a cut can be Good but never Needs practice.
   boundary_hit_rate: 0.05
   min_agreement: 0.80         # what "AC ~ CC" means as a ratio of co-voiced frames
@@ -118,7 +123,7 @@ alignment:
   allow_spn: false
   # Voiced speech outside every aligned syllable (a hesitation, a repeated or extra word, loose boundaries). Up to max_unaligned_voiced_fraction all is
   # well. Above hard_unaligned_voiced_fraction the alignment is not trusted and nothing is judged. In between it is DOUBTFUL: the syllables are judged
-  # as usual but the recording cannot accuse anyone (Good or Okay, never Needs practice). Measured 2026-10-17 (trials/guard_soft_40.yaml): learners
+  # as usual but the recording cannot accuse anyone (Good or Okay, never Needs practice). Measured 2026-10-17: learners
   # (sentences) Good 67.2 -> 73.2% with Needs practice 2.9% unchanged; teacher audio read against a script missing the last 2 characters Good
   # 77.0 -> 93.3% (it was 94.8% with the full script); against ANOTHER sentence Good 12.3 -> 23.8% (about chance).
   max_unaligned_voiced_fraction: 0.25
@@ -180,8 +185,8 @@ tone:
   # Off in the base config (single-word practice uses the single t4_min_fall_st above); ON in the `sentence:` profile below.
   # When present, the fall a tone 4 needs depends on how long
   # the aligned syllable is: < short_ms, < medium_ms, or longer; and require_end_below_start makes a tone 4 that does not
-  # end lower than it starts score 0. Meant for sentence practice (see trials/t4_by_duration_sentence.yaml):
-  # left_context:                # (off) tolerance by neighbour; see trials/left_context_*.yaml. Rules apply in order:
+  # end lower than it starts score 0. Meant for sentence practice:
+  # left_context:                # (off) tolerance by neighbour. Rules apply in order:
   #   - when: {tone: 2, previous: [1, 2]}        # also: next, phrase_final, previous_end_min_st / previous_end_max_st
   #     set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
   # soften_reduplication: true     # the second character of a repeated pair (看看, 謝謝) can never be "Needs practice"
@@ -192,7 +197,7 @@ tone:
   #   frac: 0.15
   #   max_ms: 40
   # t4_before_t4:                 # a tone 4 directly followed by another tone 4 (also across a word end) needs only this much
-  #   min_fall_st: 2.0            # fall; the second tone 4 keeps the normal rule. See trials/t4_before_t4_sentence.yaml
+  #   min_fall_st: 2.0            # fall; the second tone 4 keeps the normal rule.
   # t4_by_duration:
   #   short_ms: 180
   #   medium_ms: 300
@@ -209,7 +214,7 @@ neutral:
 
 # How the factors of ONE tone's fit are combined into its match score (0..1): "product" (today) or "geometric_mean" (the n-th root
 # of the product; three factors of 0.85 give 0.85 instead of 0.61, a factor of 0 still gives 0). The boundary search always uses
-# the product. Benchmarked in trials/final_config_*.yaml.
+# the product.
 scoring:
   combine_features: product
 
@@ -226,7 +231,7 @@ confidence:
   # (the old rule: one jump in an 11-syllable sentence dragged all of them under the Good bar), "syllable" = only the syllables that
   # contain a jump (they are gated as octave_jump_in_segment anyway). A track that is unreliable as a whole penalises everyone in both
   # modes, and with "syllable" a spared syllable can be Good but a recording with a jump anywhere still cannot produce a Needs practice.
-  # Measured 2026-10-17 (trials/unstable_scope_syllable.yaml): learners +35 Good of 855 sentence syllables, teachers +16 Good,
+  # Measured 2026-10-17: learners +35 Good of 855 sentence syllables, teachers +16 Good,
   # no new false alarm, wrong tones shown Good 20.0% -> 20.0%.
   unstable_scope: syllable
 
@@ -266,7 +271,7 @@ feedback:
 #   easy: every contour-size demand of tones 2, 3 and 4 is 0.8 of the standard one; tone 1 and the position limits are unchanged.
 # Why: learners flatten tones 2 and 4 (on 4 learners of Mandarin 121 tone-4 and 68 tone-2 Needs-practice syllables look like tone 1) and
 # their contours are smaller than a teacher's (median tone-4 fall 3.4 st vs 4.1, tone-3 dip 3.1 vs 5.7). Measured 2026-10-17
-# (trials/easy_80.yaml, 0.65 = trials/easy_65.yaml): 4 learners (LATIC, 1838 syllables) Good 64.3% -> 69.0%, Needs practice 14.3% -> 11.9%;
+# with scale 0.8: 4 learners (LATIC, 1838 syllables) Good 64.3% -> 69.0%, Needs practice 14.3% -> 11.9%;
 # the price is on the other side: 520 wrong-tone clips flagged 48.0% -> 46.1%, wrong tones shown Good 20.0% -> 21.3%, and native tones
 # said as the wrong tone accepted +1.7 points.
 # Did the speaker say more or less than the script? Judged from the alignment and the voiced stretches (no speech recognition); only for texts of at least
@@ -331,7 +336,7 @@ sentence:
     practice_min_window_ms: 130   # a reduced function word (不, 個, 一, 得) or a fast T2 on <130 ms of voicing cannot support an accusation;
                                   # it gets "say it a bit more slowly" instead (was 100; raised after the 100 teacher sentences: false alarms 15 -> 8)
     # Tone 4 is the fastest tone, so it may be accused on a shorter window (100 ms analysed = ~165 ms syllable). Of the learners' tone 4 under 130 ms, 15 of 69 were RISING and 8 flat,
-    # yet none could be flagged. Measured 2026-10-17 (trials/t4_floor_100.yaml): 100 teacher sentences false alarms 6 -> 8; learners' tone 4 flagged 14.5 -> 16.7% (LATIC), 4.9 -> 7.0% (archived).
+    # yet none could be flagged. Measured 2026-10-17: 100 teacher sentences false alarms 6 -> 8; learners' tone 4 flagged 14.5 -> 16.7% (LATIC), 4.9 -> 7.0% (archived).
     practice_min_window_ms_by_tone:
       4: 100
 
@@ -339,7 +344,7 @@ sentence:
     clause_final_half_t3: true    # teachers read a clause-final T3 as a low fall; the final rise is not required
     # Tone 4 in running speech is short and falls less than in a careful word (median fall 4.0 st vs 8.8 st). Verdict-only
     # rules (the boundary search never sees them). On the 100 teacher sentences with the 130 ms floor above:
-    # Good 89.8% -> 91.3%, false alarms 15 -> 8, nothing got worse (trials/rules_recommended_sentence.yaml).
+    # Good 89.8% -> 91.3%, false alarms 15 -> 8, nothing got worse.
     t4_by_duration:               # the fall a tone 4 needs depends on how long the aligned syllable is
       short_ms: 180
       medium_ms: 300
@@ -350,7 +355,7 @@ sentence:
       min_fall_long_st: 2.2       # >= 300 ms    (2.5)
       require_end_below_start: true
     # A tone 4 followed by a syllable that starts high (tone 1, or another tone 4) is cut short: it needs relaxation_st less, never below floor_st
-    # (so a flat line never passes). Sentences only: single words keep t4_min_fall_st. Measured 2026-10-17 (trials/t4gen_03_ctx_05_floor08.yaml): 4 learners
+    # (so a flat line never passes). Sentences only: single words keep t4_min_fall_st. Measured 2026-10-17: 4 learners
     # (LATIC) tone-4 Good 57.5 -> 61.9%, archived attempts 60.6 -> 63.4%; native tone 1 accepted as a tone 4 1.3 -> 1.7%; 100 teacher sentences Good
     # 95.0 -> 95.2% with 6 false alarms before and after. (Teachers' tone 4 falls the same ~4 st before a high onset as before a low one; it is the learners'
     # shallow falls, median 2.2 st, that this is for.)
@@ -361,7 +366,7 @@ sentence:
     # A tone 3 is first of all LOW: a syllable that starts low (<= -2 st), reaches a point >= 3 st below the speaker's median and never gets high
     # (max <= 1.5 st) is accepted as a tone 3, with or without a rise. Said at the start of a clause or after a low syllable there is no fall into
     # the low point, which both other forms require: all 8 tone-3 syllables of the learner recordings that were Needs practice had none, and 5 of
-    # them were correct low-rising tone 3s (verdict-only). Measured 2026-10-17 (trials/t3_low_register.yaml): archived attempts, tone 3 Good
+    # them were correct low-rising tone 3s (verdict-only). Measured 2026-10-17: archived attempts, tone 3 Good
     # 67.4 -> 78.5%; LATIC 69.8 -> 74.0%; 100 teacher sentences Good 94.1 -> 95.0% with 7 false alarms before and after; native tones said as
     # the wrong tone accepted 22.7 -> 22.8%.
     t3_low_register:
@@ -371,7 +376,7 @@ sentence:
     # Tone 1 against tone 4 (verdict-only). In sentences a tone 4 may fall only ~1 st, so the two overlapped: a tone 1 was Good for ANY drift up to 2.6 st, either way.
     # A tone 1 hardly ever falls (teachers: 90% fall less than 0.2 st) and a rise is not what a shallow tone 4 looks like, so a FALL now has its own allowance: Good up to
     # about 2.0 st (t1_max_fall_st + 0.3 x width), nothing at 2.7; a rise keeps 2.6. And a tone 4 that falls less than `below_st` must fall steadily: at least
-    # min_down_share of the steps (5-frame means) must not rise (teacher tone 4: median 1.00; teacher tone 1: 0.40). Measured 2026-10-17 (trials/t1t4_final.yaml):
+    # min_down_share of the steps (5-frame means) must not rise (teacher tone 4: median 1.00; teacher tone 1: 0.40). Measured 2026-10-17:
     # native tone 4 accepted as a tone 1 8.5 -> 4.1%, native tone 1 accepted as a tone 4 2.9 -> 2.1%, teachers' tone 1 and tone 4 read correctly unchanged (95.8 / 96.9%),
     # 100 teacher sentences unchanged (Good 95.2%, 6 false alarms). Price on learners: tone 1 Good 93.9 -> 92.1% (LATIC), 89.4 -> 87.4% (archived attempts); tone 4 Good 64.3 -> 63.1%.
     # A fall limit of 1.5 st separated them most (tone 4 as tone 1: 2.3%) but cost the learners' tone 1 14 points (93.9 -> 80.2%).
@@ -384,7 +389,7 @@ sentence:
     # syllable whose pitch ended 3+ st above the speaker's median) has to dip first and rises less: native tone 2 is Good
     # only 68-82% of the time there (95% elsewhere). Rules apply in order; verdict-only (the boundary search never sees them).
     # 100 teacher sentences: Good 91.3% -> 91.8%, false alarms 8 -> 7; the cost (native tones 1/3/4 now accepted as a tone 2
-    # in that context) is +12 of 957 (trials/RESULTS.md).
+    # in that context) is +12 of 957.
     left_context:
       - when: {tone: 2, previous: [1, 2]}
         set: {t2_min_rise_st: 2.0, t2_max_min_position: 0.90}
