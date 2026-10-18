@@ -39,7 +39,7 @@ variants:
     - {tones: [1, 5], sense: "thing, object (dōng xi)"}
     - {tones: [1, 1], sense: "east and west (dōng xī)", before: "南北"}
 
-# Words whose LAST syllable is light. The first syllable keeps the generic tone.
+# Words whose LAST syllable is light (for 穿穿 in 穿穿看 the second 穿). The first syllable keeps the generic tone. 唱得 游得 跑得 ... are the complement 得 (de), which pypinyin reads dé.
 #   light_required  the dictionary gives a light last syllable
 #   light_optional  a light last syllable is allowed, not required: repeated verbs (看看: slow careful speech keeps the second) and words with another reading by sense
 #                   (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣, 名字 míng zi / míng zì). Shown light.
@@ -51,11 +51,12 @@ light_required: [
   意思, 麻煩, 明白, 耳朵, 脾氣, 暖和, 玻璃, 豆腐, 腦袋, 屁股, 早上, 蘑菇,
   石頭, 木頭, 舌頭, 骨頭, 枕頭, 饅頭, 拳頭, 指頭, 甜頭, 念頭, 外頭, 裡頭, 上頭, 下頭, 前頭, 後頭,
   記得, 懂得, 值得, 曉得, 認得,
+  唱得, 游得, 遊得, 跑得, 打得, 看得, 說得, 寫得, 做得, 吃得, 走得, 跳得, 學得, 玩得, 睡得, 長得, 講得, 開得, 騎得, 彈得, 畫得,
 ]
 light_optional: [
   看看, 試試, 想想, 聽聽, 說說, 走走, 找找, 問問, 坐坐, 玩玩, 逛逛, 聊聊, 談談, 洗洗, 笑笑, 讀讀, 寫寫, 學學,
   葡萄, 兄弟, 姑娘, 便宜, 生意, 客氣,
-  名字,
+  名字, 穿穿,
 ]
 
 # Full tone: NOT light. Only a guard for the tests (the loader refuses a word listed here and as light); nothing here changes a tone.

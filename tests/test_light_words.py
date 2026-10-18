@@ -51,6 +51,14 @@ class LightWordsTests(unittest.TestCase):
             self.assertEqual(core.display_pinyin(word), pinyin, word)
             self.assertIn(word, core.REQUIRED_LIGHT_WORDS, word)
 
+    def test_the_complement_de_after_a_verb_is_light_in_the_textbook_sentences(self):
+        # 游得不太好, 跑得很慢, 唱得很好, 打得很好, 看得很開心 (lessons 6 and 8): pypinyin reads that 得 dé, the complement is de
+        for text, shown in (("游得不太好", ["yóu", "de", "bú", "tài", "hǎo"]), ("我跑步跑得很慢", ["wǒ", "pǎo", "bù", "pǎo", "de", "hěn", "màn"]),
+                            ("他的中文歌唱得很好", ["tā", "de", "zhōng", "wén", "gē", "chàng", "de", "hěn", "hǎo"]), ("可是都看得很開心", ["kě", "shì", "dōu", "kàn", "de", "hěn", "kāi", "xīn"]),
+                            ("我們去穿穿看", ["wǒ", "men", "qù", "chuān", "chuan", "kàn"])):
+            self.assertEqual(core.display_pinyin(text), shown, text)
+        self.assertEqual(core.display_pinyin("記得"), ["jì", "de"])
+
     def test_a_word_with_two_readings_uses_the_common_sense_and_the_other_one_in_its_context(self):
         self.assertEqual(core.display_pinyin("知道"), ["zhī", "dao"])                       # "to know": light, so a full-tone reading is not marked wrong either
         self.assertEqual(core.display_pinyin("買東西"), ["mǎi", "dōng", "xi"])               # things
