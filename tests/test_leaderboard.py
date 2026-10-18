@@ -74,6 +74,48 @@ class LeaderboardTests(unittest.TestCase):
         self.assertNotIn(other, repr(board))
         self.assertNotIn(mine, repr(board))
 
+    def lessons(self, name, count, good, okay=0, practice=0, first=1):
+        student = None
+        for number in range(count):
+            student = self.attempt(name, f"5-1-{first + number}", good=good, okay=okay, practice=practice)
+        return student
+
+    def test_the_accuracy_board_ranks_the_average_of_the_best_attempts_from_five_lessons_on(self):
+        self.lessons("Steady", 5, good=9, practice=1)                        # 90 on each of 5 lessons: average 90
+        self.lessons("Bold", 5, good=3, okay=2, practice=0)                  # 80 on each: average 80
+        self.lessons("Prolific", 12, good=1, practice=1)                     # 50 on each of 12: 600 points, the most points but the lowest average
+        board = self.store.leaderboard()
+        self.assertEqual([(r["name"], r["accuracy"], r["lessons"]) for r in board["accuracy"]["top"]],
+                         [("Steady", 90.0, 5), ("Bold", 80.0, 5), ("Prolific", 50.0, 12)])
+        self.assertEqual(board["top"][0]["name"], "Prolific")                # the points board is unchanged: more lessons, more points
+        self.assertEqual(board["accuracy"]["min_lessons"], 5)
+
+    def test_one_perfect_sentence_does_not_win_the_accuracy_board_and_the_learner_is_told_how_many_more_are_needed(self):
+        mine = self.lessons("Lucky", 2, good=10)                             # 100 on 2 lessons: not enough
+        self.lessons("Steady", 5, good=9, practice=1)
+        board = self.store.leaderboard(viewer_id=mine)
+        self.assertEqual([r["name"] for r in board["accuracy"]["top"]], ["Steady"])
+        self.assertEqual(board["accuracy"]["me"], {"rank": None, "name": "Lucky", "accuracy": 100.0, "lessons": 2, "needed": 3})
+        self.assertEqual(board["accuracy"]["players"], 1)
+
+    def test_equal_averages_share_an_accuracy_rank_and_a_viewer_below_the_top_ten_still_sees_their_rank(self):
+        ids = [self.lessons(f"L{n:02d}", 5, good=20 - n, practice=n) for n in range(11)]
+        self.lessons("Twin", 5, good=20, practice=0)                         # ties L00 at 100
+        board = self.store.leaderboard(viewer_id=ids[10])
+        ranks = [r["rank"] for r in board["accuracy"]["top"]]
+        self.assertEqual(len(ranks), 10)
+        self.assertEqual(ranks[:3], [1, 1, 3])
+        self.assertEqual(board["accuracy"]["me"]["name"], "L10")
+        self.assertGreater(board["accuracy"]["me"]["rank"], 10)
+
+    def test_the_viewer_is_marked_on_the_accuracy_board_and_nobody_elses_id_is_given_out(self):
+        mine = self.lessons("Mei", 5, good=8, practice=2)
+        other = self.lessons("Lin", 5, good=9, practice=1)
+        board = self.store.leaderboard(viewer_id=mine)
+        self.assertEqual([(r["name"], r["is_me"]) for r in board["accuracy"]["top"]], [("Lin", False), ("Mei", True)])
+        self.assertNotIn(other, repr(board["accuracy"]))
+        self.assertNotIn(mine, repr(board["accuracy"]))
+
     def test_the_endpoint_answers_for_a_viewer_and_for_nobody(self):
         mine = self.attempt("Mei", "5-1-1", good=3)
         with mock.patch.object(main, "practice_store", self.store):
@@ -90,8 +132,17 @@ class PageTests(unittest.TestCase):
         self.assertRegex(SOURCE, r"@media \(min-width: 1280px\) \{\s*body \{ max-width: 1400px; \}\s*\.page-grid \{ display: grid; grid-template-columns: minmax\(0, 1040px\) 300px;")
 
     def test_every_language_has_the_board_texts(self):
-        for key in ("leaderboardTitle", "leaderboardHelp", "leaderboardEmpty", "leaderboardPoints", "leaderboardLessons", "leaderboardMeRank", "leaderboardMeNone"):
+        for key in ("leaderboardTitle", "leaderboardHelp", "leaderboardEmpty", "leaderboardPoints", "leaderboardLessons", "leaderboardMeRank", "leaderboardMeNone",
+                    "boardTabPoints", "boardTabAccuracy", "leaderboardHelpAccuracy", "leaderboardEmptyAccuracy", "leaderboardAccuracy",
+                    "leaderboardMeAccuracyRank", "leaderboardMeAccuracyNeed"):
             self.assertEqual(len(re.findall(r"\b%s: " % key, SOURCE)), 5, key)
+
+    def test_the_page_has_a_points_tab_and_an_accuracy_tab_and_remembers_the_choice(self):
+        self.assertIn('id="boardTabPoints"', SOURCE)
+        self.assertIn('id="boardTabAccuracy"', SOURCE)
+        self.assertIn("onclick=\"setBoardView('accuracy')\"", SOURCE)
+        self.assertIn('localStorage.setItem("leaderboardView", boardView)', SOURCE)
+        self.assertIn("(data && data.accuracy)", SOURCE)
 
     def test_the_board_is_refreshed_after_an_assessment_and_when_the_speaker_changes(self):
         self.assertIn("loadLeaderboard();                                   // the attempt may have moved the learner up", SOURCE)

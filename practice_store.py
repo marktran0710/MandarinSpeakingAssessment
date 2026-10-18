@@ -27,6 +27,7 @@ def _now():
 
 
 # Accounts made by tests and tools: never on the leaderboard.
+ACCURACY_MIN_LESSONS = 5                      # lessons a learner needs before they appear on the accuracy board
 LEADERBOARD_HIDDEN_NAMES = re.compile(r"^(mandarin-speaking|cal-log-|cal log$|lvl-api|tts-check|strict-check|no-audio|measured)", re.IGNORECASE)
 
 
@@ -253,7 +254,27 @@ class PracticeStore:
         top = [{"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"], "is_me": r["student"] == viewer_id}
                for r in results[:limit]]
         me = next(({"rank": r["rank"], "name": r["name"], "points": r["points"], "lessons": r["lessons"]} for r in results if r["student"] == viewer_id), None)
-        return {"top": top, "me": me, "players": len(results)}
+        return {"top": top, "me": me, "players": len(results), "accuracy": self._accuracy_board(totals, names, created, viewer_id, limit)}
+
+    @staticmethod
+    def _accuracy_board(totals, names, created, viewer_id, limit):
+        """The second board: the average points of a learner's lessons (their best attempt of each, 0-100), so a learner who did many lessons
+        and one who did a few compare fairly. It needs ACCURACY_MIN_LESSONS lessons (one perfect sentence must not win); below that the learner
+        sees how many more are needed. Equal averages (to one decimal) share a rank."""
+        averages = {student: (round(points / lessons, 1), lessons) for student, (points, lessons) in totals.items()}
+        eligible = sorted(((student, accuracy, lessons) for student, (accuracy, lessons) in averages.items() if lessons >= ACCURACY_MIN_LESSONS),
+                          key=lambda row: (-row[1], -row[2], created.get(row[0], ""), names[row[0]]))
+        rows = []
+        for student, accuracy, lessons in eligible:
+            rank = 1 + sum(1 for other in rows if other["accuracy"] > accuracy)
+            rows.append({"student": student, "rank": rank, "name": names[student], "accuracy": accuracy, "lessons": lessons})
+        top = [{"rank": r["rank"], "name": r["name"], "accuracy": r["accuracy"], "lessons": r["lessons"], "is_me": r["student"] == viewer_id}
+               for r in rows[:limit]]
+        me = next(({"rank": r["rank"], "name": r["name"], "accuracy": r["accuracy"], "lessons": r["lessons"]} for r in rows if r["student"] == viewer_id), None)
+        if me is None and viewer_id in averages:                                            # has lessons, but not enough of them yet
+            accuracy, lessons = averages[viewer_id]
+            me = {"rank": None, "name": names[viewer_id], "accuracy": accuracy, "lessons": lessons, "needed": ACCURACY_MIN_LESSONS - lessons}
+        return {"top": top, "me": me, "players": len(rows), "min_lessons": ACCURACY_MIN_LESSONS}
 
     def get_student(self, student_id):
         with self._connection() as connection:

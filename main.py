@@ -1225,6 +1225,9 @@ async def read_index():
             .leaderboard-lessons { display: block; font-size: 11px; font-weight: 400; color: #718096; text-align: right; }
             .leaderboard-me { margin: 10px 0 0; padding: 8px; border-radius: 8px; }
             .leaderboard-me[hidden] { display: none; }
+            .board-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
+            .board-tabs button { flex: 1; padding: 6px 8px; font-size: 13px; background: #edf2f7; color: #2d3748; }
+            .board-tabs button.active { background: #2b6cb0; color: white; }
             @media (min-width: 1280px) {
                 body { max-width: 1400px; }
                 .page-grid { display: grid; grid-template-columns: minmax(0, 1040px) 300px; gap: 20px; align-items: start; justify-content: center; }
@@ -1489,9 +1492,13 @@ async def read_index():
         </div>
         <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
             <h2 id="leaderboardTitle" data-i18n="leaderboardTitle">Top 10</h2>
-            <p class="upload-hint" data-i18n="leaderboardHelp">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
+            <div class="board-tabs" role="tablist" aria-label="Top 10">
+                <button type="button" id="boardTabPoints" class="active" role="tab" aria-selected="true" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
+                <button type="button" id="boardTabAccuracy" role="tab" aria-selected="false" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
+            </div>
+            <p id="leaderboardHelp" class="upload-hint" data-i18n="leaderboardHelp">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
             <ol id="leaderboardList" class="leaderboard-list"></ol>
-            <p id="leaderboardEmpty" class="upload-hint" data-i18n="leaderboardEmpty" hidden>No scores yet. Be the first!</p>
+            <p id="leaderboardEmpty" class="upload-hint" hidden>No scores yet. Be the first!</p>
             <p id="leaderboardMe" class="leaderboard-me" hidden></p>
         </aside>
         </div>
@@ -1574,6 +1581,13 @@ async def read_index():
             leaderboardLessons: "{n} sentences",
             leaderboardMeRank: "You: #{rank} \u00b7 {points} pts",
             leaderboardMeNone: "Practice a sentence to join the board.",
+            boardTabPoints: "Points",
+            boardTabAccuracy: "Accuracy",
+            leaderboardHelpAccuracy: "Accuracy: the average of the best attempt of each sentence (a Good syllable counts 1, an Okay one \u00bd), out of 100. You need at least {n} sentences. Your own text does not count.",
+            leaderboardEmptyAccuracy: "Nobody has done {n} sentences yet.",
+            leaderboardAccuracy: "{n}%",
+            leaderboardMeAccuracyRank: "You: #{rank} \u00b7 {accuracy}%",
+            leaderboardMeAccuracyNeed: "Practice {n} more sentence(s) to join the accuracy board.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1722,6 +1736,13 @@ async def read_index():
                     leaderboardLessons: "{n} 句",
                     leaderboardMeRank: "你：第 {rank} 名\u30fb{points} 分",
                     leaderboardMeNone: "練習一句就能上榜。",
+                    boardTabPoints: "積分",
+                    boardTabAccuracy: "準確率",
+                    leaderboardHelpAccuracy: "準確率：每一句取最好的一次（Good 音節算 1，Okay 算 \u00bd），再取平均（滿分 100）。至少要練 {n} 句。自己輸入的文本不計分。",
+                    leaderboardEmptyAccuracy: "還沒有人練滿 {n} 句。",
+                    leaderboardAccuracy: "{n}%",
+                    leaderboardMeAccuracyRank: "你：第 {rank} 名\u30fb{accuracy}%",
+                    leaderboardMeAccuracyNeed: "再練 {n} 句就能上準確率榜。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -1869,6 +1890,13 @@ async def read_index():
                     leaderboardLessons: "{n} câu",
                     leaderboardMeRank: "Bạn: hạng {rank} \u00b7 {points} điểm",
                     leaderboardMeNone: "Luyện một câu để có tên trên bảng.",
+                    boardTabPoints: "Điểm",
+                    boardTabAccuracy: "Độ chính xác",
+                    leaderboardHelpAccuracy: "Độ chính xác: trung bình lượt tốt nhất của mỗi câu (âm Good tính 1, Okay tính \u00bd), trên thang 100. Cần ít nhất {n} câu. Văn bản tự nhập không tính.",
+                    leaderboardEmptyAccuracy: "Chưa ai luyện đủ {n} câu.",
+                    leaderboardAccuracy: "{n}%",
+                    leaderboardMeAccuracyRank: "Bạn: hạng {rank} \u00b7 {accuracy}%",
+                    leaderboardMeAccuracyNeed: "Luyện thêm {n} câu để vào bảng độ chính xác.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -2035,6 +2063,13 @@ async def read_index():
                     leaderboardLessons: "{n} kalimat",
                     leaderboardMeRank: "Anda: peringkat {rank} \u00b7 {points} poin",
                     leaderboardMeNone: "Latih satu kalimat untuk masuk papan.",
+                    boardTabPoints: "Poin",
+                    boardTabAccuracy: "Akurasi",
+                    leaderboardHelpAccuracy: "Akurasi: rata-rata percobaan terbaik tiap kalimat (suku kata Good bernilai 1, Okay \u00bd), dari 100. Perlu minimal {n} kalimat. Teks sendiri tidak dihitung.",
+                    leaderboardEmptyAccuracy: "Belum ada yang menyelesaikan {n} kalimat.",
+                    leaderboardAccuracy: "{n}%",
+                    leaderboardMeAccuracyRank: "Anda: peringkat {rank} \u00b7 {accuracy}%",
+                    leaderboardMeAccuracyNeed: "Latih {n} kalimat lagi untuk masuk papan akurasi.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2291,6 +2326,13 @@ async def read_index():
                     leaderboardLessons: "{n} वाक्य",
                     leaderboardMeRank: "आप: #{rank} \u00b7 {points} अंक",
                     leaderboardMeNone: "बोर्ड में आने के लिए एक वाक्य का अभ्यास करें।",
+                    boardTabPoints: "अंक",
+                    boardTabAccuracy: "सटीकता",
+                    leaderboardHelpAccuracy: "सटीकता: हर वाक्य के सबसे अच्छे प्रयास का औसत (Good अक्षर-खंड = 1, Okay = \u00bd), 100 में से। कम से कम {n} वाक्य ज़रूरी हैं। अपना लिखा पाठ नहीं गिना जाता।",
+                    leaderboardEmptyAccuracy: "अभी तक किसी ने {n} वाक्य पूरे नहीं किए।",
+                    leaderboardAccuracy: "{n}%",
+                    leaderboardMeAccuracyRank: "आप: #{rank} \u00b7 {accuracy}%",
+                    leaderboardMeAccuracyNeed: "सटीकता बोर्ड में आने के लिए {n} और वाक्य अभ्यास करें।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -3023,15 +3065,34 @@ async def read_index():
                 }
             }
 
-            // The leaderboard (top 10 by points; the server works the points out from every saved attempt).
+            // The leaderboard: two boards, "points" (the best attempt of every sentence added up) and "accuracy" (their average out of 100, from 5 sentences on).
+            // The server works both out from every saved attempt; the tab the learner looks at is remembered in this browser.
             let lastLeaderboard = null;
+            let boardView = "points";
+            try { boardView = localStorage.getItem("leaderboardView") === "accuracy" ? "accuracy" : "points"; } catch (error) { /* private window */ }
+
+            function setBoardView(view) {
+                boardView = view === "accuracy" ? "accuracy" : "points";
+                try { localStorage.setItem("leaderboardView", boardView); } catch (error) { /* private window */ }
+                renderLeaderboard(lastLeaderboard);
+            }
 
             function renderLeaderboard(data) {
                 lastLeaderboard = data;
+                const byAccuracy = boardView === "accuracy";
+                for (const [id, active] of [["boardTabPoints", !byAccuracy], ["boardTabAccuracy", byAccuracy]]) {
+                    document.getElementById(id).classList.toggle("active", active);
+                    document.getElementById(id).setAttribute("aria-selected", String(active));
+                }
+                const board = byAccuracy ? ((data && data.accuracy) || {}) : (data || {});
+                const minLessons = (data && data.accuracy && data.accuracy.min_lessons) || 5;
+                document.getElementById("leaderboardHelp").textContent = byAccuracy ? t("leaderboardHelpAccuracy", { n: minLessons }) : t("leaderboardHelp");
                 const list = document.getElementById("leaderboardList");
                 list.replaceChildren();
-                const top = (data && data.top) || [];
-                document.getElementById("leaderboardEmpty").hidden = top.length > 0;
+                const top = board.top || [];
+                const empty = document.getElementById("leaderboardEmpty");
+                empty.textContent = byAccuracy ? t("leaderboardEmptyAccuracy", { n: minLessons }) : t("leaderboardEmpty");
+                empty.hidden = top.length > 0;
                 top.forEach(row => {
                     const item = document.createElement("li");
                     item.className = "leaderboard-row" + (row.is_me ? " me" : "");
@@ -3044,7 +3105,7 @@ async def read_index():
                     name.title = row.name;
                     const points = document.createElement("span");
                     points.className = "leaderboard-points";
-                    points.textContent = t("leaderboardPoints", { n: row.points });
+                    points.textContent = byAccuracy ? t("leaderboardAccuracy", { n: row.accuracy.toFixed(1) }) : t("leaderboardPoints", { n: row.points });
                     const lessons = document.createElement("span");
                     lessons.className = "leaderboard-lessons";
                     lessons.textContent = t("leaderboardLessons", { n: row.lessons });
@@ -3053,12 +3114,16 @@ async def read_index():
                     list.appendChild(item);
                 });
                 const me = document.getElementById("leaderboardMe");
-                const mine = data && data.me;
+                const mine = board.me;
                 const inTop = top.some(row => row.is_me);
                 if (!activeStudent) {
                     me.hidden = true;
+                } else if (mine && mine.rank === null) {
+                    me.textContent = t("leaderboardMeAccuracyNeed", { n: mine.needed });
+                    me.hidden = false;
                 } else if (mine && !inTop) {
-                    me.textContent = t("leaderboardMeRank", { rank: mine.rank, points: mine.points });
+                    me.textContent = byAccuracy ? t("leaderboardMeAccuracyRank", { rank: mine.rank, accuracy: mine.accuracy.toFixed(1) })
+                                                : t("leaderboardMeRank", { rank: mine.rank, points: mine.points });
                     me.hidden = false;
                 } else if (!mine) {
                     me.textContent = t("leaderboardMeNone");
