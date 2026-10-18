@@ -15,14 +15,13 @@ class LightWordsTests(unittest.TestCase):
     """認識 is read rèn‧shi, not rèn shí: everyday words with a light last syllable are printed and treated as such."""
 
     def test_the_page_prints_the_light_syllable_without_a_tone_mark(self):
-        for text, expected in (("認識", ["rèn", "shi"]), ("朋友", ["péng", "you"]), ("謝謝", ["xiè", "xie"]), ("知道", ["zhī", "dao"]),
-                               ("喜歡", ["xǐ", "huan"]), ("東西", ["dōng", "xi"]), ("學生", ["xué", "sheng"]), ("時候", ["shí", "hou"]),
-                               ("看看", ["kàn", "kan"]), ("爸爸", ["bà", "ba"]), ("媽媽", ["mā", "ma"]), ("石頭", ["shí", "tou"]), ("記得", ["jì", "de"])):
+        for text, expected in (("認識", ["rèn", "shi"]), ("謝謝", ["xiè", "xie"]), ("學生", ["xué", "sheng"]), ("看看", ["kàn", "kan"]),
+                               ("爸爸", ["bà", "ba"]), ("媽媽", ["mā", "ma"]), ("石頭", ["shí", "tou"]), ("記得", ["jì", "de"])):
             self.assertEqual(core.display_pinyin(text), expected, text)
 
     def test_it_works_inside_a_sentence_and_for_what_the_learner_types(self):
         self.assertEqual(core.display_pinyin("很開心認識你們"), ["hěn", "kāi", "xīn", "rèn", "shi", "nǐ", "men"])
-        self.assertEqual(core.pinyin_per_character("我知道，謝謝"), ["wǒ", "zhī", "dao", "", "xiè", "xie"])
+        self.assertEqual(core.pinyin_per_character("我認識你，謝謝"), ["wǒ", "rèn", "shi", "nǐ", "", "xiè", "xie"])
 
     def test_the_light_syllable_is_expected_as_a_light_tone_and_not_scored(self):
         contexts = core.expected_tone_contexts(["我很高興認識你"])
@@ -31,16 +30,19 @@ class LightWordsTests(unittest.TestCase):
         self.assertEqual(by_char["認"]["target_tone"], 4)                           # the first syllable keeps its full tone
 
     def test_a_third_tone_before_a_light_syllable_is_not_a_sandhi_trigger(self):
-        contexts = core.expected_tone_contexts(["我的朋友"])
+        contexts = core.expected_tone_contexts(["我的學生"])
         self.assertEqual([c["target_tone"] for c in contexts], [3, 5, 2, 5])
-        self.assertEqual([c["target_tone"] for c in core.expected_tone_contexts(["你喜歡"])], [2, 3, 5])   # 你喜 is still a 3-3; the light 歡 is not scored
+        self.assertEqual([c["target_tone"] for c in core.expected_tone_contexts(["我的學生們"])], [3, 5, 2, 5, 5])
 
-    def test_the_compass_directions_are_not_light(self):
-        self.assertEqual(core.display_pinyin("東西南北"), ["dōng", "xī", "nán", "běi"])
-        self.assertEqual(core.display_pinyin("買東西"), ["mǎi", "dōng", "xi"])
+    def test_words_the_taiwan_teachers_read_in_full_stay_full(self):
+        # measured on the textbook recordings: the last syllable is as long as the first or longer, with a full tone
+        for word, shown in (("喜歡", ["xǐ", "huān"]), ("知道", ["zhī", "dào"]), ("漂亮", ["piào", "liàng"]), ("朋友", ["péng", "yǒu"]), ("東西", ["dōng", "xī"]),
+                            ("晚上", ["wǎn", "shàng"]), ("時候", ["shí", "hòu"]), ("地方", ["dì", "fāng"]), ("舒服", ["shū", "fú"])):
+            self.assertEqual(core.display_pinyin(word), shown, word)
+            self.assertNotIn(word, core.LIGHT_FINAL_WORDS, word)
 
     def test_what_the_displayed_tones_say_is_what_is_scored(self):
-        for text in ("我很高興認識你們", "朋友們都知道", "看看這個東西"):
+        for text in ("我很高興認識你們", "學生們都認得", "看看這個"):
             printed = [int(to_tone3(p)[-1]) if to_tone3(p)[-1].isdigit() else 5 for p in core.display_pinyin(text)]
             self.assertEqual(printed, core.display_tones(text), text)
 
