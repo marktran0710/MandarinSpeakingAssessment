@@ -1258,7 +1258,7 @@ async def read_index():
 
             <div id="bookSamplePicker" class="tight">
                 <label for="sampleSelect"><b data-i18n="sampleRecording">Sample recording (Lessons 5-8):</b></label>
-                <select id="sampleSelect" onchange="selectSample()" disabled>
+                <select id="sampleSelect" onchange="sampleTouched = true; selectSample()" disabled>
                     <option data-i18n="loadingSamples">Loading sample recordings...</option>
                 </select>
             </div>
@@ -1393,6 +1393,7 @@ async def read_index():
             let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
+            let sampleTouched = false;                      // the learner picked a sample themselves: the page stops choosing the starting one
             let chapter5WordItems = [];
             let chapter5Categories = [];
             let chapter5CategoryFilter = "";
@@ -1439,12 +1440,12 @@ async def read_index():
             customSampleError: "The sample could not be made. Try again.",
             customSampleUnavailable: "The sample voice is not available on this server.",
             leaderboardTitle: "Top 10",
-            leaderboardHelp: "Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one \u00bd), added up. Your own text does not count.",
+            leaderboardHelp: "Points: the best attempt of each sentence (a Good syllable counts 1, an Okay one \u00bd), added up. Your own text does not count.",
             leaderboardEmpty: "No scores yet. Be the first!",
             leaderboardPoints: "{n} pts",
-            leaderboardLessons: "{n} lessons",
+            leaderboardLessons: "{n} sentences",
             leaderboardMeRank: "You: #{rank} \u00b7 {points} pts",
-            leaderboardMeNone: "Practice a lesson to join the board.",
+            leaderboardMeNone: "Practice a sentence to join the board.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1587,12 +1588,12 @@ async def read_index():
                     customSampleError: "無法製作範例，請再試一次。",
                     customSampleUnavailable: "這台伺服器沒有可用的範例語音。",
                     leaderboardTitle: "前十名",
-                    leaderboardHelp: "積分：每一課取最好的一次（Good 音節算 1，Okay 算 \u00bd），全部相加。自己輸入的文本不計分。",
+                    leaderboardHelp: "積分：每一句取最好的一次（Good 音節算 1，Okay 算 \u00bd），全部相加。自己輸入的文本不計分。",
                     leaderboardEmpty: "還沒有成績，來當第一名吧！",
                     leaderboardPoints: "{n} 分",
-                    leaderboardLessons: "{n} 課",
+                    leaderboardLessons: "{n} 句",
                     leaderboardMeRank: "你：第 {rank} 名\u30fb{points} 分",
-                    leaderboardMeNone: "練習一課就能上榜。",
+                    leaderboardMeNone: "練習一句就能上榜。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -1734,12 +1735,12 @@ async def read_index():
                     customSampleError: "Không tạo được âm thanh mẫu. Hãy thử lại.",
                     customSampleUnavailable: "Máy chủ này chưa có giọng đọc mẫu.",
                     leaderboardTitle: "Top 10",
-                    leaderboardHelp: "Điểm: lấy lượt tốt nhất của mỗi bài (âm Good tính 1, Okay tính \u00bd), cộng lại. Văn bản tự nhập không tính.",
+                    leaderboardHelp: "Điểm: lấy lượt tốt nhất của mỗi câu (âm Good tính 1, Okay tính \u00bd), cộng lại. Văn bản tự nhập không tính.",
                     leaderboardEmpty: "Chưa có điểm nào. Hãy là người đầu tiên!",
                     leaderboardPoints: "{n} điểm",
-                    leaderboardLessons: "{n} bài",
+                    leaderboardLessons: "{n} câu",
                     leaderboardMeRank: "Bạn: hạng {rank} \u00b7 {points} điểm",
-                    leaderboardMeNone: "Luyện một bài để có tên trên bảng.",
+                    leaderboardMeNone: "Luyện một câu để có tên trên bảng.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -1900,12 +1901,12 @@ async def read_index():
                     customSampleError: "Contoh tidak dapat dibuat. Coba lagi.",
                     customSampleUnavailable: "Suara contoh tidak tersedia di server ini.",
                     leaderboardTitle: "10 Teratas",
-                    leaderboardHelp: "Poin: percobaan terbaik tiap pelajaran (suku kata Good bernilai 1, Okay \u00bd), dijumlahkan. Teks sendiri tidak dihitung.",
+                    leaderboardHelp: "Poin: percobaan terbaik tiap kalimat (suku kata Good bernilai 1, Okay \u00bd), dijumlahkan. Teks sendiri tidak dihitung.",
                     leaderboardEmpty: "Belum ada skor. Jadilah yang pertama!",
                     leaderboardPoints: "{n} poin",
-                    leaderboardLessons: "{n} pelajaran",
+                    leaderboardLessons: "{n} kalimat",
                     leaderboardMeRank: "Anda: peringkat {rank} \u00b7 {points} poin",
-                    leaderboardMeNone: "Latih satu pelajaran untuk masuk papan.",
+                    leaderboardMeNone: "Latih satu kalimat untuk masuk papan.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2156,12 +2157,12 @@ async def read_index():
                     customSampleError: "नमूना नहीं बन सका। फिर कोशिश करें।",
                     customSampleUnavailable: "इस सर्वर पर नमूना आवाज़ उपलब्ध नहीं है।",
                     leaderboardTitle: "शीर्ष 10",
-                    leaderboardHelp: "अंक: हर पाठ का सबसे अच्छा प्रयास (Good अक्षर-खंड = 1, Okay = \u00bd), जोड़कर। आपका अपना पाठ नहीं गिना जाता।",
+                    leaderboardHelp: "अंक: हर वाक्य का सबसे अच्छा प्रयास (Good अक्षर-खंड = 1, Okay = \u00bd), जोड़कर। आपका अपना पाठ नहीं गिना जाता।",
                     leaderboardEmpty: "अभी कोई अंक नहीं। पहले बनिए!",
                     leaderboardPoints: "{n} अंक",
-                    leaderboardLessons: "{n} पाठ",
+                    leaderboardLessons: "{n} वाक्य",
                     leaderboardMeRank: "आप: #{rank} \u00b7 {points} अंक",
-                    leaderboardMeNone: "बोर्ड में आने के लिए एक पाठ का अभ्यास करें।",
+                    leaderboardMeNone: "बोर्ड में आने के लिए एक वाक्य का अभ्यास करें।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -3106,6 +3107,7 @@ async def read_index():
                 syncVoiceCalibrationUI();
                 syncPracticeControls();
                 loadLeaderboard();                                       // "You" is a different person now
+                if (profile && !sampleTouched && sampleLessons.length && selectedPracticeMode() === "book") applyStartSample();
             }
 
             function calibrationDismissKey(studentId) {
@@ -3557,6 +3559,36 @@ async def read_index():
                 if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
             });
 
+            // Where a learner starts: the first sentence of the first story of each chapter (5-1-1, 6-1-1, 7-1-1, 8-1-1 ...), a different one for different people
+            // (the same one for the same person: it comes from their profile id; before a profile exists it is random).
+            function chapterStartSamples(samples) {
+                const first = new Map();
+                for (const sample of samples) {
+                    const order = Number(sample.story) * 1000 + Number(sample.scene);
+                    const kept = first.get(String(sample.lesson));
+                    if (!kept || order < kept.order) first.set(String(sample.lesson), { order, sample });
+                }
+                return [...first.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(entry => entry[1].sample);
+            }
+
+            function startSampleFor(samples, studentId) {
+                const starts = chapterStartSamples(samples);
+                if (!starts.length) return null;
+                let seed = Math.floor(Math.random() * 4294967296);
+                if (studentId) {
+                    seed = 2166136261;
+                    for (const character of String(studentId)) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+                }
+                return starts[seed % starts.length];
+            }
+
+            function applyStartSample() {
+                const start = startSampleFor(sampleLessons, activeStudent && activeStudent.id);
+                if (!start) return;
+                document.getElementById("sampleSelect").value = start.id;
+                selectSample();
+            }
+
             async function loadSampleLessons() {
                 const select = document.getElementById("sampleSelect");
                 try {
@@ -3573,6 +3605,8 @@ async def read_index():
                     }
 
                     refreshSampleOptions();
+                    const start = startSampleFor(sampleLessons, activeStudent && activeStudent.id);
+                    if (start) select.value = start.id;
 
                     selectSample();
                 } catch (error) {
