@@ -110,27 +110,43 @@ TONE_SOURCE_CONFIDENCE = {"textbook": 1.0, "taiwan_lexicon": 1.0, "neutral_rule"
 _NEUTRAL_SUFFIXES = set("子們嗎呢吧啊了的著過麼")        # pypinyin itself gives a light tone to these; they are light as SUFFIXES / particles
 
 
+def _word_list(data, key):
+    words = data.get(key) or []
+    if not isinstance(words, list) or any(not isinstance(w, str) or not w or any(c.isspace() for c in w) or len(w) < 2 for w in words):
+        raise ValueError(f"taiwan_lexicon.yaml: {key}: a list of words of at least two characters each, no spaces")
+    return tuple(words)
+
+
 def load_lexicon(path=LEXICON_PATH):
-    """The Taiwan lexicon, validated: whole-word tone lists of the right length, tones 1-5, the light lists apart from each other and from the full-tone words."""
+    """The Taiwan lexicon, validated: whole-word tone lists of the right length, tones 1-5, real lists for the word lists, the light lists apart from each other and from
+    the full-tone words, and sense variants that each have a valid tone list."""
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+    def check(word, tones, where):
+        if not isinstance(tones, list) or len(tones) != len(word) or any(t not in (1, 2, 3, 4, 5) for t in tones):
+            raise ValueError(f"taiwan_lexicon.yaml: {where}: {word}: needs one tone (1-5) per character")
+        return list(tones)
+
     lexicon = {"locale": data["locale"]}
     for layer in ("textbook", "tones"):
-        entries = {}
-        for word, tones in (data.get(layer) or {}).items():
-            if not isinstance(tones, list) or len(tones) != len(word) or any(t not in (1, 2, 3, 4, 5) for t in tones):
-                raise ValueError(f"taiwan_lexicon.yaml: {layer}: {word}: needs one tone (1-5) per character")
-            entries[str(word)] = list(tones)
-        lexicon[layer] = entries
+        lexicon[layer] = {str(word): check(str(word), tones, layer) for word, tones in (data.get(layer) or {}).items()}
+    variants = {}
+    for word, entries in (data.get("variants") or {}).items():
+        word = str(word)
+        if not isinstance(entries, list) or not entries or not isinstance(entries[0], dict):
+            raise ValueError(f"taiwan_lexicon.yaml: variants: {word}: a list of readings")
+        parsed = [{"tones": check(word, entry.get("tones"), "variants"), "sense": str(entry.get("sense") or ""), "before": str(entry.get("before") or "")} for entry in entries]
+        if all(v["before"] for v in parsed):
+            raise ValueError(f"taiwan_lexicon.yaml: variants: {word}: one reading must apply without a context (no `before`)")
+        variants[word] = parsed
+    lexicon["variants"] = variants
     for key in ("light_required", "light_optional", "full_tone"):
-        words = tuple(str(data.get(key) or "").split())
-        if any(len(w) < 2 for w in words):
-            raise ValueError(f"taiwan_lexicon.yaml: {key}: every word needs at least two characters")
-        lexicon[key] = words
+        lexicon[key] = _word_list(data, key)
     if set(lexicon["light_required"]) & set(lexicon["light_optional"]):
         raise ValueError("taiwan_lexicon.yaml: a word is both required and optional light")
-    wrongly_light = set(lexicon["full_tone"]) & (set(lexicon["light_required"]) | set(lexicon["light_optional"]))
+    wrongly_light = set(lexicon["full_tone"]) & (set(lexicon["light_required"]) | set(lexicon["light_optional"]) | set(lexicon["variants"]))
     if wrongly_light:
-        raise ValueError(f"taiwan_lexicon.yaml: full-tone words listed as light: {sorted(wrongly_light)}")
+        raise ValueError(f"taiwan_lexicon.yaml: full-tone words listed as light or as variants: {sorted(wrongly_light)}")
     return lexicon
 
 
@@ -138,6 +154,7 @@ LEXICON = load_lexicon()
 PRONUNCIATION_LOCALE = LEXICON["locale"]
 TEXTBOOK_TONES = LEXICON["textbook"]
 LEXICON_TONES = LEXICON["tones"]
+LEXICON_VARIANTS = LEXICON["variants"]
 TAIWAN_WORD_TONES = {**LEXICON_TONES, **TEXTBOOK_TONES}               # every explicit whole-word reading (the textbook wins)
 REQUIRED_LIGHT_WORDS = LEXICON["light_required"]
 OPTIONAL_LIGHT_WORDS = LEXICON["light_optional"]
@@ -179,6 +196,18 @@ def _resolve_tones(clause):
     apply(((w, None) for w in REQUIRED_LIGHT_WORDS), "taiwan_lexicon", "required")
     apply(((w, None) for w in OPTIONAL_LIGHT_WORDS), "taiwan_lexicon", "optional")
     apply(LEXICON_TONES.items(), "taiwan_lexicon")
+    for word, readings in LEXICON_VARIANTS.items():              # a word with several readings: the one that fits the next character, else the default
+        pos = clause.find(word)
+        while pos != -1:
+            end = pos + len(word)
+            following = clause[end:end + 1]
+            chosen = next((r for r in readings if r["before"] and following and following in r["before"]), None) or next(r for r in readings if not r["before"])
+            tones[pos:end] = chosen["tones"]
+            sources[pos:end] = ["taiwan_lexicon"] * len(word)
+            states[pos:end] = [None] * len(word)
+            if chosen["tones"][-1] == 5:
+                states[end - 1] = "optional"                      # a full reading exists too, so a full-tone reading is never wrong
+            pos = clause.find(word, end)
     apply(TEXTBOOK_TONES.items(), "textbook")
     return tones, sources, states
 

@@ -35,15 +35,29 @@ class LightWordsTests(unittest.TestCase):
         self.assertEqual([c["target_tone"] for c in core.expected_tone_contexts(["我的爸爸們"])], [3, 5, 4, 5, 5])
 
     def test_words_that_are_full_tone_stay_full(self):
-        # the textbook teachers read these in full (measured), and the Ministry of Education dictionary gives a full last syllable for the others
-        shown = {"喜歡": ["xǐ", "huān"], "知道": ["zhī", "dào"], "漂亮": ["piào", "liàng"], "朋友": ["péng", "yǒu"], "東西": ["dōng", "xī"], "晚上": ["wǎn", "shàng"],
-                 "時候": ["shí", "hòu"], "地方": ["dì", "fāng"], "舒服": ["shū", "fú"], "學生": ["xué", "shēng"], "先生": ["xiān", "shēng"], "休息": ["xiū", "xí"],
-                 "清楚": ["qīng", "chǔ"], "寶寶": ["bǎo", "bǎo"], "師傅": ["shī", "fù"], "親戚": ["qīn", "qī"], "眼睛": ["yǎn", "jīng"], "頭髮": ["tóu", "fǎ"],
-                 "打算": ["dǎ", "suàn"], "行李": ["xíng", "lǐ"], "風箏": ["fēng", "zhēng"], "小姐": ["xiǎo", "jiě"]}
+        # the Ministry of Education dictionary gives a full last syllable for these (a review supplied by the owner, 2026-10-18)
+        shown = {"喜歡": ["xǐ", "huān"], "朋友": ["péng", "yǒu"], "時候": ["shí", "hòu"], "地方": ["dì", "fāng"], "丈夫": ["zhàng", "fū"],
+                 "學生": ["xué", "shēng"], "先生": ["xiān", "shēng"], "休息": ["xiū", "xí"], "清楚": ["qīng", "chǔ"], "寶寶": ["bǎo", "bǎo"], "師傅": ["shī", "fù"],
+                 "親戚": ["qīn", "qī"], "眼睛": ["yǎn", "jīng"], "頭髮": ["tóu", "fǎ"], "打算": ["dǎ", "suàn"], "行李": ["xíng", "lǐ"], "風箏": ["fēng", "zhēng"],
+                 "小姐": ["xiǎo", "jiě"]}
         self.assertEqual(set(shown), set(core.FULL_TONE_WORDS))
         for word, pinyin in shown.items():
             self.assertEqual(core.display_pinyin(word), pinyin, word)
             self.assertNotIn(word, core.LIGHT_FINAL_WORDS, word)
+
+    def test_the_words_the_dictionary_gives_light_are_light_even_if_a_recording_moves_the_pitch(self):
+        for word, pinyin in (("漂亮", ["piào", "liang"]), ("舒服", ["shū", "fu"]), ("晚上", ["wǎn", "shang"]), ("太太", ["tài", "tai"]), ("認識", ["rèn", "shi"]),
+                             ("熱鬧", ["rè", "nao"]), ("蘿蔔", ["luó", "bo"]), ("嘴巴", ["zuǐ", "ba"]), ("叔叔", ["shū", "shu"]), ("伯伯", ["bó", "bo"])):
+            self.assertEqual(core.display_pinyin(word), pinyin, word)
+            self.assertIn(word, core.REQUIRED_LIGHT_WORDS, word)
+
+    def test_a_word_with_two_readings_uses_the_common_sense_and_the_other_one_in_its_context(self):
+        self.assertEqual(core.display_pinyin("知道"), ["zhī", "dao"])                       # "to know": light, so a full-tone reading is not marked wrong either
+        self.assertEqual(core.display_pinyin("買東西"), ["mǎi", "dōng", "xi"])               # things
+        self.assertEqual(core.display_pinyin("東西南北"), ["dōng", "xī", "nán", "běi"])      # east and west
+        self.assertEqual(core._resolve_tones("知道")[2][1], "optional")
+        self.assertIn("知道", core.LEXICON_VARIANTS)
+        self.assertNotIn("知道", core.LIGHT_FINAL_WORDS)                                    # by sense, not in a hard list
 
     def test_the_two_light_states_are_listed_apart_and_both_are_light_and_not_scored(self):
         self.assertFalse(set(core.REQUIRED_LIGHT_WORDS) & set(core.OPTIONAL_LIGHT_WORDS))
@@ -54,8 +68,9 @@ class LightWordsTests(unittest.TestCase):
             self.assertEqual(contexts[-1]["target_tone"], 5, word)                    # not scored: a learner who keeps the full tone is never marked wrong
         for word in ("看看", "葡萄", "兄弟", "姑娘", "便宜", "生意", "客氣"):
             self.assertIn(word, core.OPTIONAL_LIGHT_WORDS, word)
-        for word in ("爸爸", "謝謝", "意思", "麻煩", "明白", "耳朵", "脾氣", "暖和", "玻璃", "豆腐", "腦袋", "屁股", "早上", "蘑菇"):
+        for word in ("爸爸", "謝謝", "意思", "麻煩", "明白", "耳朵", "脾氣", "暖和", "玻璃", "豆腐", "腦袋", "屁股", "早上", "蘑菇", "媽媽", "奶奶"):
             self.assertIn(word, core.REQUIRED_LIGHT_WORDS, word)
+        self.assertIn("名字", core.OPTIONAL_LIGHT_WORDS)
 
     def test_what_the_displayed_tones_say_is_what_is_scored(self):
         for text in ("我很高興認識你們", "爸爸們都認得", "看看這個"):

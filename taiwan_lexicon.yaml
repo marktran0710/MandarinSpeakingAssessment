@@ -1,8 +1,10 @@
 # Taiwan Mandarin pronunciation data: the source of truth for lexical tones and light (neutral) syllables of this course (zh-TW).
-# Resolution order, highest first (capt_core._resolve_tones): textbook > taiwan_lexicon (tones + the light-word lists) > neutral suffix rules (子 們 嗎 吧 了 的 什麼) > generic
-# pypinyin. Every expected tone carries the layer it came from (`tone_source`) and a confidence: textbook 1.0, taiwan_lexicon 1.0, neutral_rule 0.9, generic_g2p 0.7.
-# A light syllable is never scored (tone_v1: never `practice`), so a word that allows both readings (optional light) never marks a full-tone reading wrong.
-# Checked against the Ministry of Education 重編國語辭典修訂本 (review supplied by the owner, 2026-10-18) and the textbook teachers' recordings (measured).
+# Resolution order, highest first (capt_core._resolve_tones): textbook > taiwan_lexicon (tones, variants and the light-word lists) > neutral suffix rules (子 們 嗎 吧 了 的 什麼)
+# > generic pypinyin. Every expected tone carries the layer it came from (`tone_source`) and a confidence: textbook 1.0, taiwan_lexicon 1.0, neutral_rule 0.9, generic_g2p 0.7.
+# Whether a syllable is light is a LEXICAL fact (the Ministry of Education 重編國語辭典修訂本, the textbook, the sense of the word), never read off the teachers' F0: a light
+# syllable can show a clear pitch movement in a careful recording (漂亮, 舒服, 晚上). The recordings only check how a reading is REALISED.
+# A light syllable is never scored (tone_v1: never `practice`), so a word that allows both readings never marks a full-tone reading wrong.
+# Reviewed against the Ministry of Education dictionary (review supplied by the owner, 2026-10-18).
 locale: zh-TW
 
 # The textbook's own printed reading (Chapter 5 workbook Pinyin: 哥哥 gēge, 桌子 zhuōzi ...). Tones 1-4, 5 = light. Beats everything below.
@@ -25,23 +27,39 @@ tones:
   衣服: [1, 5]            # yīfu
   休息: [1, 2]            # xiūxí (pypinyin: xiūxī)
   頭髮: [2, 3]            # tóufǎ (pypinyin: tóufà)
+  丈夫: [4, 1]            # zhàngfū (not light)
+
+# Words with more than one reading in the dictionary, by sense. The FIRST entry without `before` is the reading used for the expected tones; `before` makes an entry
+# the reading when the next character is one of those. A light default is shown light and not scored, so a learner who reads the other (full) reading is not marked wrong.
+variants:
+  知道:
+    - {tones: [1, 5], sense: "to know, to understand"}
+    - {tones: [1, 4], sense: "full-tone reading (zhī dào)"}
+  東西:
+    - {tones: [1, 5], sense: "thing, object (dōng xi)"}
+    - {tones: [1, 1], sense: "east and west (dōng xī)", before: "南北"}
 
 # Words whose LAST syllable is light. The first syllable keeps the generic tone.
 #   light_required  the dictionary gives a light last syllable
-#   light_optional  a light last syllable is allowed, not required: repeated verbs (看看: slow careful speech keeps the second), words with another reading by sense
-#                   (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣) and the ones not confirmed yet. Shown light.
-light_required: >-
-  爸爸 爺爺 姑姑 舅舅 嬸嬸 娃娃 星星 謝謝 拜拜
-  意思 麻煩 明白 耳朵 脾氣 暖和 玻璃 豆腐 腦袋 屁股 早上 蘑菇
-  石頭 木頭 舌頭 骨頭 枕頭 饅頭 拳頭 指頭 甜頭 念頭 外頭 裡頭 上頭 下頭 前頭 後頭
-  記得 懂得 值得 曉得 認得
-light_optional: >-
-  看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
-  葡萄 兄弟 姑娘 便宜 生意 客氣
-  媽媽 奶奶 叔叔 伯伯 太太 丈夫 認識 熱鬧 蘿蔔 嘴巴 名字
+#   light_optional  a light last syllable is allowed, not required: repeated verbs (看看: slow careful speech keeps the second) and words with another reading by sense
+#                   (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣, 名字 míng zi / míng zì). Shown light.
+light_required: [
+  爸爸, 媽媽, 奶奶, 爺爺, 叔叔, 伯伯, 姑姑, 舅舅, 嬸嬸,
+  娃娃, 星星, 謝謝, 拜拜,
+  太太, 認識, 熱鬧, 蘿蔔, 嘴巴,
+  漂亮, 舒服, 晚上,
+  意思, 麻煩, 明白, 耳朵, 脾氣, 暖和, 玻璃, 豆腐, 腦袋, 屁股, 早上, 蘑菇,
+  石頭, 木頭, 舌頭, 骨頭, 枕頭, 饅頭, 拳頭, 指頭, 甜頭, 念頭, 外頭, 裡頭, 上頭, 下頭, 前頭, 後頭,
+  記得, 懂得, 值得, 曉得, 認得,
+]
+light_optional: [
+  看看, 試試, 想想, 聽聽, 說說, 走走, 找找, 問問, 坐坐, 玩玩, 逛逛, 聊聊, 談談, 洗洗, 笑笑, 讀讀, 寫寫, 學學,
+  葡萄, 兄弟, 姑娘, 便宜, 生意, 客氣,
+  名字,
+]
 
-# Full tone: NOT light. The words that were wrongly light before (and the nine the textbook teachers read in full: 喜歡 xǐ huān, 知道 zhī dào ...). Only a guard
-# for the tests; nothing here changes a tone.
-full_tone: >-
-  學生 先生 休息 清楚 寶寶 師傅 親戚 眼睛 頭髮 打算 行李 風箏 小姐
-  喜歡 知道 漂亮 朋友 東西 晚上 時候 地方 舒服
+# Full tone: NOT light. Only a guard for the tests (the loader refuses a word listed here and as light); nothing here changes a tone.
+full_tone: [
+  學生, 先生, 休息, 清楚, 寶寶, 師傅, 親戚, 眼睛, 頭髮, 打算, 行李, 風箏, 小姐,
+  喜歡, 朋友, 時候, 地方, 丈夫,
+]
