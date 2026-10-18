@@ -3,9 +3,11 @@ Script and tone-context helpers shared by the API (main.py), tone_assessment and
 Han clauses and work out each syllable's expected (surface) tone. No audio model is loaded here.
 """
 import re
+from pathlib import Path
 
 import numpy as np
 import opencc
+import yaml
 from pypinyin import lazy_pinyin, Style
 from pypinyin.contrib.tone_convert import to_tone
 
@@ -101,70 +103,88 @@ def display_tones(run):
     return [spoken[i] if ch in "不一" else base[i] for i, ch in enumerate(run)]
 
 
-# Taiwan Mandarin readings differ from mainland Pinyin readings.
-TAIWAN_WORD_TONES = {
-    "星期": [1, 2],
-    "垃圾": [4, 4],
-    "覺得": [2, 5],
-    "睡覺": [4, 4],             # shuìjiào; pypinyin reads Traditional 覺 as jué
-    "衣服": [1, 5],
-    "休息": [1, 2],             # xiūxí in Taiwan (pypinyin: xiūxī)
-    "頭髮": [2, 3],             # tóufǎ in Taiwan (pypinyin: tóufà)
-    # Reduplicated kinship terms: neutral second syllable (book Pinyin, MOE).
-    "哥哥": [1, 5],
-    "姐姐": [3, 5],
-    "姊姊": [3, 5],             # variant character of 姐姐
-    "妹妹": [4, 5],
-    "弟弟": [4, 5],
-}
-# Words whose LAST syllable is light (neutral tone) in Taiwan Mandarin, in three states (checked against the Ministry of Education's 重編國語辭典修訂本 and the
-# textbook teachers; pypinyin has no light-tone information for most of them and its phrase dictionary is keyed by Simplified characters, so without this the page
-# printed 認識 as "rèn shí"):
-#   REQUIRED_LIGHT   the dictionary gives a light last syllable: 爸爸 bàba, 謝謝 xièxie, 意思 yìsi ... The first syllable keeps pypinyin's tone.
-#   OPTIONAL_LIGHT   a light last syllable is allowed but not required: repeated verbs (看看, in slow careful speech the second is kept), words with another reading
-#                    (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣 by sense) and the ones not confirmed yet. Shown light.
-#   FULL_TONE        every other word: nothing to list (pypinyin's tone is used and scored). FULL_TONE_WORDS names the ones that were wrongly light before; the tests
-#                    keep them full: 學生 xuéshēng, 先生, 休息 xiūxí, 清楚 qīngchǔ, 寶寶 bǎobǎo, 眼睛 ... and the nine the textbook teachers read in full (喜歡 xǐ huān, 知道 zhī dào ...).
-# A light syllable is NOT scored (finalize_neutral: never `practice`, tone not checked), so a learner who keeps the full tone is never marked wrong, in either state.
-# The suffix rules (子, 們, 頭, 得, 嗎, 了, 吧, 的, 什麼) act as SUFFIXES: 房子 / 我們 are light, a 子 or 們 elsewhere keeps its tone (pypinyin decides; 頭 and 得 are listed by word).
-REQUIRED_LIGHT_WORDS = tuple("""
-爸爸 爺爺 姑姑 舅舅 嬸嬸 娃娃 星星 謝謝 拜拜
-意思 麻煩 明白 耳朵 脾氣 暖和 玻璃 豆腐 腦袋 屁股 早上 蘑菇
-石頭 木頭 舌頭 骨頭 枕頭 饅頭 拳頭 指頭 甜頭 念頭 外頭 裡頭 上頭 下頭 前頭 後頭
-記得 懂得 值得 曉得 認得
-""".split())
-OPTIONAL_LIGHT_WORDS = tuple("""
-看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
-葡萄 兄弟 姑娘 便宜 生意 客氣
-媽媽 奶奶 叔叔 伯伯 太太 丈夫 認識 熱鬧 蘿蔔 嘴巴 名字
-""".split())
+# Taiwan Mandarin pronunciation data (taiwan_lexicon.yaml): textbook readings, Taiwan tones, light-word lists in three states (required / optional / full tone).
+# Resolution order, highest first: textbook > taiwan_lexicon > neutral suffix rules > generic pypinyin (see _resolve_tones).
+LEXICON_PATH = Path(__file__).resolve().parent / "taiwan_lexicon.yaml"
+TONE_SOURCE_CONFIDENCE = {"textbook": 1.0, "taiwan_lexicon": 1.0, "neutral_rule": 0.9, "generic_g2p": 0.7}
+_NEUTRAL_SUFFIXES = set("子們嗎呢吧啊了的著過麼")        # pypinyin itself gives a light tone to these; they are light as SUFFIXES / particles
+
+
+def load_lexicon(path=LEXICON_PATH):
+    """The Taiwan lexicon, validated: whole-word tone lists of the right length, tones 1-5, the light lists apart from each other and from the full-tone words."""
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    lexicon = {"locale": data["locale"]}
+    for layer in ("textbook", "tones"):
+        entries = {}
+        for word, tones in (data.get(layer) or {}).items():
+            if not isinstance(tones, list) or len(tones) != len(word) or any(t not in (1, 2, 3, 4, 5) for t in tones):
+                raise ValueError(f"taiwan_lexicon.yaml: {layer}: {word}: needs one tone (1-5) per character")
+            entries[str(word)] = list(tones)
+        lexicon[layer] = entries
+    for key in ("light_required", "light_optional", "full_tone"):
+        words = tuple(str(data.get(key) or "").split())
+        if any(len(w) < 2 for w in words):
+            raise ValueError(f"taiwan_lexicon.yaml: {key}: every word needs at least two characters")
+        lexicon[key] = words
+    if set(lexicon["light_required"]) & set(lexicon["light_optional"]):
+        raise ValueError("taiwan_lexicon.yaml: a word is both required and optional light")
+    wrongly_light = set(lexicon["full_tone"]) & (set(lexicon["light_required"]) | set(lexicon["light_optional"]))
+    if wrongly_light:
+        raise ValueError(f"taiwan_lexicon.yaml: full-tone words listed as light: {sorted(wrongly_light)}")
+    return lexicon
+
+
+LEXICON = load_lexicon()
+PRONUNCIATION_LOCALE = LEXICON["locale"]
+TEXTBOOK_TONES = LEXICON["textbook"]
+LEXICON_TONES = LEXICON["tones"]
+TAIWAN_WORD_TONES = {**LEXICON_TONES, **TEXTBOOK_TONES}               # every explicit whole-word reading (the textbook wins)
+REQUIRED_LIGHT_WORDS = LEXICON["light_required"]
+OPTIONAL_LIGHT_WORDS = LEXICON["light_optional"]
 LIGHT_FINAL_WORDS = REQUIRED_LIGHT_WORDS + OPTIONAL_LIGHT_WORDS
-FULL_TONE_WORDS = tuple("""
-學生 先生 休息 清楚 寶寶 師傅 親戚 眼睛 頭髮 打算 行李 風箏 小姐
-喜歡 知道 漂亮 朋友 東西 晚上 時候 地方 舒服
-""".split())
+FULL_TONE_WORDS = LEXICON["full_tone"]
 
 # These compounds are often followed by a pause: keep the final syllable at Tone 3 instead of applying sandhi to the next character.
 PHRASE_BREAK_AFTER = ["所以", "哪裡"]
 _NUMERAL_CHARS = set("第零二三四五六七八九十兩")
 
-def _base_tones(clause):
+def _resolve_tones(clause):
+    """(lexical tones, where each came from, light state) of every character of `clause`.
+
+    Layers, each overriding the one before: generic pypinyin ("generic_g2p"; a light 子 / 們 / 嗎 ... is "neutral_rule"), the light-word lists and the Taiwan tones of
+    taiwan_lexicon.yaml ("taiwan_lexicon"), the textbook readings ("textbook"). The light state is "required" / "optional" for a syllable that is light by a list or a
+    whole-word reading, else None."""
     pinyin = lazy_pinyin(clause, style=Style.TONE3, neutral_tone_with_five=True)
     if len(pinyin) != len(clause):
         pinyin = [lazy_pinyin(c, style=Style.TONE3, neutral_tone_with_five=True)[0] for c in clause]
     tones = [int(p[-1]) if p and p[-1].isdigit() else None for p in pinyin]
-    for word in LIGHT_FINAL_WORDS:
-        pos = clause.find(word)
-        while pos != -1:
-            end = pos + len(word)
-            tones[end - 1] = 5
-            pos = clause.find(word, end)
-    for word, word_tones in TAIWAN_WORD_TONES.items():
-        pos = clause.find(word)
-        while pos != -1:
-            tones[pos:pos + len(word)] = word_tones
-            pos = clause.find(word, pos + len(word))
-    return tones
+    sources = ["neutral_rule" if tone == 5 and char in _NEUTRAL_SUFFIXES else "generic_g2p" for tone, char in zip(tones, clause)]
+    states = [None] * len(clause)
+
+    def apply(words, source, state=None):
+        for word, word_tones in words:
+            pos = clause.find(word)
+            while pos != -1:
+                end = pos + len(word)
+                if word_tones is None:                                    # a light-word list: only the last syllable
+                    tones[end - 1], sources[end - 1], states[end - 1] = 5, source, state
+                else:
+                    tones[pos:end] = word_tones
+                    sources[pos:end] = [source] * len(word)
+                    states[pos:end] = [None] * len(word)
+                    if word_tones[-1] == 5:
+                        states[end - 1] = "required"
+                pos = clause.find(word, end)
+
+    apply(((w, None) for w in REQUIRED_LIGHT_WORDS), "taiwan_lexicon", "required")
+    apply(((w, None) for w in OPTIONAL_LIGHT_WORDS), "taiwan_lexicon", "optional")
+    apply(LEXICON_TONES.items(), "taiwan_lexicon")
+    apply(TEXTBOOK_TONES.items(), "textbook")
+    return tones, sources, states
+
+
+def _base_tones(clause):
+    return _resolve_tones(clause)[0]
 
 def _clause_tones(clause, additional_phrase_breaks=None):
     base = _base_tones(clause)
@@ -221,7 +241,7 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None, cross_word_sandh
         if isinstance(index, (int, np.integer)) and int(index) > 0
     }
     for clause_index, clause in enumerate(clauses):
-        lexical = _base_tones(clause)
+        lexical, tone_sources, neutral_states = _resolve_tones(clause)
         break_after = set()
         taiwan_override_positions = set()
         for phrase in PHRASE_BREAK_AFTER:
@@ -283,6 +303,9 @@ def expected_tone_contexts(clauses, *, phrase_end_indices=None, cross_word_sandh
                 "lexical_tone": lexical[index],
                 "target_tone": surface[index],
                 "tone_rule": rule,
+                "tone_source": tone_sources[index],                          # textbook / taiwan_lexicon / neutral_rule / generic_g2p
+                "tone_confidence": TONE_SOURCE_CONFIDENCE[tone_sources[index]],
+                "neutral_state": neutral_states[index],                      # "required" / "optional" for a light syllable of the lexicon, else None
                 "previous_char": preceding_char,
                 "previous_tone": surface[index - 1] if index and not starts_phrase else None,
                 "next_char": following_char,

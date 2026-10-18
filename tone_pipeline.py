@@ -1168,6 +1168,7 @@ def _empty_result(context, char, config, speaker, status="insufficient_evidence"
         "index": context["index"], "character": char, "pinyin": _pinyin(char, context["lexical_tone"]),
         "lexical_tone": context["lexical_tone"], "expected_surface_tone": context["target_tone"],
         "tone_rule": context["tone_rule"],
+        "tone_source": context.get("tone_source"), "tone_confidence": context.get("tone_confidence"), "neutral_state": context.get("neutral_state"),
         "speaker_f0_median": speaker.get("baseline_hz"), "pitch_floor": speaker.get("pitch_floor"),
         "pitch_ceiling": speaker.get("pitch_ceiling"),
         "tone_match": None, "tone_mismatch": None, "detected_alternative": None,
@@ -1741,7 +1742,7 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     calibrated, floor, ceiling, baseline = _resolve_pitch_range(calibration, pitch_range)
     speaker = {"baseline_hz": baseline, "pitch_floor": floor, "pitch_ceiling": ceiling}
 
-    base = {"method": METHOD, "script": "".join(chars), "calibrated": calibrated, "aligner": None,
+    base = {"method": METHOD, "script": "".join(chars), "pronunciation_locale": capt_core.PRONUNCIATION_LOCALE, "calibrated": calibrated, "aligner": None,
             "calibration_version": (calibration or {}).get("calibration_version") if calibrated else None,
             "acoustic_profile": (calibration or {}).get("acoustic_profile") if calibrated else None}
     if rejected_reasons:

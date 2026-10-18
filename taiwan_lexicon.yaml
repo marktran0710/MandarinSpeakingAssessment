@@ -1,0 +1,47 @@
+# Taiwan Mandarin pronunciation data: the source of truth for lexical tones and light (neutral) syllables of this course (zh-TW).
+# Resolution order, highest first (capt_core._resolve_tones): textbook > taiwan_lexicon (tones + the light-word lists) > neutral suffix rules (子 們 嗎 吧 了 的 什麼) > generic
+# pypinyin. Every expected tone carries the layer it came from (`tone_source`) and a confidence: textbook 1.0, taiwan_lexicon 1.0, neutral_rule 0.9, generic_g2p 0.7.
+# A light syllable is never scored (tone_v1: never `practice`), so a word that allows both readings (optional light) never marks a full-tone reading wrong.
+# Checked against the Ministry of Education 重編國語辭典修訂本 (review supplied by the owner, 2026-10-18) and the textbook teachers' recordings (measured).
+locale: zh-TW
+
+# The textbook's own printed reading (Chapter 5 workbook Pinyin: 哥哥 gēge, 桌子 zhuōzi ...). Tones 1-4, 5 = light. Beats everything below.
+textbook:
+  哥哥: [1, 5]
+  姐姐: [3, 5]
+  姊姊: [3, 5]            # variant character of 姐姐
+  妹妹: [4, 5]
+  弟弟: [4, 5]
+  桌子: [1, 5]
+  椅子: [3, 5]
+  房子: [2, 5]
+
+# Taiwan readings that differ from what pypinyin (mainland) gives, or that it cannot give for Traditional characters.
+tones:
+  星期: [1, 2]            # xīngqí
+  垃圾: [4, 4]            # lèsè (mainland: lājī)
+  覺得: [2, 5]            # jué de
+  睡覺: [4, 4]            # shuìjiào (pypinyin reads Traditional 覺 as jué)
+  衣服: [1, 5]            # yīfu
+  休息: [1, 2]            # xiūxí (pypinyin: xiūxī)
+  頭髮: [2, 3]            # tóufǎ (pypinyin: tóufà)
+
+# Words whose LAST syllable is light. The first syllable keeps the generic tone.
+#   light_required  the dictionary gives a light last syllable
+#   light_optional  a light last syllable is allowed, not required: repeated verbs (看看: slow careful speech keeps the second), words with another reading by sense
+#                   (葡萄 pú táo / pú tao, 兄弟, 姑娘, 便宜, 生意, 客氣) and the ones not confirmed yet. Shown light.
+light_required: >-
+  爸爸 爺爺 姑姑 舅舅 嬸嬸 娃娃 星星 謝謝 拜拜
+  意思 麻煩 明白 耳朵 脾氣 暖和 玻璃 豆腐 腦袋 屁股 早上 蘑菇
+  石頭 木頭 舌頭 骨頭 枕頭 饅頭 拳頭 指頭 甜頭 念頭 外頭 裡頭 上頭 下頭 前頭 後頭
+  記得 懂得 值得 曉得 認得
+light_optional: >-
+  看看 試試 想想 聽聽 說說 走走 找找 問問 坐坐 玩玩 逛逛 聊聊 談談 洗洗 笑笑 讀讀 寫寫 學學
+  葡萄 兄弟 姑娘 便宜 生意 客氣
+  媽媽 奶奶 叔叔 伯伯 太太 丈夫 認識 熱鬧 蘿蔔 嘴巴 名字
+
+# Full tone: NOT light. The words that were wrongly light before (and the nine the textbook teachers read in full: 喜歡 xǐ huān, 知道 zhī dào ...). Only a guard
+# for the tests; nothing here changes a tone.
+full_tone: >-
+  學生 先生 休息 清楚 寶寶 師傅 親戚 眼睛 頭髮 打算 行李 風箏 小姐
+  喜歡 知道 漂亮 朋友 東西 晚上 時候 地方 舒服
