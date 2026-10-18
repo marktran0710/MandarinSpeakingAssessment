@@ -1124,8 +1124,14 @@ async def read_index():
             .tone-shape .tone-shape-alt { opacity: 0.45; }
             .pitch-details { margin: 10px 0 20px; border-top: 1px solid #e2e8f0; }
             .pitch-details > summary { min-height: 24px; padding: 12px 4px; color: #2b6cb0; font-weight: 600; cursor: pointer; }
-            .pitch-clause { margin: 8px 0 16px; }
-            .pitch-clause h3 { font-size: 15px; margin: 8px 0; }
+            .word-card.selected { outline: 3px solid #2b6cb0; outline-offset: 2px; }
+            .pitch-panel { margin: 14px 0 8px; padding: 10px 12px 12px; border: 1px solid #d8e1ea; border-radius: 10px; background: #fcfdff; }
+            .pitch-panel[hidden] { display: none; }
+            .pitch-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+            .pitch-panel-title { margin: 0; flex: 1; font-size: 16px; text-align: center; }
+            .phrase-nav { width: 42px; height: 38px; padding: 0; font-size: 24px; line-height: 1; background: #edf2f7; color: #2d3748; }
+            .phrase-nav:disabled { opacity: 0.4; cursor: default; }
+            .pitch-panel .pitch-chart { margin: 8px 0; }
 
             .pitch-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: #4a5568; font-size: 12px; margin: 16px 0 8px; }
             .pitch-controls { margin-bottom: 20px; }
@@ -1469,7 +1475,7 @@ async def read_index():
         <div id="resultCard" class="card" style="display: none;">
             <div class="results-header">
                 <div>
-                    <h2 data-i18n="resultsTitle">Reading practice results</h2>
+                    <h2 class="sr-only" data-i18n="resultsTitle">Reading practice results</h2>
                     <p id="targetScriptDisplay" style="color: #718096; margin: 0;"></p>
                 </div>
                 <div class="result-actions">
@@ -1479,8 +1485,13 @@ async def read_index():
             </div>
 
             <div id="pronunciationResults"></div>
-            <details id="pitchDetails" class="pitch-details">
-                <summary data-i18n="viewPitch">View pitch graphs (optional)</summary>
+            <section id="pitchPanel" class="pitch-panel" aria-labelledby="pitchPanelTitle" hidden>
+                <div class="pitch-nav">
+                    <button type="button" id="phrasePrevBtn" class="phrase-nav" onclick="movePhrase(-1)" aria-label="Previous word" data-i18n-aria-label="phrasePrev">&#8249;</button>
+                    <h3 id="pitchPanelTitle" class="pitch-panel-title"></h3>
+                    <button type="button" id="phraseNextBtn" class="phrase-nav" onclick="movePhrase(1)" aria-label="Next word" data-i18n-aria-label="phraseNext">&#8250;</button>
+                </div>
+                <div id="pitchChart"></div>
                 <div class="pitch-controls">
                     <label for="pitchScale"><b data-i18n="pitchDisplay">Pitch display:</b></label>
                     <select id="pitchScale" onchange="refreshPitchPlots()">
@@ -1496,8 +1507,8 @@ async def read_index():
                     <p class="pitch-note" data-i18n="expectedNote">The guide is drawn from your own pitch.</p>
                     <p class="pitch-note" data-i18n="pitchNote">Tone feedback uses only your pitch contour; sample audio is not scored.</p>
                 </div>
-                <div id="clausesContainer"></div>
-            </details>
+            </section>
+            <div id="resultExtras"></div>
             <section id="feedbackPanel" class="feedback-panel" hidden aria-labelledby="feedbackTitle">
                 <h3 id="feedbackTitle" data-i18n="quickFeedback">Quick feedback</h3>
                 <p data-i18n="feedbackQuestion">How helpful was this practice? 1 = not helpful, 5 = very helpful.</p>
@@ -1559,6 +1570,8 @@ async def read_index():
             let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
+            let selectedPhrase = 0;                         // the word card whose pitch graph is shown under the cards
+            let renderedResult = null;
             let progressData = { lessons: {} };   // what the learner has practised (from /api/progress): the latest result of every sentence and word
             let sampleTouched = false;                      // the learner picked a sample themselves: the page stops choosing the starting one
             let chapter5WordItems = [];
@@ -1637,6 +1650,8 @@ async def read_index():
                     showExpectedTone: "Show the expected tone behind my pitch",
                     expectedLine: "Expected tone (guide from your own pitch)",
                     expectedNote: "The guide is drawn from your own pitch: where a tone is already right it follows your line, where it is not it shows a basic shape to aim for. It is only a guide: the feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds.",
+                    phrasePrev: "Previous word",
+                    phraseNext: "Next word",
                     pitchNote: "Tone feedback uses your pitch contour only. Sample audio is not scored.", quickFeedback: "Quick feedback",
                     feedbackQuestion: "How helpful was this practice? 1 = not helpful, 5 = very helpful.",
                     feedbackImprove: "Anything we should improve? (optional)", feedbackPlaceholder: "Share a short comment", sendFeedback: "Send feedback",
@@ -1799,6 +1814,8 @@ async def read_index():
                     showExpectedTone: "在我的音高後面顯示預期聲調",
                     expectedLine: "預期聲調（依你自己的音高）",
                     expectedNote: "這條參考線是依你自己的音高畫的：聲調已經正確的地方，它會貼著你的曲線；還不正確的地方，它會畫出一個基本的目標形狀。它只是參考，回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音。",
+                    phrasePrev: "上一個詞",
+                    phraseNext: "下一個詞",
                     pitchNote: "評估只使用你的音高曲線；範例音訊不會用來評分。", quickFeedback: "快速回饋",
                     feedbackQuestion: "這次練習對你有幫助嗎？1 = 沒幫助，5 = 非常有幫助。",
                     feedbackImprove: "你覺得哪些地方可以改進？（選填）", feedbackPlaceholder: "請簡短留言", sendFeedback: "送出回饋",
@@ -1960,6 +1977,8 @@ async def read_index():
                     showExpectedTone: "Hiện thanh điệu mong đợi phía sau đường cao độ của tôi",
                     expectedLine: "Thanh điệu mong đợi (theo cao độ của chính bạn)",
                     expectedNote: "Đường mong đợi được vẽ từ chính cao độ của bạn: chỗ thanh điệu đã đúng thì nó bám theo đường của bạn, chỗ chưa đúng thì nó vẽ hình cơ bản để bạn hướng tới. Đây chỉ là gợi ý: phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh.",
+                    phrasePrev: "Từ trước",
+                    phraseNext: "Từ tiếp theo",
                     pitchNote: "Phản hồi thanh điệu chỉ dựa trên đường cao độ của bạn; âm thanh mẫu không dùng để chấm.", quickFeedback: "Phản hồi nhanh",
                     feedbackQuestion: "Buổi luyện tập này hữu ích thế nào? 1 = không hữu ích, 5 = rất hữu ích.",
                     feedbackImprove: "Bạn muốn chúng tôi cải thiện điều gì? (không bắt buộc)", feedbackPlaceholder: "Viết nhận xét ngắn", sendFeedback: "Gửi phản hồi",
@@ -2153,6 +2172,8 @@ async def read_index():
                     showExpectedTone: "Tampilkan nada yang diharapkan di belakang kontur saya",
                     expectedLine: "Nada yang diharapkan (berdasarkan nada Anda sendiri)",
                     expectedNote: "Garis ini digambar dari nada Anda sendiri: bila nada sudah benar ia mengikuti garis Anda, bila belum ia menunjukkan bentuk dasar yang dituju. Ini hanya panduan: umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya.",
+                    phrasePrev: "Kata sebelumnya",
+                    phraseNext: "Kata berikutnya",
                     pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
                     quickFeedback: "Masukan singkat",
                     feedbackQuestion: "Seberapa membantu latihan ini? 1 = tidak membantu, 5 = sangat membantu.",
@@ -2423,6 +2444,8 @@ async def read_index():
                     showExpectedTone: "मेरी पिच के पीछे अपेक्षित स्वर दिखाएँ",
                     expectedLine: "अपेक्षित स्वर (आपकी अपनी पिच पर आधारित)",
                     expectedNote: "यह रेखा आपकी अपनी पिच से बनी है: जहाँ स्वर सही है वहाँ यह आपकी रेखा के साथ चलती है, जहाँ नहीं है वहाँ लक्ष्य की एक बुनियादी आकृति दिखाती है। यह केवल मार्गदर्शन है: फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है।",
+                    phrasePrev: "पिछला शब्द",
+                    phraseNext: "अगला शब्द",
                     pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
                     quickFeedback: "त्वरित प्रतिक्रिया",
                     feedbackQuestion: "यह अभ्यास कितना उपयोगी रहा? 1 = उपयोगी नहीं, 5 = बहुत उपयोगी।",
@@ -4258,31 +4281,70 @@ async def read_index():
                 </div>`;
             }
 
-            function refreshPitchPlots() {
-                if (!lastAssessment) return;
-                const pitchDetails = document.getElementById("pitchDetails");
-                const wasOpen = pitchDetails.open;
-                renderVisualResults(lastAssessment);
-                pitchDetails.open = wasOpen;
+            // The phrases of a result (the older payloads only had words or clauses).
+            function phrasesOf(data) {
+                const legacyWords = Array.isArray(data && data.words) ? data.words : [];
+                return Array.isArray(data && data.phrases) && data.phrases.length
+                    ? data.phrases
+                    : legacyWords.length ? legacyWords : (Array.isArray(data && data.clauses) ? data.clauses.map(clause => ({
+                        annotation: clause.clause_text, word: clause.clause_text, status: "uncertain"
+                    })) : []);
             }
 
-            function openPhraseChart(index) {
-                const details = document.getElementById("pitchDetails");
-                details.open = true;
-                document.getElementById(`phrase-chart-${index}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            function toneSequenceText(sequence) {
+                return Array.isArray(sequence) && sequence.length && sequence.some(tone => tone !== null && tone !== undefined)
+                    ? sequence.map(tone => tone === null || tone === undefined ? "T?" : `T${Number(tone)}`).join(" - ")
+                    : t("sequenceUnavailable");
             }
+
+            // One pitch graph at a time, right under the row of word cards: the card that is selected (marked) decides which one, so the learner reads the overview,
+            // picks a word and sees its graph without scrolling; the arrows (or the left and right keys) move to the next word.
+            function renderPitchPanel() {
+                const phrases = phrasesOf(lastAssessment);
+                const phrase = phrases[selectedPhrase];
+                document.querySelectorAll(".word-card").forEach((card, index) => {
+                    card.classList.toggle("selected", index === selectedPhrase);
+                    card.setAttribute("aria-pressed", String(index === selectedPhrase));
+                });
+                document.getElementById("pitchPanel").hidden = !phrase;
+                if (!phrase) return;
+                const name = phrase.annotation || phrase.word || `${t("phrase")} ${selectedPhrase + 1}`;
+                document.getElementById("pitchPanelTitle").textContent = `${name} - ${toneSequenceText(phrase.expected_tone_sequence)} (${selectedPhrase + 1}/${phrases.length})`;
+                document.getElementById("pitchChart").innerHTML = renderPhrasePitchChart(phrase, selectedPhrase);
+                document.getElementById("phrasePrevBtn").disabled = selectedPhrase <= 0;
+                document.getElementById("phraseNextBtn").disabled = selectedPhrase >= phrases.length - 1;
+            }
+
+            function refreshPitchPlots() {
+                if (lastAssessment) renderPitchPanel();
+            }
+
+            function selectPhrase(index) {
+                const phrases = phrasesOf(lastAssessment);
+                if (!phrases.length) return;
+                selectedPhrase = Math.min(phrases.length - 1, Math.max(0, index));
+                renderPitchPanel();
+                document.getElementById("pitchPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });     // only when the graph is not already in view
+            }
+
+            function movePhrase(step) {
+                selectPhrase(selectedPhrase + step);
+            }
+
+            document.getElementById("resultCard").addEventListener("keydown", event => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+                if (event.target.closest("input, select, textarea, audio, [contenteditable]")) return;       // those keep their own arrow keys
+                event.preventDefault();
+                movePhrase(event.key === "ArrowRight" ? 1 : -1);
+            });
 
             function renderVisualResults(data) {
                 lastAssessment = data;
                 document.getElementById("resultCard").style.display = "block";
                 document.getElementById("targetScriptDisplay").innerText = t("scriptLabel", { script: data.target_script || "" });
 
-                const legacyWords = Array.isArray(data.words) ? data.words : [];
-                const phrases = Array.isArray(data.phrases) && data.phrases.length
-                    ? data.phrases
-                    : legacyWords.length ? legacyWords : (Array.isArray(data.clauses) ? data.clauses.map(clause => ({
-                        annotation: clause.clause_text, word: clause.clause_text, status: "uncertain"
-                    })) : []);
+                const phrases = phrasesOf(data);
                 const statusLabels = {
                     likely_correct: t("likelyCorrect"),
                     practice: t("practice"),
@@ -4299,10 +4361,7 @@ async def read_index():
                 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({
                     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
                 }[char]));
-                const sequenceText = sequence => Array.isArray(sequence) && sequence.length
-                    && sequence.some(tone => tone !== null && tone !== undefined)
-                    ? sequence.map(tone => tone === null || tone === undefined ? "T?" : `T${Number(tone)}`).join(" - ")
-                    : t("sequenceUnavailable");
+                const sequenceText = toneSequenceText;
                 const transcriptCheck = data.transcript_check || {};
                 const transcriptNote = transcriptCheck.status === "script_provided"
                     ? t("scriptProvidedOnly")
@@ -4338,7 +4397,7 @@ async def read_index():
                         item.type === "tone" && item.tone >= 1 && item.tone <= 4 ? t(`adviceTone${item.tone}`, { char: item.char })
                         : item.type === "retry" && retryKeys[item.code]
                             ? (item.char ? `\u201c${item.char}\u201d \u2013 ` : "") + t(retryKeys[item.code]) : "").filter(Boolean);
-                    return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="phrase-chart-${index}" onclick="openPhraseChart(${index})">
+                    return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="pitchChart" aria-pressed="false" onclick="selectPhrase(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>
                         <span class="word-card-status"><span class="${iconClass}" aria-hidden="true">${icon}</span>${statusLabels[phrase.status] || t("notScored")}</span>
@@ -4357,18 +4416,19 @@ async def read_index():
                         ${(() => { const key = { longer: "lengthLonger", shorter: "lengthShorter", different: "lengthDifferent" }[data.length_check?.direction];
                                    return key && !systemFailure ? `<p class="results-advice">${escapeHtml(t(key))}</p>` : ""; })()}
                         <div class="result-groups">${groups.join("") || `<p>${t("noScores")}</p>`}</div>
-                        <details class="json-output">
-                            <summary>${t("viewJsonOutput")}</summary>
-                            <pre id="assessmentJsonOutput"></pre>
-                        </details>
                     </section>`;
+                document.getElementById("resultExtras").innerHTML = `
+                    <details class="json-output">
+                        <summary>${t("viewJsonOutput")}</summary>
+                        <pre id="assessmentJsonOutput"></pre>
+                    </details>`;
                 document.getElementById("assessmentJsonOutput").textContent = JSON.stringify(data, null, 2);
 
-                document.getElementById("clausesContainer").innerHTML = phrases.map((phrase, index) => `
-                    <section class="pitch-clause" id="phrase-chart-${index}">
-                        <h3>${escapeHtml(phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`)} - ${escapeHtml(sequenceText(phrase.expected_tone_sequence))}</h3>
-                        ${renderPhrasePitchChart(phrase, index)}
-                    </section>`).join("");
+                // a new result opens at the first word that is not Good yet (the one to look at first), the first word when all are; the same result drawn again
+                // (a language or pitch-display change) keeps the word the learner chose
+                if (renderedResult !== data) selectedPhrase = Math.max(0, phrases.findIndex(phrase => phrase.status !== "likely_correct"));
+                renderedResult = data;
+                renderPitchPanel();
             }
 
         </script>
