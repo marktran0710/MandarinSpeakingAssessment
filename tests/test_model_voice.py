@@ -352,8 +352,16 @@ class PageTests(unittest.TestCase):
         self.assertIn('t("scoringBadgeModelVoice")', render)
         self.assertIn('item.type === "heard_as"', render)
 
+    def test_a_result_of_the_mode_sets_the_rules_result_of_the_same_recording_beside_its_own(self):
+        render = SOURCE[SOURCE.index("function renderVisualResults("):]
+        line = render[render.index('data.scoring_mode !== "model_voice"'): render.index('class="scoring-compare"')]
+        self.assertIn("item.rule_status || item.status", line)             # the rules' verdict is the one saved beside the model's
+        self.assertIn('t("scoringCompare"', render)
+        self.assertIn("all.length", line)                                  # per syllable of the recording, as the boards count
+        self.assertNotIn("scoring-compare", SOURCE[SOURCE.index("async function submitAssessment("): SOURCE.index("window.addEventListener(\"beforeunload\"")])
+
     def test_every_language_has_every_string_and_the_vietnamese_name_is_the_owners(self):
-        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "scoringBadgeModelVoice", "adviceHeardAs"):
+        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "scoringBadgeModelVoice", "scoringCompare", "adviceHeardAs"):
             self.assertEqual(len(re.findall(rf"\b{key}: ", SOURCE)), 5, key)
         self.assertIn('scoringModeModelVoice: "Theo giọng mẫu",', SOURCE)
         self.assertIn('scoringModeModelVoice: "對照範例發音",', SOURCE)

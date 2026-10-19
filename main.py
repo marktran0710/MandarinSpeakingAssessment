@@ -1335,6 +1335,7 @@ async def read_index():
             .scoring-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 10px 0 4px; }
             .scoring-mode select { width: auto; max-width: 100%; }
             .scoring-mode .upload-hint { flex-basis: 100%; margin: 0; }
+            .scoring-compare { margin: 0 0 10px; color: #4a5568; font-size: 14px; }
             .scoring-badge { margin: 4px 0 10px; padding: 6px 10px; border-left: 3px solid #805ad5; background: #faf5ff; color: #44337a; font-size: 14px; }
             .item-progress.practiced { color: #276749; font-weight: 600; }
             #practiceMode { scroll-margin-top: 12px; }
@@ -1748,6 +1749,7 @@ async def read_index():
             scoringModeNotCounted: "Compared with the teachers' recordings. These attempts are shown but not counted on the leaderboards.",
             scoringModeCustomHint: "Your own text is always judged by the rules (there is no teacher recording to follow).",
             scoringBadgeModelVoice: "Judged by following the model voice (not counted on the leaderboards).",
+            scoringCompare: "Same recording: rules {rules}% Good ({rulesGood}/{total} syllables) · model voice {model}% Good ({modelGood}/{total}).",
             adviceHeardAs: "“{char}” – sounds closer to tone {tone}.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
@@ -1921,6 +1923,7 @@ async def read_index():
                     scoringModeNotCounted: "與老師的錄音比對。這類練習會顯示結果，但不列入排行榜。",
                     scoringModeCustomHint: "自己輸入的文字一律用規則評分（沒有老師的錄音可以對照）。",
                     scoringBadgeModelVoice: "以對照範例發音評分（不列入排行榜）。",
+                    scoringCompare: "同一段錄音：規則 {rules}% 良好（{rulesGood}/{total} 個音節）· 對照範例發音 {model}% 良好（{modelGood}/{total}）。",
                     adviceHeardAs: "「{char}」聽起來比較接近第{tone}聲。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
@@ -2093,6 +2096,7 @@ async def read_index():
                     scoringModeNotCounted: "So với bản ghi của giáo viên. Các lần đọc này được hiện kết quả nhưng không tính vào bảng xếp hạng.",
                     scoringModeCustomHint: "Chữ bạn tự nhập luôn được chấm theo quy tắc (không có bản ghi giáo viên để so).",
                     scoringBadgeModelVoice: "Chấm theo giọng mẫu (không tính vào bảng xếp hạng).",
+                    scoringCompare: "Cùng một lần đọc: quy tắc {rules}% Tốt ({rulesGood}/{total} âm) · theo giọng mẫu {model}% Tốt ({modelGood}/{total}).",
                     adviceHeardAs: "“{char}” – nghe gần với thanh {tone} hơn.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
@@ -2284,6 +2288,7 @@ async def read_index():
                     scoringModeNotCounted: "Dibandingkan dengan rekaman guru. Hasil percobaan ini ditampilkan tetapi tidak dihitung di papan peringkat.",
                     scoringModeCustomHint: "Teks yang Anda ketik sendiri selalu dinilai dengan aturan (tidak ada rekaman guru untuk dibandingkan).",
                     scoringBadgeModelVoice: "Dinilai sesuai suara contoh (tidak dihitung di papan peringkat).",
+                    scoringCompare: "Rekaman yang sama: aturan {rules}% Bagus ({rulesGood}/{total} suku kata) · suara contoh {model}% Bagus ({modelGood}/{total}).",
                     adviceHeardAs: "“{char}” – terdengar lebih dekat ke nada {tone}.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
@@ -2565,6 +2570,7 @@ async def read_index():
                     scoringModeNotCounted: "शिक्षकों की रिकॉर्डिंग से तुलना। इन प्रयासों के नतीजे दिखते हैं, लेकिन लीडरबोर्ड में नहीं गिने जाते।",
                     scoringModeCustomHint: "आपका अपना लिखा पाठ हमेशा नियमों से जाँचा जाता है (तुलना के लिए शिक्षक की रिकॉर्डिंग नहीं है)।",
                     scoringBadgeModelVoice: "आदर्श आवाज़ के अनुसार जाँचा गया (लीडरबोर्ड में नहीं गिना जाता)।",
+                    scoringCompare: "वही रिकॉर्डिंग: नियम {rules}% बढ़िया ({rulesGood}/{total} अक्षर) · आदर्श आवाज़ {model}% बढ़िया ({modelGood}/{total})।",
                     adviceHeardAs: "“{char}” – स्वर {tone} के ज़्यादा क़रीब सुनाई देता है।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
@@ -4644,6 +4650,15 @@ async def read_index():
                     <section class="pronunciation-results" aria-labelledby="pronunciation-title">
                         <h3 id="pronunciation-title">${t("pronunciationFeedback")}</h3>
                         ${data.scoring_mode === "model_voice" ? `<p class="scoring-badge">${escapeHtml(t("scoringBadgeModelVoice"))}</p>` : ""}
+                        ${(() => {
+                            // the same recording, both ways: what the rules say (the figure the boards are built from) beside what the model voice says
+                            const all = data.tone_verification?.syllables || [];
+                            if (data.scoring_mode !== "model_voice" || !all.length || !all.some(item => item.rule_status)) return "";
+                            const good = verdict => all.filter(item => verdict(item) === "likely_correct").length;
+                            const byRules = good(item => item.rule_status || item.status), byModel = good(item => item.status);
+                            const percent = count => Math.round(100 * count / all.length);
+                            return `<p class="scoring-compare">${escapeHtml(t("scoringCompare", { rules: percent(byRules), rulesGood: byRules, model: percent(byModel), modelGood: byModel, total: all.length }))}</p>`;
+                        })()}
                         <details class="results-notes">
                             <summary>${t("resultNotes")}</summary>
                             <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
