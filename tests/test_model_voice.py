@@ -399,13 +399,18 @@ class PageTests(unittest.TestCase):
         self.assertIn("view.differences", admin)
         self.assertIn("not counted on the leaderboards", admin)
 
-    def test_a_word_that_needs_practice_is_sent_back_to_the_model_voice_except_own_text(self):
+    def test_any_okay_or_needs_practice_word_sends_the_learner_back_to_the_model_voice_once_under_the_cards_own_text_included(self):
         render = SOURCE[SOURCE.index("function renderVisualResults("): SOURCE.index('@app.post("/api/assess-pronunciation")')]
-        line = render[render.index('phrase.status === "practice"'): render.index('t("adviceListenAgain")') + 30]
-        self.assertIn('data.practice_mode !== "custom"', line)
-        self.assertIn("advice.push(", line)
-        self.assertLess(render.index("const advice = "), render.index('t("adviceListenAgain")'))      # after the advice the rules / the model voice already give
-        self.assertLess(render.index('t("adviceListenAgain")'), render.index('class="word-card-advice"'))
+        flag = render[render.index("const listenAgain = "): render.index("const groups = ")]
+        for status in ('"practice"', '"uncertain"', '"insufficient_evidence"'):
+            self.assertIn(status, flag)
+        self.assertNotIn("likely_correct", flag)
+        self.assertNotIn("custom", flag)                                   # own text has generated audio to listen to
+        self.assertEqual(render.count('t("adviceListenAgain")'), 1)        # one note for the whole result, not one per word card
+        note = render[render.index('${listenAgain ?'):]
+        self.assertTrue(note.startswith('${listenAgain ? `<p class="results-advice">'))
+        self.assertLess(render.index('class="result-groups"'), render.index("${listenAgain ?"))        # under the cards
+        self.assertNotIn("advice.push(", render)
         self.assertIn('adviceListenAgain: "Listen to the model voice again, then try once more."', SOURCE)
 
     def test_every_language_has_every_string_and_the_vietnamese_name_is_the_owners(self):

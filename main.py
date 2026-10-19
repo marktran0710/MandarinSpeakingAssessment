@@ -1188,6 +1188,7 @@ async def read_index():
             .word-card-status { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
             .word-card-advice { display: block; margin-top: 4px; color: #4a5568; font-size: 12.5px; line-height: 1.45; text-align: left; }
             .results-advice { margin: 0 0 12px; padding: 9px 12px; border-left: 3px solid #d69e2e; background: #fffaf0; color: #744210; font-size: 13px; line-height: 1.45; }
+            .result-groups + .results-advice { margin-top: 10px; }
             .status-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
             .status-icon.half { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
             .json-output { display: none; /* temporarily hidden: remove this line to show "View JSON response" again */ margin-top: 16px; border-top: 1px solid #e2e8f0; }
@@ -4624,6 +4625,8 @@ async def read_index():
                 // The aligner itself failed (not the learner's recording): say so, instead of leaving "Okay" everywhere.
                 const systemFailure = data.tone_verification?.alignment?.error_kind === "system";
                 const retryKeys = { short_fall: "retryShortFall", slower: "retrySlower", steady: "retrySteady", clearer: "retryClearer", read_exactly: "retryReadExactly", again: "retryAgain", not_heard: "retryNotHeard", full_third: "retryFullThird" };
+                // any word that is Okay or Needs practice: one note under the cards, back to the model voice (own text has a generated one)
+                const listenAgain = phrases.some(phrase => ["practice", "uncertain", "insufficient_evidence"].includes(phrase.status));
                 const groups = phrases.map((phrase, index) => {
                     const labelText = phrase.annotation || phrase.word || `${t("phrase")} ${index + 1}`;
                     // In a phrase of several characters, mark the one that needs work (red wavy line) or was unclear (amber dotted line).
@@ -4644,8 +4647,6 @@ async def read_index():
                         : item.type === "heard_as" && item.tone >= 1 && item.tone <= 4 ? t("adviceHeardAs", { char: item.char, tone: item.tone })
                         : item.type === "retry" && retryKeys[item.code]
                             ? (item.char ? `\u201c${item.char}\u201d \u2013 ` : "") + t(retryKeys[item.code]) : "").filter(Boolean);
-                    // a word that needs practice: go back to the model voice first (own text has no model voice)
-                    if (phrase.status === "practice" && data.practice_mode !== "custom") advice.push(t("adviceListenAgain"));
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="pitchChart" aria-pressed="false" onclick="selectPhrase(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>
@@ -4668,6 +4669,7 @@ async def read_index():
                         ${(() => { const key = { longer: "lengthLonger", shorter: "lengthShorter", different: "lengthDifferent" }[data.length_check?.direction];
                                    return key && !systemFailure ? `<p class="results-advice">${escapeHtml(t(key))}</p>` : ""; })()}
                         <div class="result-groups">${groups.join("") || `<p>${t("noScores")}</p>`}</div>
+                        ${listenAgain ? `<p class="results-advice">${escapeHtml(t("adviceListenAgain"))}</p>` : ""}
                     </section>`;
                 document.getElementById("resultExtras").innerHTML = `
                     <details class="json-output">
