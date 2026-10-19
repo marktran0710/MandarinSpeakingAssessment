@@ -4175,7 +4175,7 @@ null,
 "17_female__irregular_wavy.wav#0": [
 "insufficient_evidence",
 null,
-0.576,
+0.497,
 "unstable_pitch_track|octave_jump_in_segment"
 ],
 "17_female__nearly_flat.wav#0": [
@@ -6197,10 +6197,10 @@ null,
 ""
 ],
 "C6-6-1-W054#1": [
-"insufficient_evidence",
-null,
-0.723,
-"unstable_pitch_track|octave_jump_in_segment"
+"likely_correct",
+1.0,
+0.941,
+""
 ],
 "C6-6-1-W055#0": [
 "likely_correct",

@@ -80,7 +80,10 @@ sanity:
   # A jump that big between adjacent frames is a tracking error (an octave slip, mostly on a creaky syllable tail). The syllable is
   # gated as octave_jump_in_segment unless the voiced fragment BEHIND the jump sits at an end of the syllable and lasts at most this
   # many ms: then the fragment is dropped and the rest is judged. 0 = off.
-  jump_fragment_trim_ms: 40
+  jump_fragment_trim_ms: 60
+  # 40 -> 60 on 2026-10-19: a sub-harmonic start of ~50 ms in front of a clean fall (這 of a slow reading) is now dropped instead of gating the syllable.
+  # Measured: 599 archived learner attempts +46 Good (tone 4 +29, tone 3 +16, tone 2 +1), nothing worse; teacher sentences Good 96.1 -> 96.6% and words 95.4 -> 95.8%,
+  # no new false alarm; the synthetic wrong-tone benchmark identical (recall 48.0, false accept 21.6).
   # Measured 2026-10-17: words Good 93.7 -> 95.4%, teacher sentences 93.0 -> 94.1%, learners +18 Good of 888,
   # the 520-clip stress test identical. A syllable (or recording) that needed a cut can be Good but never Needs practice.
   boundary_hit_rate: 0.05
