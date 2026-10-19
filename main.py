@@ -1227,7 +1227,7 @@ async def read_index():
             .pitch-panel .pitch-chart { margin: 8px 0; }
 
             .pitch-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: #4a5568; font-size: 12px; margin: 16px 0 8px; }
-            .pitch-controls { margin-bottom: 20px; }
+            .pitch-controls { margin-bottom: 14px; }
             .pitch-controls select { max-width: 300px; }
             .pitch-note { font-size: 13px; color: #4a5568; line-height: 1.5; margin: 8px 0; }
             .pitch-key { display: inline-flex; align-items: center; gap: 5px; }
@@ -1600,12 +1600,6 @@ async def read_index():
 
             <div id="pronunciationResults"></div>
             <section id="pitchPanel" class="pitch-panel" aria-labelledby="pitchPanelTitle" hidden>
-                <div class="pitch-nav">
-                    <button type="button" id="phrasePrevBtn" class="phrase-nav" onclick="movePhrase(-1)" aria-label="Previous word" data-i18n-aria-label="phrasePrev">&#8249;</button>
-                    <h3 id="pitchPanelTitle" class="pitch-panel-title"></h3>
-                    <button type="button" id="phraseNextBtn" class="phrase-nav" onclick="movePhrase(1)" aria-label="Next word" data-i18n-aria-label="phraseNext">&#8250;</button>
-                </div>
-                <div id="pitchChart"></div>
                 <div class="pitch-controls">
                     <label for="pitchScale"><b data-i18n="pitchDisplay">Pitch display:</b></label>
                     <select id="pitchScale" onchange="refreshPitchPlots()">
@@ -1621,6 +1615,12 @@ async def read_index():
                     <p class="pitch-note" data-i18n="expectedNote">The guide is drawn from your own pitch.</p>
                     <p class="pitch-note" data-i18n="pitchNote">Tone feedback uses only your pitch contour; sample audio is not scored.</p>
                 </div>
+                <div class="pitch-nav">
+                    <button type="button" id="phrasePrevBtn" class="phrase-nav" onclick="movePhrase(-1)" aria-label="Previous word" data-i18n-aria-label="phrasePrev">&#8249;</button>
+                    <h3 id="pitchPanelTitle" class="pitch-panel-title"></h3>
+                    <button type="button" id="phraseNextBtn" class="phrase-nav" onclick="movePhrase(1)" aria-label="Next word" data-i18n-aria-label="phraseNext">&#8250;</button>
+                </div>
+                <div id="pitchChart"></div>
             </section>
             <div id="resultExtras"></div>
             <section id="feedbackPanel" class="feedback-panel" hidden aria-labelledby="feedbackTitle">

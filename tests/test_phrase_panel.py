@@ -25,6 +25,13 @@ class WordCardsPickTheGraphTests(unittest.TestCase):
                      'id="pitchScale"', 'id="showExpectedTone"'):
             self.assertIn(part, panel, part)
 
+    def test_the_explanation_of_the_pitch_display_comes_before_the_title_and_the_chart(self):
+        panel = RESULT_CARD[RESULT_CARD.index('id="pitchPanel"'):]
+        self.assertLess(panel.index('class="pitch-controls"'), panel.index('class="pitch-nav"'))           # the display choice, the legend and the notes first
+        self.assertLess(panel.index('class="pitch-nav"'), panel.index('id="pitchChart"'))                  # then the word's title with its arrows, right above its chart
+        for needed in ('id="pitchScale"', 'id="showExpectedTone"', 'class="pitch-legend"', 'data-i18n="expectedNote"', 'data-i18n="pitchNote"'):
+            self.assertLess(panel.index(needed), panel.index('id="pitchChart"'), needed)
+
     def test_the_two_long_notes_above_the_cards_are_folded_away(self):
         self.assertEqual(len(re.findall(r"\bresultNotes: ", SOURCE)), 5)
         results = SOURCE[SOURCE.index('<section class="pronunciation-results"'): SOURCE.index('<div class="result-groups">')]
