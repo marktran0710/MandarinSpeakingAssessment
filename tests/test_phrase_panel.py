@@ -25,6 +25,14 @@ class WordCardsPickTheGraphTests(unittest.TestCase):
                      'id="pitchScale"', 'id="showExpectedTone"'):
             self.assertIn(part, panel, part)
 
+    def test_the_two_long_notes_above_the_cards_are_folded_away(self):
+        self.assertEqual(len(re.findall(r"\bresultNotes: ", SOURCE)), 5)
+        results = SOURCE[SOURCE.index('<section class="pronunciation-results"'): SOURCE.index('<div class="result-groups">')]
+        notes = results[results.index('<details class="results-notes">'): results.index("</details>")]
+        self.assertIn('${t("renderPhraseScores")}', notes)
+        self.assertIn('${t("noProbabilityModel")}', notes)
+        self.assertNotIn("open", results[results.index('<details class="results-notes"'): results.index(">", results.index('<details class="results-notes"'))])   # closed until asked for
+
     def test_the_stacked_list_of_graphs_and_the_big_title_are_gone(self):
         for gone in ("clausesContainer", "pitchDetails", "openPhraseChart", "pitch-clause", 'id="phrase-chart-'):
             self.assertNotIn(gone, SOURCE, gone)

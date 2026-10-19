@@ -1133,6 +1133,8 @@ async def read_index():
             .pronunciation-results { margin: 0 0 18px; }
             .pronunciation-results h3 { margin: 0 0 4px; }
             .results-note { margin: 0 0 12px; color: #4a5568; font-size: 13px; line-height: 1.45; }
+            .results-notes { margin: 2px 0 8px; }
+            .results-notes summary { cursor: pointer; color: #4a5568; font-size: 13px; }
             .result-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
             .word-card { min-width: 0; min-height: 112px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 5px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 7px; color: #1a202c; font: inherit; cursor: pointer; }
             .word-card:hover, .word-card:focus-visible { outline: 2px solid #3182ce; outline-offset: 2px; }
@@ -1706,6 +1708,7 @@ async def read_index():
                     showExpectedTone: "Show the expected tone behind my pitch",
                     expectedLine: "Expected tone (guide from your own pitch)",
                     expectedNote: "The guide is drawn from your own pitch: where a tone is already right it follows your line, where it is not it shows a basic shape to aim for. It is only a guide: the feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds.",
+                    resultNotes: "How to read these results",
                     phrasePrev: "Previous word",
                     phraseNext: "Next word",
                     pitchNote: "Tone feedback uses your pitch contour only. Sample audio is not scored.", quickFeedback: "Quick feedback",
@@ -1870,6 +1873,7 @@ async def read_index():
                     showExpectedTone: "在我的音高後面顯示預期聲調",
                     expectedLine: "預期聲調（依你自己的音高）",
                     expectedNote: "這條參考線是依你自己的音高畫的：聲調已經正確的地方，它會貼著你的曲線；還不正確的地方，它會畫出一個基本的目標形狀。它只是參考，回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音。",
+                    resultNotes: "如何閱讀這些結果",
                     phrasePrev: "上一個詞",
                     phraseNext: "下一個詞",
                     pitchNote: "評估只使用你的音高曲線；範例音訊不會用來評分。", quickFeedback: "快速回饋",
@@ -2033,6 +2037,7 @@ async def read_index():
                     showExpectedTone: "Hiện thanh điệu mong đợi phía sau đường cao độ của tôi",
                     expectedLine: "Thanh điệu mong đợi (theo cao độ của chính bạn)",
                     expectedNote: "Đường mong đợi được vẽ từ chính cao độ của bạn: chỗ thanh điệu đã đúng thì nó bám theo đường của bạn, chỗ chưa đúng thì nó vẽ hình cơ bản để bạn hướng tới. Đây chỉ là gợi ý: phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh.",
+                    resultNotes: "Cách đọc kết quả này",
                     phrasePrev: "Từ trước",
                     phraseNext: "Từ tiếp theo",
                     pitchNote: "Phản hồi thanh điệu chỉ dựa trên đường cao độ của bạn; âm thanh mẫu không dùng để chấm.", quickFeedback: "Phản hồi nhanh",
@@ -2228,6 +2233,7 @@ async def read_index():
                     showExpectedTone: "Tampilkan nada yang diharapkan di belakang kontur saya",
                     expectedLine: "Nada yang diharapkan (berdasarkan nada Anda sendiri)",
                     expectedNote: "Garis ini digambar dari nada Anda sendiri: bila nada sudah benar ia mengikuti garis Anda, bila belum ia menunjukkan bentuk dasar yang dituju. Ini hanya panduan: umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya.",
+                    resultNotes: "Cara membaca hasil ini",
                     phrasePrev: "Kata sebelumnya",
                     phraseNext: "Kata berikutnya",
                     pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
@@ -2500,6 +2506,7 @@ async def read_index():
                     showExpectedTone: "मेरी पिच के पीछे अपेक्षित स्वर दिखाएँ",
                     expectedLine: "अपेक्षित स्वर (आपकी अपनी पिच पर आधारित)",
                     expectedNote: "यह रेखा आपकी अपनी पिच से बनी है: जहाँ स्वर सही है वहाँ यह आपकी रेखा के साथ चलती है, जहाँ नहीं है वहाँ लक्ष्य की एक बुनियादी आकृति दिखाती है। यह केवल मार्गदर्शन है: फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है।",
+                    resultNotes: "इन परिणामों को कैसे पढ़ें",
                     phrasePrev: "पिछला शब्द",
                     phraseNext: "अगला शब्द",
                     pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
@@ -4508,8 +4515,11 @@ async def read_index():
                 document.getElementById("pronunciationResults").innerHTML = `
                     <section class="pronunciation-results" aria-labelledby="pronunciation-title">
                         <h3 id="pronunciation-title">${t("pronunciationFeedback")}</h3>
-                        <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
-                        <p class="results-note">${t("noProbabilityModel")}</p>
+                        <details class="results-notes">
+                            <summary>${t("resultNotes")}</summary>
+                            <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
+                            <p class="results-note">${t("noProbabilityModel")}</p>
+                        </details>
                         ${qualityKey ? `<p class="results-advice">${escapeHtml(t(qualityKey))}</p>` : ""}
                         ${systemFailure ? `<p class="results-advice">${escapeHtml(t("alignmentFailed"))}</p>` : ""}
                         ${data.pace?.too_fast && !systemFailure ? `<p class="results-advice">${escapeHtml(t("paceTooFast"))}</p>` : ""}
