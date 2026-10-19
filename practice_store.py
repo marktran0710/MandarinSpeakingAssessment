@@ -236,7 +236,7 @@ class PracticeStore:
 
     def _leaderboard(self, viewer_id=None, limit=10):
         """The best-scoring learners. A lesson (a book sentence or a Chapter 5 word) is worth 0-100 points: the BEST attempt at it,
-        100 x (Good syllables + half of the Okay ones) / all syllables; the points of all lessons add up. Own text does not count (a single easy
+        100 x Good syllables / all syllables (an Okay syllable is worth nothing); the points of all lessons add up. Own text does not count (a single easy
         character would give full points), nor does an attempt without a single Good syllable (silence, a failed alignment: all Okay).
         Returns {"top": [{rank, name, points, lessons, is_me}], "me": {rank, name, points, lessons} or None, "players": n}; `me` is only
         filled for the viewer, and ids are never given out."""
@@ -261,7 +261,7 @@ class PracticeStore:
             total = good + okay + practice
             if good < 1 or total < 1:
                 continue
-            points = 100.0 * (good + 0.5 * okay) / total
+            points = 100.0 * good / total
             key = (row["id"], row["sample_id"])
             best[key] = max(best.get(key, 0.0), points)
             names[row["id"]] = row["name"]
@@ -288,11 +288,11 @@ class PracticeStore:
 
     @staticmethod
     def _accuracy_board(pooled, lesson_sets, names, created, viewer_id, limit):
-        """The second board: the learner's accuracy over EVERY attempt, counted in syllables: 100 x (Good + half of the Okay ones) / all syllables
+        """The second board: the learner's accuracy over EVERY attempt, counted in syllables: 100 x Good / all syllables (an Okay syllable is worth nothing)
         of all their attempts at book sentences and Chapter 5 words (own text, and attempts without a single Good syllable, do not count: as on the
         points board). Reading a sentence again does not hide the first try. It needs ACCURACY_MIN_LESSONS different lessons (one perfect sentence
         must not win); below that the learner sees how many more are needed. Equal accuracies (to one decimal) share a rank."""
-        accuracy_of = {student: (round(100.0 * (good + 0.5 * okay) / total, 1), len(lesson_sets[student])) for student, (good, okay, total) in pooled.items()}
+        accuracy_of = {student: (round(100.0 * good / total, 1), len(lesson_sets[student])) for student, (good, okay, total) in pooled.items()}
         eligible = sorted(((student, accuracy, lessons) for student, (accuracy, lessons) in accuracy_of.items() if lessons >= ACCURACY_MIN_LESSONS),
                           key=lambda row: (-row[1], -row[2], created.get(row[0], ""), names[row[0]]))
         rows = []
@@ -309,7 +309,7 @@ class PracticeStore:
 
     def progress(self, student_id):
         """What one learner has practised: per lesson (a book sentence or a Chapter 5 word) how many attempts, the best and the LATEST points and
-        when the latest was. Points are 100 x (Good + half of the Okay ones) / all syllables of the attempt; an attempt without a single Good
+        when the latest was. Points are 100 x Good / all syllables of the attempt (an Okay syllable is worth nothing); an attempt without a single Good
         syllable (silence, a failed alignment) is not a result and marks nothing; own text has no lesson.
         Returns {"lessons": {sample_id: {attempts, best, last, last_at}}}."""
         with self._connection() as connection:
@@ -327,7 +327,7 @@ class PracticeStore:
             total = good + okay + practice
             if good < 1 or total < 1:
                 continue
-            points = round(100.0 * (good + 0.5 * okay) / total)
+            points = round(100.0 * good / total)
             entry = lessons.setdefault(row["sample_id"], {"attempts": 0, "best": 0, "last": 0, "last_at": ""})
             entry["attempts"] += 1
             entry["best"] = max(entry["best"], points)

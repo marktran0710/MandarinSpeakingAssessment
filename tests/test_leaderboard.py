@@ -30,13 +30,20 @@ class LeaderboardTests(unittest.TestCase):
                                 {"summary": {"syllables": {"likely_correct": good, "insufficient_evidence": okay, "practice": practice}}})
         return student["id"]
 
-    def test_a_lesson_is_worth_its_best_attempt_and_an_okay_counts_half(self):
+    def test_a_lesson_is_worth_its_best_attempt_and_only_good_syllables_count(self):
         self.attempt("Mei", "5-1-1", good=2, okay=0, practice=2)            # 50
-        self.attempt("Mei", "5-1-1", good=2, okay=2, practice=0)            # 75: the best attempt of that lesson
+        self.attempt("Mei", "5-1-1", good=3, okay=1, practice=0)            # 75: the best attempt of that lesson (the Okay syllable is worth nothing)
         self.attempt("Mei", "5-1-1", good=1, okay=0, practice=3)            # 25: a worse try changes nothing
         self.attempt("Mei", "C5-5-1-I1-W001", good=2)                       # 100
         board = self.store.leaderboard()
         self.assertEqual(board["top"], [{"rank": 1, "name": "Mei", "points": 175, "lessons": 2, "is_me": False}])
+
+    def test_an_okay_syllable_is_worth_nothing_on_both_boards(self):
+        for number in range(5):
+            self.attempt("Mei", f"5-1-{number + 1}", good=6, okay=4, practice=0)        # 6 Good of 10: 60, not 80
+        board = self.store.leaderboard()
+        self.assertEqual(board["top"][0]["points"], 300)
+        self.assertEqual(board["accuracy"]["top"][0]["accuracy"], 60.0)
 
     def test_own_text_and_attempts_without_a_good_syllable_do_not_count(self):
         self.attempt("Mei", "custom", good=1)                                # a single easy character must not give points
@@ -82,11 +89,11 @@ class LeaderboardTests(unittest.TestCase):
 
     def test_the_accuracy_board_ranks_the_average_of_the_best_attempts_from_five_lessons_on(self):
         self.lessons("Steady", 5, good=9, practice=1)                        # 90 on each of 5 lessons: average 90
-        self.lessons("Bold", 5, good=3, okay=2, practice=0)                  # 80 on each: average 80
+        self.lessons("Bold", 5, good=3, okay=2, practice=0)                  # 60 on each (the Okay ones are worth nothing): average 60
         self.lessons("Prolific", 12, good=1, practice=1)                     # 50 on each of 12: 600 points, the most points but the lowest average
         board = self.store.leaderboard()
         self.assertEqual([(r["name"], r["accuracy"], r["lessons"]) for r in board["accuracy"]["top"]],
-                         [("Steady", 90.0, 5), ("Bold", 80.0, 5), ("Prolific", 50.0, 12)])
+                         [("Steady", 90.0, 5), ("Bold", 60.0, 5), ("Prolific", 50.0, 12)])
         self.assertEqual(board["top"][0]["name"], "Prolific")                # the points board is unchanged: more lessons, more points
         self.assertEqual(board["accuracy"]["min_lessons"], 5)
 

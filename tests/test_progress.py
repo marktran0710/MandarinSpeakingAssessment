@@ -40,7 +40,7 @@ class AccuracyBoardPoolsEveryAttemptTests(StoreCase):
             student = self.attempt(name, f"5-1-{number + 1}", *second)
         return student
 
-    def test_accuracy_counts_every_attempt_in_syllables_and_an_okay_is_half(self):
+    def test_accuracy_counts_every_attempt_in_syllables_and_only_good_syllables(self):
         self.lessons_twice("Mei", (5, 0, 5), (10, 0, 0))                    # 5 + 10 Good out of 20 syllables: 75, although the best tries are perfect
         board = self.store.leaderboard()
         self.assertEqual(board["accuracy"]["top"], [{"rank": 1, "name": "Mei", "accuracy": 75.0, "lessons": 5, "is_me": False}])
@@ -65,9 +65,9 @@ class ProgressTests(StoreCase):
     def test_a_lesson_knows_its_attempts_best_and_latest_points(self):
         learner = self.attempt("Mei", "5-1-1", 5, 0, 5)                     # 50
         self.attempt("Mei", "5-1-1", 9, 0, 1)                               # 90
-        self.attempt("Mei", "5-1-1", 6, 2, 2)                               # 70: the latest, not the best
+        self.attempt("Mei", "5-1-1", 6, 2, 2)                               # 60 (the Okay ones are worth nothing): the latest, not the best
         entry = self.store.progress(learner)["lessons"]["5-1-1"]
-        self.assertEqual((entry["attempts"], entry["best"], entry["last"]), (3, 90, 70))
+        self.assertEqual((entry["attempts"], entry["best"], entry["last"]), (3, 90, 60))
         self.assertTrue(entry["last_at"])
 
     def test_different_lessons_have_their_own_latest_result(self):

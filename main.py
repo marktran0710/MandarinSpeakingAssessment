@@ -1606,7 +1606,7 @@ async def read_index():
                 <button type="button" id="boardTabPoints" class="active" role="tab" aria-selected="true" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
                 <button type="button" id="boardTabAccuracy" role="tab" aria-selected="false" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
             </div>
-            <p id="leaderboardHelp" class="upload-hint">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
+            <p id="leaderboardHelp" class="upload-hint">Points: the best attempt of each sentence (only Good syllables count), added up. Your own text does not count.</p>
             <ol id="leaderboardList" class="leaderboard-list"></ol>
             <p id="leaderboardEmpty" class="upload-hint" hidden>No scores yet. Be the first!</p>
             <p id="leaderboardMe" class="leaderboard-me" hidden></p>
@@ -1688,7 +1688,7 @@ async def read_index():
             customSampleError: "The sample could not be made. Try again.",
             customSampleUnavailable: "The sample voice is not available on this server.",
             leaderboardTitle: "Top 10",
-            leaderboardHelp: "Points: the best attempt of each sentence (a Good syllable counts 1, an Okay one \u00bd), added up. Your own text does not count.",
+            leaderboardHelp: "Points: the best attempt of each sentence (only Good syllables count), added up. Your own text does not count.",
             leaderboardEmpty: "No scores yet. Be the first!",
             leaderboardPoints: "{n} pts",
             leaderboardLessons: "{n} sentences",
@@ -1696,7 +1696,7 @@ async def read_index():
             leaderboardMeNone: "Practice a sentence to join the board.",
             boardTabPoints: "Points",
             boardTabAccuracy: "Accuracy",
-            leaderboardHelpAccuracy: "Accuracy: over all your attempts at sentences and words, the share of syllables that were Good (an Okay one counts \u00bd), out of 100. You need at least {n} sentences. Your own text does not count.",
+            leaderboardHelpAccuracy: "Accuracy: over all your attempts at sentences and words, the share of syllables that were Good (Okay does not count), out of 100. You need at least {n} sentences. Your own text does not count.",
             leaderboardEmptyAccuracy: "Nobody has done {n} sentences yet.",
             leaderboardAccuracy: "{n}%",
             leaderboardMeAccuracyRank: "You: #{rank} \u00b7 {accuracy}%",
@@ -1853,7 +1853,7 @@ async def read_index():
                     customSampleError: "無法製作範例，請再試一次。",
                     customSampleUnavailable: "這台伺服器沒有可用的範例語音。",
                     leaderboardTitle: "前十名",
-                    leaderboardHelp: "積分：每一句取最好的一次（Good 音節算 1，Okay 算 \u00bd），全部相加。自己輸入的文本不計分。",
+                    leaderboardHelp: "積分：每一句取最好的一次（只計 Good 音節），全部相加。自己輸入的文本不計分。",
                     leaderboardEmpty: "還沒有成績，來當第一名吧！",
                     leaderboardPoints: "{n} 分",
                     leaderboardLessons: "{n} 句",
@@ -1861,7 +1861,7 @@ async def read_index():
                     leaderboardMeNone: "練習一句就能上榜。",
                     boardTabPoints: "積分",
                     boardTabAccuracy: "準確率",
-                    leaderboardHelpAccuracy: "準確率：你所有句子與單字練習中，Good 音節的比例（Okay 算 \u00bd），滿分 100。至少要練 {n} 句。自己輸入的文本不計分。",
+                    leaderboardHelpAccuracy: "準確率：你所有句子與單字練習中，Good 音節所占的比例（Okay 不計），滿分 100。至少要練 {n} 句。自己輸入的文本不計分。",
                     leaderboardEmptyAccuracy: "還沒有人練滿 {n} 句。",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "你：第 {rank} 名\u30fb{accuracy}%",
@@ -2017,7 +2017,7 @@ async def read_index():
                     customSampleError: "Không tạo được âm thanh mẫu. Hãy thử lại.",
                     customSampleUnavailable: "Máy chủ này chưa có giọng đọc mẫu.",
                     leaderboardTitle: "Top 10",
-                    leaderboardHelp: "Điểm: lấy lượt tốt nhất của mỗi câu (âm Good tính 1, Okay tính \u00bd), cộng lại. Văn bản tự nhập không tính.",
+                    leaderboardHelp: "Điểm: lấy lượt tốt nhất của mỗi câu (chỉ tính âm Good), cộng lại. Văn bản tự nhập không tính.",
                     leaderboardEmpty: "Chưa có điểm nào. Hãy là người đầu tiên!",
                     leaderboardPoints: "{n} điểm",
                     leaderboardLessons: "{n} câu",
@@ -2025,7 +2025,7 @@ async def read_index():
                     leaderboardMeNone: "Luyện một câu để có tên trên bảng.",
                     boardTabPoints: "Điểm",
                     boardTabAccuracy: "Độ chính xác",
-                    leaderboardHelpAccuracy: "Độ chính xác: trên tất cả các lượt luyện câu và từ của bạn, tỉ lệ âm Good (Okay tính \u00bd), trên thang 100. Cần ít nhất {n} câu. Văn bản tự nhập không tính.",
+                    leaderboardHelpAccuracy: "Độ chính xác: trên tất cả các lượt luyện câu và từ của bạn, tỉ lệ âm Good (Okay không tính), trên thang 100. Cần ít nhất {n} câu. Văn bản tự nhập không tính.",
                     leaderboardEmptyAccuracy: "Chưa ai luyện đủ {n} câu.",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Bạn: hạng {rank} \u00b7 {accuracy}%",
@@ -2200,7 +2200,7 @@ async def read_index():
                     customSampleError: "Contoh tidak dapat dibuat. Coba lagi.",
                     customSampleUnavailable: "Suara contoh tidak tersedia di server ini.",
                     leaderboardTitle: "10 Teratas",
-                    leaderboardHelp: "Poin: percobaan terbaik tiap kalimat (suku kata Good bernilai 1, Okay \u00bd), dijumlahkan. Teks sendiri tidak dihitung.",
+                    leaderboardHelp: "Poin: percobaan terbaik tiap kalimat (hanya suku kata Good yang dihitung), dijumlahkan. Teks sendiri tidak dihitung.",
                     leaderboardEmpty: "Belum ada skor. Jadilah yang pertama!",
                     leaderboardPoints: "{n} poin",
                     leaderboardLessons: "{n} kalimat",
@@ -2208,7 +2208,7 @@ async def read_index():
                     leaderboardMeNone: "Latih satu kalimat untuk masuk papan.",
                     boardTabPoints: "Poin",
                     boardTabAccuracy: "Akurasi",
-                    leaderboardHelpAccuracy: "Akurasi: dari semua percobaan kalimat dan kata Anda, bagian suku kata Good (Okay dihitung \u00bd), dari 100. Perlu minimal {n} kalimat. Teks sendiri tidak dihitung.",
+                    leaderboardHelpAccuracy: "Akurasi: dari semua percobaan kalimat dan kata Anda, bagian suku kata Good (Okay tidak dihitung), dari 100. Perlu minimal {n} kalimat. Teks sendiri tidak dihitung.",
                     leaderboardEmptyAccuracy: "Belum ada yang menyelesaikan {n} kalimat.",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Anda: peringkat {rank} \u00b7 {accuracy}%",
@@ -2473,7 +2473,7 @@ async def read_index():
                     customSampleError: "नमूना नहीं बन सका। फिर कोशिश करें।",
                     customSampleUnavailable: "इस सर्वर पर नमूना आवाज़ उपलब्ध नहीं है।",
                     leaderboardTitle: "शीर्ष 10",
-                    leaderboardHelp: "अंक: हर वाक्य का सबसे अच्छा प्रयास (Good अक्षर-खंड = 1, Okay = \u00bd), जोड़कर। आपका अपना पाठ नहीं गिना जाता।",
+                    leaderboardHelp: "अंक: हर वाक्य का सबसे अच्छा प्रयास (केवल Good अक्षर-खंड गिने जाते हैं), जोड़कर। अपना लिखा पाठ नहीं गिना जाता।",
                     leaderboardEmpty: "अभी कोई अंक नहीं। पहले बनिए!",
                     leaderboardPoints: "{n} अंक",
                     leaderboardLessons: "{n} वाक्य",
@@ -2481,7 +2481,7 @@ async def read_index():
                     leaderboardMeNone: "बोर्ड में आने के लिए एक वाक्य का अभ्यास करें।",
                     boardTabPoints: "अंक",
                     boardTabAccuracy: "सटीकता",
-                    leaderboardHelpAccuracy: "सटीकता: आपके सभी वाक्य और शब्द प्रयासों में Good अक्षर-खंडों का अनुपात (Okay = \u00bd), 100 में से। कम से कम {n} वाक्य ज़रूरी हैं। अपना लिखा पाठ नहीं गिना जाता।",
+                    leaderboardHelpAccuracy: "सटीकता: आपके सभी वाक्य और शब्द प्रयासों में Good अक्षर-खंडों का अनुपात (Okay नहीं गिना जाता), 100 में से। कम से कम {n} वाक्य ज़रूरी हैं। अपना लिखा पाठ नहीं गिना जाता।",
                     leaderboardEmptyAccuracy: "अभी तक किसी ने {n} वाक्य पूरे नहीं किए।",
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "आप: #{rank} \u00b7 {accuracy}%",
