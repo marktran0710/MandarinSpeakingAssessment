@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import sys
+from threading import Lock
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -81,6 +82,7 @@ def _csv_row(record):
 class UserArchive:
     def __init__(self, base_dir):
         self.base_dir = Path(base_dir) if base_dir else None
+        self._write_lock = Lock()
 
     @classmethod
     def from_env(cls):
@@ -107,6 +109,10 @@ class UserArchive:
 
     def archive_attempt(self, student, attempt, audio_source, original_filename, payload):
         """Copy the recording and log the attempt. Returns the user's folder, or None if nothing was written."""
+        with self._write_lock:
+            return self._archive_attempt(student, attempt, audio_source, original_filename, payload)
+
+    def _archive_attempt(self, student, attempt, audio_source, original_filename, payload):
         if not self.enabled:
             return None
         try:
@@ -131,6 +137,10 @@ class UserArchive:
     def archive_calibration(self, student, outcome):
         """One line per voice-calibration try, no audio: when, what came out and why (calibration_log.jsonl in the user's folder). Calibration
         keeps nothing else, so without this a failure cannot be explained afterwards. Returns the folder, or None if nothing was written."""
+        with self._write_lock:
+            return self._archive_calibration(student, outcome)
+
+    def _archive_calibration(self, student, outcome):
         if not self.enabled:
             return None
         try:

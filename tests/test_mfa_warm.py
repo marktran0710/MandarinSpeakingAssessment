@@ -4,7 +4,9 @@ import sys
 import tempfile
 import textwrap
 import time
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +32,17 @@ FAKE_WORKER = textwrap.dedent('''
         elif MODE == "die":
             sys.exit(1)
         else:
+            if MODE == "parallel":
+                from pathlib import Path
+                import time
+                marker = Path(request["txt"])
+                marker.write_text(str(os.getpid()))
+                deadline = time.monotonic() + 5
+                while len(list(marker.parent.glob("*.started"))) < 2:
+                    if time.monotonic() > deadline:
+                        reply({"error": "second worker did not run concurrently"})
+                        sys.exit(1)
+                    time.sleep(0.01)
             reply({"tiers": {"words": {"entries": [[0.0, 0.1, request["txt"]]]}, "pid": os.getpid()}})
         break
 ''')
@@ -150,6 +163,33 @@ class WarmAlignerTests(unittest.TestCase):
             self.assertEqual(calls, [("utterance.wav", "你 好")])
         finally:
             tp.warm_aligner = original
+
+    def test_pool_uses_two_separate_worker_processes_at_the_same_time(self):
+        pool = mfa_warm.WarmAlignerPool(
+            2, sys.executable, {**os.environ, "FAKE_MODE": "parallel"}, "mandarin_mfa",
+            lambda folder: "dictionary.dict", lambda: "v1", timeout_sec=15,
+            load_timeout_sec=15, ready_wait_sec=15, worker_script=self.worker,
+            load_lock=threading.Lock())
+        self.addCleanup(pool.close)
+        pool.prewarm()
+        for aligner in pool._aligners:
+            self.wait_for_spare(aligner)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(pool.align, "a.wav", str(Path(self.folder) / f"{i}.started")) for i in range(2)]
+            results = [future.result(timeout=20) for future in futures]
+        self.assertTrue(all(result is not None for result in results))
+        self.assertNotEqual(results[0]["pid"], results[1]["pid"])
+
+    def test_pool_returns_a_slot_after_a_failed_alignment(self):
+        pool = mfa_warm.WarmAlignerPool(
+            1, sys.executable, dict(os.environ), "mandarin_mfa", lambda folder: "dictionary.dict",
+            lambda: "v1", timeout_sec=15, worker_script=self.worker)
+        self.addCleanup(pool.close)
+        from unittest import mock
+        with mock.patch.object(pool._aligners[0], "align", side_effect=[RuntimeError("boom"), {"ok": True}]):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                pool.align("a.wav", "a.txt")
+            self.assertEqual(pool.align("b.wav", "b.txt"), {"ok": True})
 
 
 if __name__ == "__main__":

@@ -72,6 +72,7 @@ Set environment variables **before starting the application**. The application d
 | `MFA_ROOT_DIR` | MFA model and state directory; `D:\CodexData\mfa-runtime\models`. |
 | `MFA_PYTHON` | Python in the MFA environment for the preloaded worker; inferred from `MFA_EXE` if unset. |
 | `TONE_MFA_WARM` | `1` enables preloading. Disabled by default when launching directly; enabled by `run_dev.ps1`. |
+| `MANDARIN_ASSESSMENT_CONCURRENCY` | Maximum concurrent assessments/calibrations per API process; defaults to `2`. Must be a positive integer. Also sets the number of preloaded MFA worker slots. |
 | `MANDARIN_SAMPLE_DATA_DIR` | Directory containing textbook MP3 files and `lessons-5-8_with_character_audio_synced.csv`. |
 | `MANDARIN_WORD_LEVEL_PATH` | JSON word and phrase annotations indexed by sample ID. |
 | `MANDARIN_PRACTICE_DATA_DIR` | Learner data directory; defaults to `practice_data/` in the project. |
@@ -97,6 +98,23 @@ Textbook sentence data defaults to the external directory `D:\hautran\Lab\mandar
 
 Assessment thresholds, tone rules, alignment handling, and difficulty levels are defined in `tone_v1_config.yaml`, the active runtime configuration.
 
+## Concurrent requests
+
+The server admits up to **two assessments or voice calibrations at once** by default. Different learners can be processed concurrently. Requests for the same learner run one at a time; deleting that learner waits for their active operation without stopping other learners.
+
+Requests wait for an available slot for up to 30 seconds, then receive HTTP `429` with `Retry-After: 1`. Waiting requests do not have a guaranteed FIFO order, and this is not a persistent job queue.
+
+To change the limit before starting the server:
+
+```powershell
+$env:MANDARIN_ASSESSMENT_CONCURRENCY = "2"
+.\run_dev.ps1
+```
+
+With `TONE_MFA_WARM=1`, each slot has a separate one-shot alignment worker and dictionary working directory. Ready workers can align concurrently. Loading shared MFA models and the fallback `mfa align_one` command remain protected by the existing machine-wide file lock. Increasing the limit uses more CPU and memory; the previous estimate was about 340 MB per preloaded MFA process, in addition to application memory. Warm-up and fallback requests can still wait for shared MFA resources, and throughput does not scale linearly with this setting.
+
+These admission and per-learner guards apply to one API process. Run one Uvicorn application worker with this configuration; multiple application processes would need shared coordination for learner operations. The HTTP request remains open until its result is saved. Archive file writes are briefly serialized to keep profiles and log headers consistent.
+
 ## Data and backups
 
 `practice_data/` contains the SQLite database and original practice recordings. Pause data writes before backing up both the database and the audio directory. If `MANDARIN_USER_DATA_DIR` is enabled, back up that directory as well: it contains per-learner copies, assessment logs, and calibration logs. Calibration audio is discarded after analysis.
@@ -108,6 +126,7 @@ External datasets, the `env/` environment, external MFA models, and learner data
 | Path | Purpose |
 | --- | --- |
 | `main.py` | FastAPI endpoints and learner and administrator interfaces. |
+| `assessment_concurrency.py` | Per-process admission limits and per-learner operation guards. |
 | `audio_prep.py` | Audio decoding, quality checks, normalization, and silence trimming. |
 | `capt_core.py` | Text processing, syllables, and expected tone contexts. |
 | `tone_pipeline.py` | Calibration, MFA alignment, F0 extraction, and tone verification. |

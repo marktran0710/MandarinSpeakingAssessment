@@ -5,7 +5,8 @@ if (-not (Test-Path $python)) {
     throw "Python environment not found: $python"
 }
 
-# A pre-loaded MFA aligner (about 340 MB resident) cuts an assessment from ~6 s to ~2 s with identical scores.
+# Preloaded MFA workers use roughly 340 MB each. MANDARIN_ASSESSMENT_CONCURRENCY defaults to 2.
+# Ready workers align concurrently; shared model loading and the CLI fallback remain locked.
 # Remove this line to run `mfa align_one` for every request instead.
 $env:TONE_MFA_WARM = "1"
 

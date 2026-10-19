@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
@@ -74,6 +75,18 @@ class ArchiveTests(unittest.TestCase):
         second = self.archive.archive_attempt(other, self.attempt(2), self.audio, "a.webm", payload())
         again = self.archive.archive_attempt(STUDENT, self.attempt(3), self.audio, "a.webm", payload())
         self.assertEqual((first.name, second.name, again.name), ("Hau tran", "Hau tran (taiwanese)", "Hau tran"))
+
+    def test_simultaneous_profiles_with_the_same_name_keep_separate_archives(self):
+        other = {**STUDENT, "id": "c" * 32, "group_type": "taiwanese"}
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(self.archive.archive_attempt, student, self.attempt(i), self.audio, "a.webm", payload())
+                       for i, student in enumerate((STUDENT, other), 1)]
+            folders = [future.result(timeout=5) for future in futures]
+        self.assertNotEqual(folders[0], folders[1])
+        for folder, student in zip(folders, (STUDENT, other)):
+            self.assertEqual(json.loads((folder / "profile.json").read_text(encoding="utf-8"))["student_id"], student["id"])
+            with (folder / "log.csv").open(encoding="utf-8-sig", newline="") as handle:
+                self.assertEqual(len(list(csv.DictReader(handle))), 1)
 
     def test_hostile_or_odd_names_stay_inside_the_archive(self):
         for name in ("../../evil", "a/b\\c", "CON", "name.", "  ", "中文 名字", "x" * 300):

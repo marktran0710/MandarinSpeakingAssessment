@@ -10,7 +10,6 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
-from threading import Lock
 
 import opencc
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Response, Depends
@@ -24,6 +23,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from pypinyin import lazy_pinyin, Style
 
 import audio_prep
+from assessment_concurrency import AssessmentBusy, AssessmentCoordinator, assessment_capacity
 import capt_core as core
 import tts_sample
 import tone_assessment
@@ -75,7 +75,12 @@ async def explain_rejected_request(request: Request, exc: RequestValidationError
         except Exception as error:                      # explaining must never break the answer
             print(f"Warning: could not log the rejected calibration request: {error}", file=sys.stderr)
     return await request_validation_exception_handler(request, exc)
-ASSESSMENT_LOCK = Lock()
+ASSESSMENTS = AssessmentCoordinator(assessment_capacity())
+
+
+@app.exception_handler(AssessmentBusy)
+async def explain_assessment_busy(request: Request, exc: AssessmentBusy):
+    return JSONResponse(status_code=429, content={"detail": str(exc)}, headers={"Retry-After": "1"})
 
 
 @app.on_event("startup")
@@ -412,6 +417,11 @@ def calibration_sound(tone: int):
 
 @app.post("/api/students/{student_id}/voice-calibration")
 def calibrate_student_voice(student_id: str, file: UploadFile = File(...)):
+    with ASSESSMENTS.assessment(student_id):
+        return _calibrate_student_voice(student_id, file)
+
+
+def _calibrate_student_voice(student_id: str, file: UploadFile):
     student = practice_store.get_student(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Speaker profile was not found.")
@@ -952,7 +962,7 @@ def delete_admin_student(
 ):
     require_admin_access(request, credentials)
     # Prevent an in-flight assessment from saving a new attempt during deletion.
-    with ASSESSMENT_LOCK:
+    with ASSESSMENTS.student(student_id):
         try:
             deleted = practice_store.delete_student_data(student_id)
         except Exception as exc:
@@ -4557,7 +4567,7 @@ def assess_pronunciation(
     practice_mode: str = Form(default="book"),
     level: str = Form(default=""),          # API / tools only (the page has no switch and never sends it): "" = the default for the learner's group (easy for everybody), or "standard" / "easy"
 ):
-    with ASSESSMENT_LOCK:
+    with ASSESSMENTS.assessment(student_id):
         return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level)
 
 

@@ -1,15 +1,16 @@
 """
-Keeps one pre-loaded MFA aligner ready, so a learner does not wait for `mfa align_one` to start up (about 5 s of
+Keeps a pool of pre-loaded MFA aligners ready, so a learner does not wait for `mfa align_one` to start up (about 5 s of
 a 6 s assessment). The score does not change: each spare serves exactly one request in a fresh process (see
 mfa_oneshot_worker.py), so its alignment is bit-identical to the one `align_one` gives.
 
 The warm path is only ever a shortcut. Anything unusual (no spare yet, a slow or dead worker, an error reply, a
 dictionary that changed on disk) returns None and the caller runs the normal `align_one` command instead.
-After a spare is used, the next one is built in the background. Cost: one extra Python process holding the model
+After a spare is used, its replacement is built in the background. Cost per slot: one Python process holding the model
 (about 340 MB) while it waits.
 """
 import json
 import os
+import queue
 import subprocess
 import sys
 import tempfile
@@ -172,6 +173,36 @@ class WarmAligner:
             self.disabled = True
         if spare is not None:
             spare.kill()                                   # a worker still starting ends by itself once our pipe closes
+
+
+class WarmAlignerPool:
+    """Separate one-shot workers can align concurrently; each owns its dictionary files."""
+
+    def __init__(self, size, *args, **kwargs):
+        if size < 1:
+            raise ValueError("MFA pool size must be positive")
+        self._aligners = [WarmAligner(*args, **kwargs) for _ in range(size)]
+        self._available = queue.Queue()
+        for aligner in self._aligners:
+            self._available.put(aligner)
+
+    def prewarm(self):
+        for aligner in self._aligners:
+            aligner.prewarm()
+
+    def align(self, wav, txt):
+        try:
+            aligner = self._available.get_nowait()
+        except queue.Empty:
+            return None  # callers outside the API may exceed the pool; use the locked fallback
+        try:
+            return aligner.align(wav, txt)
+        finally:
+            self._available.put(aligner)
+
+    def close(self):
+        for aligner in self._aligners:
+            aligner.close()
 
 
 def enabled_by_environment():

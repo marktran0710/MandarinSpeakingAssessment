@@ -33,6 +33,7 @@ from scipy.io import wavfile
 from scipy.signal import medfilt, resample_poly
 
 import audio_prep
+from assessment_concurrency import assessment_capacity
 import capt_core
 import mfa_warm
 
@@ -47,7 +48,7 @@ STATUSES = ("likely_correct", "practice", "insufficient_evidence")
 
 
 class _MfaExclusive:
-    """One MFA process at a time on the whole machine, not just in this process.
+    """Serialize shared MFA model loading and CLI runs across threads and processes.
 
     MFA keeps shared state under MFA_ROOT_DIR (the unpacked acoustic model, command_history.yaml). Two MFA processes
     starting together, a second server, a batch evaluation next to the app, can find the model half-written or corrupt the
@@ -885,7 +886,7 @@ _WARM_LOCK = threading.Lock()
 
 
 def warm_aligner(config=None):
-    """The pre-loaded aligner (see mfa_warm.py), or None when it is switched off (TONE_MFA_WARM=1 turns it on)."""
+    """The preloaded aligner pool, or None when switched off (TONE_MFA_WARM=1 turns it on)."""
     if not mfa_warm.enabled_by_environment():
         return None
     config = config or load_config()
@@ -896,9 +897,10 @@ def warm_aligner(config=None):
     key = (align["mfa_dictionary"], align["mfa_acoustic_model"])
     with _WARM_LOCK:
         if key not in _WARM:
-            if _WARM:                                          # one spare only: another model would double the memory
+            if _WARM:                                          # one model pool only: bound model memory usage
                 return None
-            aligner = mfa_warm.WarmAligner(
+            aligner = mfa_warm.WarmAlignerPool(
+                assessment_capacity(),
                 python, {**os.environ, "MFA_ROOT_DIR": MFA_ROOT_DIR, "PYTHONIOENCODING": "utf-8"},
                 align["mfa_acoustic_model"], lambda folder: _dictionary_argument(align["mfa_dictionary"], folder),
                 lambda: dictionary_fingerprint(config), align["mfa_timeout_sec"], load_lock=_MFA_LOCK)
