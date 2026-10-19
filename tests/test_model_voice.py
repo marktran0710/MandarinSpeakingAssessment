@@ -322,9 +322,12 @@ class BoardsIgnoreTheModeTests(unittest.TestCase):
 
 
 class PageTests(unittest.TestCase):
-    def test_the_page_has_the_selector_with_both_modes_and_rules_first(self):
+    def test_the_page_has_the_selector_with_both_modes_and_the_model_voice_first_as_the_default(self):
         select = SOURCE[SOURCE.index('<select id="scoringModeSelect"'): SOURCE.index('<p id="scoringModeHint"')]
-        self.assertLess(select.index('value="rules"'), select.index('value="model_voice"'))
+        self.assertLess(select.index('value="model_voice"'), select.index('value="rules"'))
+        # nothing stored (a new browser, a private window, a blocked storage) means the model voice; only an explicit "rules" keeps the rules
+        self.assertIn('localStorage.getItem("scoringMode") === "rules" ? "rules" : "model_voice"', SOURCE)
+        self.assertIn('catch (error) { return "model_voice"; }', SOURCE)
         self.assertIn('onchange="changeScoringMode()"', select)
         self.assertLess(SOURCE.index('id="practiceMode"'), SOURCE.index('id="scoringModeSelect"'))
 

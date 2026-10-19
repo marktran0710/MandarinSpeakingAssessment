@@ -1492,8 +1492,8 @@ async def read_index():
             <div class="scoring-mode">
                 <label for="scoringModeSelect"><b data-i18n="scoringModeLabel">Scoring</b></label>
                 <select id="scoringModeSelect" onchange="changeScoringMode()">
-                    <option value="rules" data-i18n="scoringModeRules">Rules</option>
                     <option value="model_voice" data-i18n="scoringModeModelVoice">Follow the model voice</option>
+                    <option value="rules" data-i18n="scoringModeRules">Rules</option>
                 </select>
                 <p id="scoringModeHint" class="upload-hint" hidden></p>
             </div>
@@ -1658,9 +1658,9 @@ async def read_index():
             let voiceCalibrationTimer = null;
             let isVoiceCalibrationRecording = false;
             let isVoiceCalibrationProcessing = false;
-            // How the syllables are judged: "rules" (the default) or "model_voice" (compared with the teachers' recordings, "Theo giọng mẫu"). Remembered in this browser;
-            // own text has no teacher recording to follow and is always judged by the rules.
-            let scoringMode = (() => { try { return localStorage.getItem("scoringMode") === "model_voice" ? "model_voice" : "rules"; } catch (error) { return "rules"; } })();
+            // How the syllables are judged: "model_voice" (the default since 2026-10-19, on request: compared with the teachers' recordings, "Theo giọng mẫu") or "rules".
+            // Remembered in this browser once chosen; own text has no teacher recording to follow and is always judged by the rules.
+            let scoringMode = (() => { try { return localStorage.getItem("scoringMode") === "rules" ? "rules" : "model_voice"; } catch (error) { return "model_voice"; } })();
             let isRecording = false;
             let isProcessing = false;
             let calibrationHadError = false;   // "Do this later" only appears once calibration has failed (or is done)

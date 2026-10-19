@@ -9,7 +9,7 @@ The system checks recordings against a **known transcript**: audio preparation �
 - Chapter 5 word and phrase practice, textbook sentence practice, and custom text practice.
 - Personalized pitch-range calibration using five reference tones.
 - `Good`, `Okay`, or `Needs practice` feedback. Insufficient acoustic evidence results in `Okay`.
-- A second scoring mode on the practice page, "Follow the model voice" (Vietnamese: *Theo giọng mẫu*): the pitch of each syllable is compared with contours taken from the teachers' recordings instead of going through the tone rules. It is shown to the learner but not counted on the leaderboards, and own text always uses the rules.
+- A second scoring mode on the practice page, "Follow the model voice" (Vietnamese: *Theo giọng mẫu*): the pitch of each syllable is compared with contours taken from the teachers' recordings instead of going through the tone rules. It is the page's default (a learner can switch back to "Rules"; the API's `scoring_mode` field still defaults to `rules`). Its attempts are shown to the learner but not counted on the leaderboards, and own text always uses the rules.
 - English, Traditional Chinese, Vietnamese, Indonesian, and Hindi interfaces.
 - Learner profiles, recording history, feedback ratings, and an administration page.
 
