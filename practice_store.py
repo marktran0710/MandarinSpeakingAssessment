@@ -28,6 +28,24 @@ def _now():
 
 
 # Accounts made by tests and tools: never on the leaderboard.
+def _model_voice_view(result):
+    """For the admin dashboard only: an attempt judged by the model voice, as the rules' and the model voice's share of Good syllables of the same recording,
+    and the syllables they disagree on (None for any other attempt)."""
+    if result.get("scoring_mode") != "model_voice":
+        return None
+    syllables = (result.get("tone_verification") or {}).get("syllables") or []
+    if not syllables:
+        return None
+    rules = [s.get("rule_status") or s.get("status") for s in syllables]
+    differences = [
+        {"character": s.get("character"), "tone": s.get("expected_surface_tone"), "rules": rule, "model": s.get("status"),
+         "score": s.get("model_score"), "closest_tone": s.get("model_closest_tone")}
+        for s, rule in zip(syllables, rules) if rule != s.get("status")
+    ]
+    return {"total": len(syllables), "rules_good": sum(r == "likely_correct" for r in rules),
+            "model_good": sum(s.get("status") == "likely_correct" for s in syllables), "differences": differences[:40]}
+
+
 MODEL_VOICE_MODE = "model_voice"                  # scoring_mode of an attempt judged by following the teachers' recordings: not on the boards, not a lesson result
 ACCURACY_MIN_LESSONS = 5                      # lessons a learner needs before they appear on the accuracy board
 LEADERBOARD_HIDDEN_NAMES = re.compile(r"^(mandarin-speaking|cal-log-|cal log$|lvl-api|tts-check|strict-check|no-audio|measured)", re.IGNORECASE)
@@ -639,15 +657,18 @@ class PracticeStore:
                 attempts = []
                 for row in rows:
                     result = json.loads(row["result_json"])
+                    summary = json.loads(row["summary_json"])
                     attempts.append({
                         "id": row["id"],
                         "sample_id": row["sample_id"],
                         "practice_mode": result.get("practice_mode", "book"),
+                        "scoring_mode": summary.get("scoring_mode") or result.get("scoring_mode") or "rules",
+                        "model_voice": _model_voice_view(result),
                         "practice_item": result.get("practice_item"),
                         "target_script": row["target_script"],
                         "recognized_text": row["recognized_text"],
                         "transcript_status": row["transcript_status"],
-                        "summary": json.loads(row["summary_json"]),
+                        "summary": summary,
                         "original_filename": row["original_filename"],
                         "created_at": row["created_at"],
                         "phrases": [

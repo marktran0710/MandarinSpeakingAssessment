@@ -321,6 +321,42 @@ class BoardsIgnoreTheModeTests(unittest.TestCase):
         self.assertEqual(self.store.leaderboard()["top"][0]["points"], 100)
 
 
+class AdminDashboardTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        self.store = PracticeStore(root / "practice.sqlite3", root / "recordings")
+        self.audio = root / "a.webm"
+        self.audio.write_bytes(b"x")
+        self.student = self.store.create_or_get_student("Mei", "foreigner")["id"]
+
+    def save(self, mode, syllables):
+        result = {"scoring_mode": mode, "practice_mode": "book", "phrases": [], "tone_verification": {"syllables": syllables},
+                  "summary": {"scoring_mode": mode, "syllables": {"likely_correct": 1, "insufficient_evidence": 0, "practice": 0}}}
+        self.store.save_attempt(self.student, "5-1-1", "文本", self.audio, "a.webm", result)
+
+    def test_a_model_voice_attempt_carries_both_results_and_the_syllables_they_disagree_on(self):
+        self.save("model_voice", [
+            {"character": "我", "expected_surface_tone": 3, "status": "likely_correct", "rule_status": "practice", "model_score": 0.88},
+            {"character": "去", "expected_surface_tone": 4, "status": "practice", "rule_status": "likely_correct", "model_score": 0.12, "model_closest_tone": 2},
+            {"character": "好", "expected_surface_tone": 3, "status": "likely_correct", "rule_status": "likely_correct", "model_score": 0.9},
+            {"character": "的", "expected_surface_tone": 5, "status": "insufficient_evidence"}])
+        attempt = self.store.list_admin_dashboard()[0]["attempts"][0]
+        self.assertEqual(attempt["scoring_mode"], "model_voice")
+        view = attempt["model_voice"]
+        self.assertEqual((view["total"], view["rules_good"], view["model_good"]), (4, 2, 2))
+        self.assertEqual([(d["character"], d["rules"], d["model"], d["score"], d["closest_tone"]) for d in view["differences"]],
+                         [("我", "practice", "likely_correct", 0.88, None), ("去", "likely_correct", "practice", 0.12, 2)])
+
+    def test_a_rules_attempt_and_an_old_attempt_have_no_model_voice_view(self):
+        self.save("rules", [{"character": "我", "expected_surface_tone": 3, "status": "likely_correct"}])
+        self.store.save_attempt(self.student, "5-1-2", "文本", self.audio, "a.webm", {"summary": {"syllables": {"likely_correct": 1}}})
+        attempts = self.store.list_admin_dashboard()[0]["attempts"]
+        self.assertEqual({a["scoring_mode"] for a in attempts}, {"rules"})
+        self.assertEqual({a["model_voice"] for a in attempts}, {None})
+
+
 class PageTests(unittest.TestCase):
     def test_the_page_has_the_selector_with_both_modes_and_the_model_voice_first_as_the_default(self):
         select = SOURCE[SOURCE.index('<select id="scoringModeSelect"'): SOURCE.index('<p id="scoringModeHint"')]
@@ -349,22 +385,22 @@ class PageTests(unittest.TestCase):
         apply = SOURCE[SOURCE.index("function applyLanguage("): SOURCE.index("function changeLanguage(")]
         self.assertIn("syncScoringMode();", apply)
 
-    def test_a_result_of_the_mode_carries_a_badge_and_the_advice_names_the_closest_tone(self):
-        render = SOURCE[SOURCE.index("function renderVisualResults("):]
-        self.assertIn('data.scoring_mode === "model_voice"', render)
-        self.assertIn('t("scoringBadgeModelVoice")', render)
+    def test_the_learners_result_names_the_closest_tone_but_shows_no_badge_and_no_comparison_of_the_modes(self):
+        render = SOURCE[SOURCE.index("function renderVisualResults("): SOURCE.index('@app.post("/api/assess-pronunciation")')]
         self.assertIn('item.type === "heard_as"', render)
+        for word in ("scoring-badge", "scoring-compare", "scoringBadgeModelVoice", "scoringCompare", "rule_status"):
+            self.assertNotIn(word, SOURCE)                                 # not in the markup, the styles, the strings, or the result card
 
-    def test_a_result_of_the_mode_sets_the_rules_result_of_the_same_recording_beside_its_own(self):
-        render = SOURCE[SOURCE.index("function renderVisualResults("):]
-        line = render[render.index('data.scoring_mode !== "model_voice"'): render.index('class="scoring-compare"')]
-        self.assertIn("item.rule_status || item.status", line)             # the rules' verdict is the one saved beside the model's
-        self.assertIn('t("scoringCompare"', render)
-        self.assertIn("all.length", line)                                  # per syllable of the recording, as the boards count
-        self.assertNotIn("scoring-compare", SOURCE[SOURCE.index("async function submitAssessment("): SOURCE.index("window.addEventListener(\"beforeunload\"")])
+    def test_the_admin_dashboard_shows_the_mode_the_two_results_of_the_same_recording_and_where_they_differ(self):
+        admin = SOURCE[SOURCE.index("function renderAttempt("): SOURCE.index("function renderUser(")]
+        self.assertIn('attempt.scoring_mode === "model_voice"', admin)
+        self.assertIn(" | model voice", admin)
+        self.assertIn("Same recording: rules", admin)
+        self.assertIn("view.differences", admin)
+        self.assertIn("not counted on the leaderboards", admin)
 
     def test_every_language_has_every_string_and_the_vietnamese_name_is_the_owners(self):
-        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "scoringBadgeModelVoice", "scoringCompare", "adviceHeardAs"):
+        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "adviceHeardAs"):
             self.assertEqual(len(re.findall(rf"\b{key}: ", SOURCE)), 5, key)
         self.assertIn('scoringModeModelVoice: "Theo giọng mẫu",', SOURCE)
         self.assertIn('scoringModeModelVoice: "對照範例發音",', SOURCE)
