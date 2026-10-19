@@ -332,7 +332,8 @@ class PracticeStore:
     def progress(self, student_id):
         """What one learner has practised: per lesson (a book sentence or a Chapter 5 word) how many attempts, the best and the LATEST points and
         when the latest was. Points are 100 x Good / all syllables of the attempt (an Okay syllable is worth nothing); an attempt without a single Good
-        syllable (silence, a failed alignment) is not a result and marks nothing; own text has no lesson.
+        syllable (silence, a failed alignment) is not a result and marks nothing; own text has no lesson. Every scoring mode counts here (the newest attempt is the
+        latest result, whichever way it was judged); only the leaderboards leave out the "Theo giọng mẫu" attempts.
         Returns {"lessons": {sample_id: {attempts, best, last, last_at}}}."""
         with self._connection() as connection:
             rows = connection.execute(
@@ -342,11 +343,8 @@ class PracticeStore:
         lessons = {}
         for row in rows:
             try:
-                summary = json.loads(row["summary_json"] or "{}")
-                counts = summary.get("syllables") or {}
+                counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
             except (ValueError, AttributeError):
-                continue
-            if summary.get("scoring_mode") == MODEL_VOICE_MODE:        # "Theo giọng mẫu" attempts are shown to the learner, never counted
                 continue
             good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
             total = good + okay + practice

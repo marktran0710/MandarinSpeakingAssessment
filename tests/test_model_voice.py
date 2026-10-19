@@ -306,15 +306,24 @@ class BoardsIgnoreTheModeTests(unittest.TestCase):
             summary["scoring_mode"] = mode
         self.store.save_attempt(self.student, sample_id, "文本", self.audio, "a.webm", {"summary": summary})
 
-    def test_a_model_voice_attempt_is_on_neither_board_and_marks_no_lesson(self):
+    def test_a_model_voice_attempt_is_on_neither_board(self):
         for number in range(5):
             self.attempt(f"5-1-{number + 1}", good=5, okay=5, mode="rules")                 # 50 each
             self.attempt(f"5-1-{number + 1}", good=10, mode="model_voice")                   # would be 100 each
         board = self.store.leaderboard()
         self.assertEqual(board["top"][0]["points"], 250)
         self.assertEqual(board["accuracy"]["top"][0]["accuracy"], 50.0)
-        self.assertEqual({lesson["best"] for lesson in self.store.progress(self.student)["lessons"].values()}, {50})
-        self.assertEqual({lesson["attempts"] for lesson in self.store.progress(self.student)["lessons"].values()}, {1})
+
+    def test_the_latest_result_of_a_lesson_is_the_newest_attempt_whichever_way_it_was_judged(self):
+        self.attempt("5-1-1", good=5, okay=5, mode="rules")                                  # 50
+        self.attempt("5-1-1", good=9, okay=1, mode="model_voice")                            # 90: the newest
+        self.attempt("5-1-2", good=10, mode="model_voice")                                   # a lesson only the model voice has been tried on: marked as practised
+        lessons = self.store.progress(self.student)["lessons"]
+        self.assertEqual((lessons["5-1-1"]["last"], lessons["5-1-1"]["attempts"], lessons["5-1-1"]["best"]), (90, 2, 90))
+        self.assertEqual((lessons["5-1-2"]["last"], lessons["5-1-2"]["attempts"]), (100, 1))
+        self.attempt("5-1-1", good=6, okay=4, mode="rules")                                  # 60, newest again
+        self.assertEqual(self.store.progress(self.student)["lessons"]["5-1-1"]["last"], 60)
+        self.assertEqual(self.store.leaderboard()["top"][0]["points"], 60)                  # the boards still count only the rules attempts: the best of 5-1-1 is 60
 
     def test_attempts_from_before_the_mode_existed_still_count(self):
         self.attempt("5-1-1", good=4, okay=0)

@@ -15,7 +15,7 @@ The owner wants to *see* the new mode's results; it does not count for points ye
 
 ## Decisions already taken
 
-1. A `model_voice` attempt is **not** counted on the Points or Accuracy boards, nor in the per-lesson "Latest result" / ✓ marks. It is saved and shown, labelled with its mode.
+1. A `model_voice` attempt is **not** counted on the Points or Accuracy boards, but it **does** update the per-lesson "Latest result" and the ✓ marks (changed on the owner's request, 2026-10-19: the newest attempt is the latest result, whichever mode judged it). It is saved with its mode.
 2. The switch sits **on the practice page** and is remembered per browser (localStorage). Default of the page: the **model voice** (changed from Rules on the owner's request, 2026-10-19: learners should try the new version first; only an explicit choice of Rules is kept). The API's `scoring_mode` still defaults to `rules`, so tools and evaluations are unchanged.
 3. The accepted tones of a syllable are the ones the rules already use (`[expected, *also_accept_tones]` in `tone_pipeline.verify_syllable`), not a separate list. Today the only alternative is T2 for a third tone before another third tone across a word end; 不 and 一 take one sandhi tone and need nothing extra (measured: 不→T2 96%, 一→T4 100% of the Good syllables also pass under the new formula).
 
