@@ -137,11 +137,11 @@ class PageTests(unittest.TestCase):
                     "leaderboardMeAccuracyRank", "leaderboardMeAccuracyNeed"):
             self.assertEqual(len(re.findall(r"\b%s: " % key, SOURCE)), 5, key)
 
-    def test_the_accuracy_board_comes_first_and_is_the_default(self):
-        self.assertLess(SOURCE.index('id="boardTabAccuracy"'), SOURCE.index('id="boardTabPoints"'))
-        self.assertIn('let boardView = "accuracy";', SOURCE)
-        self.assertIn('localStorage.getItem("leaderboardView") === "points" ? "points" : "accuracy"', SOURCE)
-        self.assertRegex(SOURCE, r'id="boardTabAccuracy" class="active"')
+    def test_the_points_board_comes_first_and_is_the_default(self):
+        self.assertLess(SOURCE.index('id="boardTabPoints"'), SOURCE.index('id="boardTabAccuracy"'))
+        self.assertIn('let boardView = "points";', SOURCE)
+        self.assertIn('localStorage.getItem("leaderboardView") === "accuracy" ? "accuracy" : "points"', SOURCE)
+        self.assertRegex(SOURCE, r'id="boardTabPoints" class="active"')
         self.assertIn("renderBoardHeader();\n                if (lastLeaderboard) renderLeaderboard(lastLeaderboard);", SOURCE)       # also before the board has arrived
 
     def test_the_page_has_a_points_tab_and_an_accuracy_tab_and_remembers_the_choice(self):

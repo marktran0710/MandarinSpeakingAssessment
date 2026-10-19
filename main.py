@@ -1541,10 +1541,10 @@ async def read_index():
         <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
             <h2 id="leaderboardTitle" data-i18n="leaderboardTitle">Top 10</h2>
             <div class="board-tabs" role="tablist" aria-label="Top 10">
-                <button type="button" id="boardTabAccuracy" class="active" role="tab" aria-selected="true" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
-                <button type="button" id="boardTabPoints" role="tab" aria-selected="false" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
+                <button type="button" id="boardTabPoints" class="active" role="tab" aria-selected="true" data-i18n="boardTabPoints" onclick="setBoardView('points')">Points</button>
+                <button type="button" id="boardTabAccuracy" role="tab" aria-selected="false" data-i18n="boardTabAccuracy" onclick="setBoardView('accuracy')">Accuracy</button>
             </div>
-            <p id="leaderboardHelp" class="upload-hint">Accuracy: over all your attempts at sentences and words, the share of syllables that were Good (an Okay one counts &frac12;), out of 100.</p>
+            <p id="leaderboardHelp" class="upload-hint">Points: the best attempt of each lesson (a Good syllable counts 1, an Okay one &frac12;), added up. Your own text does not count.</p>
             <ol id="leaderboardList" class="leaderboard-list"></ol>
             <p id="leaderboardEmpty" class="upload-hint" hidden>No scores yet. Be the first!</p>
             <p id="leaderboardMe" class="leaderboard-me" hidden></p>
@@ -3169,11 +3169,11 @@ async def read_index():
                 }
             }
 
-            // The leaderboard: two boards, "accuracy" first (the share of Good syllables over every attempt, Okay = half, from 5 sentences on) and "points" (the best attempt of every sentence added up).
+            // The leaderboard: two boards, "points" first (the best attempt of every sentence added up) and "accuracy" (the share of Good syllables over every attempt, Okay = half, from 5 sentences on).
             // The server works both out from every saved attempt; the tab the learner looks at is remembered in this browser.
             let lastLeaderboard = null;
-            let boardView = "accuracy";                      // the accuracy board comes first; a learner who picked the points board keeps it
-            try { boardView = localStorage.getItem("leaderboardView") === "points" ? "points" : "accuracy"; } catch (error) { /* private window */ }
+            let boardView = "points";                        // the points board comes first; a learner who picked the accuracy board keeps it
+            try { boardView = localStorage.getItem("leaderboardView") === "accuracy" ? "accuracy" : "points"; } catch (error) { /* private window */ }
 
             function setBoardView(view) {
                 boardView = view === "accuracy" ? "accuracy" : "points";
