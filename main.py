@@ -301,6 +301,17 @@ async def get_pinyin(text: str = ""):
 
 
 
+def _load_book_meanings():
+    """{sample id: {"en", "vi", "id", "hi": meaning of the sentence}} (book_sample_meanings.json); the page shows the one of the interface language."""
+    path = Path(__file__).with_name("book_sample_meanings.json")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"Warning: the book sentence meanings could not be loaded: {exc}")
+        return {}
+
+
+BOOK_MEANINGS = _load_book_meanings()
 _sample_pinyin = lru_cache(maxsize=1024)(core.display_pinyin)           # the readings are fixed data: work each script out once
 
 
@@ -315,6 +326,7 @@ async def get_sample_lessons():
             "character": sample["character"],
             "script": sample["script"],
             "pinyin": _sample_pinyin(sample["script"]),
+            "meaning": BOOK_MEANINGS.get(sample["id"], {}),
             "audio_available": bool(sample.get("audio_available", Path(sample["audio_path"]).is_file())),
             "audio_url": (
                 f"/api/sample-lessons/{sample['id']}/audio"
@@ -1313,6 +1325,8 @@ async def read_index():
             .result-actions .prev-item-btn, .result-actions .next-item-btn { background: #edf2f7; color: #2d3748; }
             .result-actions .prev-item-btn:disabled, .result-actions .next-item-btn:disabled { opacity: 0.5; }
             .item-progress { margin: 6px 0 0; }
+            .item-meaning { margin: 8px 0 2px; color: #2d3748; font-size: 15px; line-height: 1.45; }
+            .item-meaning b { color: #4a5568; }
             .item-progress.practiced { color: #276749; font-weight: 600; }
             #practiceMode { scroll-margin-top: 12px; }
             @media (min-width: 1280px) {
@@ -1502,6 +1516,7 @@ async def read_index():
                 <p id="customTextHint" class="upload-hint" data-i18n="customTextHint" hidden>Enter any Mandarin text. It does not need to appear in a textbook.</p>
                 <textarea id="scriptInput" rows="2" readonly oninput="handleScriptInput()" data-i18n-placeholder="customTextPlaceholder"></textarea>
                 <div id="transcriptDisplay" class="transcript" aria-label="Matching script with pinyin" data-i18n-aria-label="scriptWithPinyin"></div>
+                <p id="itemMeaning" class="item-meaning" hidden></p>
                 <p id="itemProgress" class="upload-hint item-progress" role="status" hidden></p>
                 <p id="chapter5OptionalHint" class="upload-hint" hidden></p>
                 <label id="pinyinToggle" class="pinyin-toggle">
@@ -1705,6 +1720,7 @@ async def read_index():
             resultNext: "Next",
             itemProgress: "Latest result: {last}% \u00b7 {when}",
             itemNotPracticed: "Not practised yet.",
+            itemMeaning: "Meaning",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1870,6 +1886,7 @@ async def read_index():
                     resultNext: "下一個",
                     itemProgress: "最近成績：{last}%\u30fb{when}",
                     itemNotPracticed: "還沒練習過。",
+                    itemMeaning: "意思",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -2034,6 +2051,7 @@ async def read_index():
                     resultNext: "Tiếp theo",
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
                     itemNotPracticed: "Chưa luyện.",
+                    itemMeaning: "Nghĩa",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -2217,6 +2235,7 @@ async def read_index():
                     resultNext: "Berikutnya",
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
                     itemNotPracticed: "Belum dilatih.",
+                    itemMeaning: "Arti",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2490,6 +2509,7 @@ async def read_index():
                     resultNext: "अगला",
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
                     itemNotPracticed: "अभी अभ्यास नहीं किया।",
+                    itemMeaning: "अर्थ",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -2802,6 +2822,7 @@ async def read_index():
                 renderBoardHeader();
                 if (lastLeaderboard) renderLeaderboard(lastLeaderboard);
                 syncResultButtons();
+                renderItemMeaning();
                 renderItemProgress();
                 const status = document.getElementById("status");
                 if (status.dataset.translation) {
@@ -3331,6 +3352,20 @@ async def read_index():
                 }
                 if (sampleLessons.length && !isRecording) refreshSampleOptions();
                 renderItemProgress();
+            }
+
+            // The meaning of the sentence in the language of the page (English where there is none); a Chinese page needs no translation of the Chinese.
+            function renderItemMeaning() {
+                const line = document.getElementById("itemMeaning");
+                const sample = selectedPracticeMode() === "book" ? sampleLessons.find(item => item.id === document.getElementById("sampleSelect").value) : null;
+                const meanings = (sample && sample.meaning) || {};
+                const text = currentLanguage === "zh-TW" ? "" : (meanings[currentLanguage] || meanings.en || "");
+                line.hidden = !text;
+                if (!text) return;
+                line.replaceChildren();
+                const label = document.createElement("b");
+                label.textContent = `${t("itemMeaning")}: `;
+                line.append(label, document.createTextNode(text));
             }
 
             function renderItemProgress() {
@@ -3898,6 +3933,7 @@ async def read_index():
                 fileInput.disabled = busy || !canPractice;
                 document.getElementById("uploadBtn").disabled = busy || !canPractice || !hasScript || Boolean(audioFileError(fileInput.files[0]));
                 syncResultButtons();
+                renderItemMeaning();
                 renderItemProgress();
             }
 
