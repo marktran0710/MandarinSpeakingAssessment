@@ -86,10 +86,10 @@ class LeaderboardIsWorkedOutOncePerChangeTests(unittest.TestCase):
         self.audio = root / "a.webm"
         self.audio.write_bytes(b"x")
 
-    def attempt(self, name, sample_id="5-1-1", good=3):
+    def attempt(self, name, sample_id="5-1-1", good=3, practice=0):
         student = self.store.create_or_get_student(name, "foreigner")
         self.store.save_attempt(student["id"], sample_id, "文本", self.audio, "a.webm",
-                                {"summary": {"syllables": {"likely_correct": good, "insufficient_evidence": 0, "practice": 0}}})
+                                {"summary": {"syllables": {"likely_correct": good, "insufficient_evidence": 0, "practice": practice}}})
         return student["id"]
 
     def test_a_second_ask_is_answered_from_the_first(self):
@@ -97,20 +97,20 @@ class LeaderboardIsWorkedOutOncePerChangeTests(unittest.TestCase):
         self.assertIs(self.store.leaderboard(), self.store.leaderboard())
 
     def test_a_saved_attempt_shows_at_once(self):
-        self.attempt("Mei")
+        self.attempt("Mei", good=3, practice=1)                                       # 75 points
         self.assertEqual([row["name"] for row in self.store.leaderboard()["top"]], ["Mei"])
-        self.attempt("Lin", good=5)
+        self.attempt("Lin", good=5)                                                  # 100 points: ahead of Mei, whoever came first
         self.assertEqual([row["name"] for row in self.store.leaderboard()["top"]], ["Lin", "Mei"])
 
     def test_a_deleted_learner_disappears_at_once(self):
-        mei = self.attempt("Mei")
+        mei = self.attempt("Mei", good=3, practice=1)
         self.attempt("Lin", good=5)
         self.assertEqual(len(self.store.leaderboard()["top"]), 2)
         self.store.delete_student_data(mei)
         self.assertEqual([row["name"] for row in self.store.leaderboard()["top"]], ["Lin"])
 
     def test_each_viewer_gets_their_own_answer(self):
-        mei, lin = self.attempt("Mei"), self.attempt("Lin", good=5)
+        mei, lin = self.attempt("Mei", good=3, practice=1), self.attempt("Lin", good=5)
         self.assertEqual([row["is_me"] for row in self.store.leaderboard(mei)["top"]], [False, True])
         self.assertEqual([row["is_me"] for row in self.store.leaderboard(lin)["top"]], [True, False])
 
