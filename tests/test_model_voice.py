@@ -399,8 +399,17 @@ class PageTests(unittest.TestCase):
         self.assertIn("view.differences", admin)
         self.assertIn("not counted on the leaderboards", admin)
 
+    def test_a_word_that_needs_practice_is_sent_back_to_the_model_voice_except_own_text(self):
+        render = SOURCE[SOURCE.index("function renderVisualResults("): SOURCE.index('@app.post("/api/assess-pronunciation")')]
+        line = render[render.index('phrase.status === "practice"'): render.index('t("adviceListenAgain")') + 30]
+        self.assertIn('data.practice_mode !== "custom"', line)
+        self.assertIn("advice.push(", line)
+        self.assertLess(render.index("const advice = "), render.index('t("adviceListenAgain")'))      # after the advice the rules / the model voice already give
+        self.assertLess(render.index('t("adviceListenAgain")'), render.index('class="word-card-advice"'))
+        self.assertIn('adviceListenAgain: "Listen to the model voice again, then try once more."', SOURCE)
+
     def test_every_language_has_every_string_and_the_vietnamese_name_is_the_owners(self):
-        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "adviceHeardAs"):
+        for key in ("scoringModeLabel", "scoringModeRules", "scoringModeModelVoice", "scoringModeNotCounted", "scoringModeCustomHint", "adviceHeardAs", "adviceListenAgain"):
             self.assertEqual(len(re.findall(rf"\b{key}: ", SOURCE)), 5, key)
         self.assertIn('scoringModeModelVoice: "Theo giọng mẫu",', SOURCE)
         self.assertIn('scoringModeModelVoice: "對照範例發音",', SOURCE)

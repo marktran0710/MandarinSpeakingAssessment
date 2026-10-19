@@ -1760,6 +1760,7 @@ async def read_index():
             scoringModeNotCounted: "Compared with the teachers' recordings. These attempts are shown but not counted on the leaderboards.",
             scoringModeCustomHint: "Your own text is always judged by the rules (there is no teacher recording to follow).",
             adviceHeardAs: "“{char}” – sounds closer to tone {tone}.",
+            adviceListenAgain: "Listen to the model voice again, then try once more.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1932,6 +1933,7 @@ async def read_index():
                     scoringModeNotCounted: "與老師的錄音比對。這類練習會顯示結果，但不列入排行榜。",
                     scoringModeCustomHint: "自己輸入的文字一律用規則評分（沒有老師的錄音可以對照）。",
                     adviceHeardAs: "「{char}」聽起來比較接近第{tone}聲。",
+                    adviceListenAgain: "請再聽一次範例發音，然後再試一次。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -2103,6 +2105,7 @@ async def read_index():
                     scoringModeNotCounted: "So với bản ghi của giáo viên. Các lần đọc này được hiện kết quả nhưng không tính vào bảng xếp hạng.",
                     scoringModeCustomHint: "Chữ bạn tự nhập luôn được chấm theo quy tắc (không có bản ghi giáo viên để so).",
                     adviceHeardAs: "“{char}” – nghe gần với thanh {tone} hơn.",
+                    adviceListenAgain: "Hãy nghe lại giọng mẫu rồi thử lại.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -2293,6 +2296,7 @@ async def read_index():
                     scoringModeNotCounted: "Dibandingkan dengan rekaman guru. Hasil percobaan ini ditampilkan tetapi tidak dihitung di papan peringkat.",
                     scoringModeCustomHint: "Teks yang Anda ketik sendiri selalu dinilai dengan aturan (tidak ada rekaman guru untuk dibandingkan).",
                     adviceHeardAs: "“{char}” – terdengar lebih dekat ke nada {tone}.",
+                    adviceListenAgain: "Dengarkan suara contoh sekali lagi, lalu coba lagi.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2573,6 +2577,7 @@ async def read_index():
                     scoringModeNotCounted: "शिक्षकों की रिकॉर्डिंग से तुलना। इन प्रयासों के नतीजे दिखते हैं, लेकिन लीडरबोर्ड में नहीं गिने जाते।",
                     scoringModeCustomHint: "आपका अपना लिखा पाठ हमेशा नियमों से जाँचा जाता है (तुलना के लिए शिक्षक की रिकॉर्डिंग नहीं है)।",
                     adviceHeardAs: "“{char}” – स्वर {tone} के ज़्यादा क़रीब सुनाई देता है।",
+                    adviceListenAgain: "आदर्श आवाज़ को एक बार फिर सुनें, फिर दोबारा कोशिश करें।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -4639,6 +4644,8 @@ async def read_index():
                         : item.type === "heard_as" && item.tone >= 1 && item.tone <= 4 ? t("adviceHeardAs", { char: item.char, tone: item.tone })
                         : item.type === "retry" && retryKeys[item.code]
                             ? (item.char ? `\u201c${item.char}\u201d \u2013 ` : "") + t(retryKeys[item.code]) : "").filter(Boolean);
+                    // a word that needs practice: go back to the model voice first (own text has no model voice)
+                    if (phrase.status === "practice" && data.practice_mode !== "custom") advice.push(t("adviceListenAgain"));
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="pitchChart" aria-pressed="false" onclick="selectPhrase(${index})">
                         <span class="word-card-label">${label}</span>
                         <span class="word-card-tone-sequence"><b>${t("expectedSequence")}:</b> ${escapeHtml(expected)}</span>
