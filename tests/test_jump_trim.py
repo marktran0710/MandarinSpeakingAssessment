@@ -90,7 +90,7 @@ class VerifySyllableTests(unittest.TestCase):
 
     def test_the_trim_is_on_in_the_config_file(self):
         import tone_assessment as ta
-        self.assertEqual(ta.get_config()["sanity"]["jump_fragment_trim_ms"], 40)
+        self.assertEqual(ta.get_config()["sanity"]["jump_fragment_trim_ms"], 60)           # 40 until 2026-10-19
 
 
 def verify_wrong_rise_with_a_creaky_tail(trim_ms):

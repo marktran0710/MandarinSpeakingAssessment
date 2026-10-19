@@ -912,7 +912,8 @@ class BoundarySearchTests(unittest.TestCase):
 
     @staticmethod
     def with_search(enabled, **changes):
-        return {**CONFIG, "boundary_search": {**CONFIG["boundary_search"], "enabled": enabled, **changes}}
+        # the octave-slip trim is a different mechanism: switched to its old 40 ms here, so a 60 ms strip of the next syllable still gates the syllable it was left in
+        return {**CONFIG, "sanity": {**CONFIG["sanity"], "jump_fragment_trim_ms": 40}, "boundary_search": {**CONFIG["boundary_search"], "enabled": enabled, **changes}}
 
     def test_a_boundary_that_is_60_ms_late_is_pulled_back(self):
         late = self.syllables(42)                                  # true boundary is at frame 30
