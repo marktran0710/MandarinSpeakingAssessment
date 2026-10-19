@@ -32,7 +32,7 @@ class PhraseContourTests(unittest.TestCase):
 
 class ExpectedToneLineTests(unittest.TestCase):
     def test_every_language_has_the_new_texts(self):
-        for key in ("showExpectedTone", "expectedLine", "expectedNote"):
+        for key in ("showExpectedTone", "expectedLine"):
             self.assertEqual(len(re.findall(r"\b%s: " % key, SOURCE)), 5, key)
 
     def test_the_pitch_controls_have_a_switch_and_a_legend_entry(self):
@@ -41,11 +41,12 @@ class ExpectedToneLineTests(unittest.TestCase):
         self.assertIn('onchange="toggleExpectedTone()"', controls)
         self.assertIn('class="pitch-swatch expected"', controls)
 
-    def test_the_guide_is_on_until_the_learner_switches_it_off_and_comes_with_a_caveat(self):
+    def test_the_guide_is_on_until_the_learner_switches_it_off_and_has_no_explanation_under_the_chart(self):
         controls = SOURCE[SOURCE.index('<div class="pitch-controls">'): SOURCE.index('<div id="resultExtras">')]
         self.assertRegex(controls, r'id="showExpectedTone"[^>]*checked')
         self.assertIn('localStorage.getItem("showExpectedTone") !== "0"', SOURCE)
-        self.assertIn('data-i18n="expectedNote"', controls)
+        for removed in ("expectedNote", "pitchNote", "pitch-note"):        # the two long notes were taken out on request (2026-10-19)
+            self.assertNotIn(removed, SOURCE)
 
     def test_the_guide_is_built_from_the_learners_own_start_end_lowest_and_highest_points(self):
         guide = SOURCE[SOURCE.index("function shapeFromFourPoints("): SOURCE.index("function showExpectedToneChoice()")]

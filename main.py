@@ -1229,7 +1229,6 @@ async def read_index():
             .pitch-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: #4a5568; font-size: 12px; margin: 16px 0 8px; }
             .pitch-controls { margin-bottom: 14px; }
             .pitch-controls select { max-width: 300px; }
-            .pitch-note { font-size: 13px; color: #4a5568; line-height: 1.5; margin: 8px 0; }
             .pitch-key { display: inline-flex; align-items: center; gap: 5px; }
             .pitch-chart { max-width: 100%; overflow-x: auto; }
             @media (max-width: 480px) { .result-groups { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } }
@@ -1612,8 +1611,6 @@ async def read_index():
                         <span class="pitch-key"><i class="pitch-swatch learner" aria-hidden="true"></i><span data-i18n="recordingLine">Your pitch contour</span></span>
                         <span class="pitch-key"><i class="pitch-swatch expected" aria-hidden="true"></i><span data-i18n="expectedLine">Expected tone (guide from your own pitch)</span></span>
                     </div>
-                    <p class="pitch-note" data-i18n="expectedNote">The guide is drawn from your own pitch.</p>
-                    <p class="pitch-note" data-i18n="pitchNote">Tone feedback uses only your pitch contour; sample audio is not scored.</p>
                 </div>
                 <div class="pitch-nav">
                     <button type="button" id="phrasePrevBtn" class="phrase-nav" onclick="movePhrase(-1)" aria-label="Previous word" data-i18n-aria-label="phrasePrev">&#8249;</button>
@@ -1774,11 +1771,10 @@ async def read_index():
                     recordingLine: "Your pitch contour",
                     showExpectedTone: "Show the expected tone behind my pitch",
                     expectedLine: "Expected tone (guide from your own pitch)",
-                    expectedNote: "The guide is drawn from your own pitch: where a tone is already right it follows your line, where it is not it shows a basic shape to aim for. It is only a guide: the feedback also depends on length, how clearly your voice was picked up and the neighbouring sounds.",
                     resultNotes: "How to read these results",
                     phrasePrev: "Previous word",
                     phraseNext: "Next word",
-                    pitchNote: "Tone feedback uses your pitch contour only. Sample audio is not scored.", quickFeedback: "Quick feedback",
+                    quickFeedback: "Quick feedback",
                     feedbackQuestion: "How helpful was this practice? 1 = not helpful, 5 = very helpful.",
                     feedbackImprove: "Anything we should improve? (optional)", feedbackPlaceholder: "Share a short comment", sendFeedback: "Send feedback",
                     sendingFeedback: "Sending feedback...", feedbackSaved: "Thanks for your feedback!", feedbackSaveFailed: "Could not save feedback.",
@@ -1947,11 +1943,10 @@ async def read_index():
                     recordingLine: "你的音高曲線",
                     showExpectedTone: "在我的音高後面顯示預期聲調",
                     expectedLine: "預期聲調（依你自己的音高）",
-                    expectedNote: "這條參考線是依你自己的音高畫的：聲調已經正確的地方，它會貼著你的曲線；還不正確的地方，它會畫出一個基本的目標形狀。它只是參考，回饋還會考慮音節長度、聲音是否被清楚偵測，以及前後的音。",
                     resultNotes: "如何閱讀這些結果",
                     phrasePrev: "上一個詞",
                     phraseNext: "下一個詞",
-                    pitchNote: "評估只使用你的音高曲線；範例音訊不會用來評分。", quickFeedback: "快速回饋",
+                    quickFeedback: "快速回饋",
                     feedbackQuestion: "這次練習對你有幫助嗎？1 = 沒幫助，5 = 非常有幫助。",
                     feedbackImprove: "你覺得哪些地方可以改進？（選填）", feedbackPlaceholder: "請簡短留言", sendFeedback: "送出回饋",
                     sendingFeedback: "正在送出回饋…", feedbackSaved: "謝謝你的回饋！", feedbackSaveFailed: "無法儲存回饋。",
@@ -2119,11 +2114,10 @@ async def read_index():
                     recordingLine: "Đường cao độ của bạn",
                     showExpectedTone: "Hiện thanh điệu mong đợi phía sau đường cao độ của tôi",
                     expectedLine: "Thanh điệu mong đợi (theo cao độ của chính bạn)",
-                    expectedNote: "Đường mong đợi được vẽ từ chính cao độ của bạn: chỗ thanh điệu đã đúng thì nó bám theo đường của bạn, chỗ chưa đúng thì nó vẽ hình cơ bản để bạn hướng tới. Đây chỉ là gợi ý: phản hồi còn phụ thuộc vào độ dài âm, mức thu giọng rõ hay không và các âm xung quanh.",
                     resultNotes: "Cách đọc kết quả này",
                     phrasePrev: "Từ trước",
                     phraseNext: "Từ tiếp theo",
-                    pitchNote: "Phản hồi thanh điệu chỉ dựa trên đường cao độ của bạn; âm thanh mẫu không dùng để chấm.", quickFeedback: "Phản hồi nhanh",
+                    quickFeedback: "Phản hồi nhanh",
                     feedbackQuestion: "Buổi luyện tập này hữu ích thế nào? 1 = không hữu ích, 5 = rất hữu ích.",
                     feedbackImprove: "Bạn muốn chúng tôi cải thiện điều gì? (không bắt buộc)", feedbackPlaceholder: "Viết nhận xét ngắn", sendFeedback: "Gửi phản hồi",
                     sendingFeedback: "Đang gửi phản hồi...", feedbackSaved: "Cảm ơn phản hồi của bạn!", feedbackSaveFailed: "Không thể lưu phản hồi.",
@@ -2323,11 +2317,9 @@ async def read_index():
                     recordingLine: "Kontur nada suara Anda",
                     showExpectedTone: "Tampilkan nada yang diharapkan di belakang kontur saya",
                     expectedLine: "Nada yang diharapkan (berdasarkan nada Anda sendiri)",
-                    expectedNote: "Garis ini digambar dari nada Anda sendiri: bila nada sudah benar ia mengikuti garis Anda, bila belum ia menunjukkan bentuk dasar yang dituju. Ini hanya panduan: umpan balik juga bergantung pada panjang bunyi, seberapa jelas suara Anda tertangkap, dan bunyi di sekitarnya.",
                     resultNotes: "Cara membaca hasil ini",
                     phrasePrev: "Kata sebelumnya",
                     phraseNext: "Kata berikutnya",
-                    pitchNote: "Umpan balik nada hanya memakai kontur nada suara Anda. Audio contoh tidak dinilai.",
                     quickFeedback: "Masukan singkat",
                     feedbackQuestion: "Seberapa membantu latihan ini? 1 = tidak membantu, 5 = sangat membantu.",
                     feedbackImprove: "Apa yang perlu kami perbaiki? (opsional)",
@@ -2604,11 +2596,9 @@ async def read_index():
                     recordingLine: "आपकी पिच रेखा",
                     showExpectedTone: "मेरी पिच के पीछे अपेक्षित स्वर दिखाएँ",
                     expectedLine: "अपेक्षित स्वर (आपकी अपनी पिच पर आधारित)",
-                    expectedNote: "यह रेखा आपकी अपनी पिच से बनी है: जहाँ स्वर सही है वहाँ यह आपकी रेखा के साथ चलती है, जहाँ नहीं है वहाँ लक्ष्य की एक बुनियादी आकृति दिखाती है। यह केवल मार्गदर्शन है: फ़ीडबैक अक्षर की लंबाई, आपकी आवाज़ कितनी साफ़ पकड़ी गई और आसपास की ध्वनियों पर भी निर्भर करता है।",
                     resultNotes: "इन परिणामों को कैसे पढ़ें",
                     phrasePrev: "पिछला शब्द",
                     phraseNext: "अगला शब्द",
-                    pitchNote: "टोन की प्रतिक्रिया केवल आपकी पिच रेखा पर आधारित है। नमूना ऑडियो का अंकन नहीं होता।",
                     quickFeedback: "त्वरित प्रतिक्रिया",
                     feedbackQuestion: "यह अभ्यास कितना उपयोगी रहा? 1 = उपयोगी नहीं, 5 = बहुत उपयोगी।",
                     feedbackImprove: "हमें क्या सुधारना चाहिए? (वैकल्पिक)",
