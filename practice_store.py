@@ -28,6 +28,7 @@ def _now():
 
 
 # Accounts made by tests and tools: never on the leaderboard.
+MODEL_VOICE_MODE = "model_voice"                  # scoring_mode of an attempt judged by following the teachers' recordings: not on the boards, not a lesson result
 ACCURACY_MIN_LESSONS = 5                      # lessons a learner needs before they appear on the accuracy board
 LEADERBOARD_HIDDEN_NAMES = re.compile(r"^(mandarin-speaking|cal-log-|cal log$|lvl-api|tts-check|strict-check|no-audio|measured)", re.IGNORECASE)
 
@@ -254,8 +255,11 @@ class PracticeStore:
             if LEADERBOARD_HIDDEN_NAMES.match(row["name"] or ""):
                 continue
             try:
-                counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
+                summary = json.loads(row["summary_json"] or "{}")
+                counts = summary.get("syllables") or {}
             except (ValueError, AttributeError):
+                continue
+            if summary.get("scoring_mode") == MODEL_VOICE_MODE:        # "Theo giọng mẫu" attempts are shown to the learner, never counted
                 continue
             good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
             total = good + okay + practice
@@ -320,8 +324,11 @@ class PracticeStore:
         lessons = {}
         for row in rows:
             try:
-                counts = json.loads(row["summary_json"] or "{}").get("syllables") or {}
+                summary = json.loads(row["summary_json"] or "{}")
+                counts = summary.get("syllables") or {}
             except (ValueError, AttributeError):
+                continue
+            if summary.get("scoring_mode") == MODEL_VOICE_MODE:        # "Theo giọng mẫu" attempts are shown to the learner, never counted
                 continue
             good, okay, practice = (int(counts.get(k) or 0) for k in ("likely_correct", "insufficient_evidence", "practice"))
             total = good + okay + practice

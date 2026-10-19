@@ -13,7 +13,7 @@ class AssessmentConcurrencyTests(unittest.TestCase):
 
         both_entered = threading.Barrier(2)
 
-        def assess(file, script, sample_id, student_id, mode, level):
+        def assess(file, script, sample_id, student_id, mode, level, scoring_mode="rules"):
             both_entered.wait(timeout=5)
             return {"student_id": student_id, "script": script}
 

@@ -1,6 +1,6 @@
 # Second assessment mode: follow the model voice (design)
 
-Date: 2026-10-19 · Status: draft for the owner's review
+Date: 2026-10-19 · Status: approved by the owner ("làm luôn"), implemented 2026-10-19
 
 ## Goal
 

@@ -9,6 +9,7 @@ The system checks recordings against a **known transcript**: audio preparation �
 - Chapter 5 word and phrase practice, textbook sentence practice, and custom text practice.
 - Personalized pitch-range calibration using five reference tones.
 - `Good`, `Okay`, or `Needs practice` feedback. Insufficient acoustic evidence results in `Okay`.
+- A second scoring mode on the practice page, "Follow the model voice" (Vietnamese: *Theo giọng mẫu*): the pitch of each syllable is compared with contours taken from the teachers' recordings instead of going through the tone rules. It is shown to the learner but not counted on the leaderboards, and own text always uses the rules.
 - English, Traditional Chinese, Vietnamese, Indonesian, and Hindi interfaces.
 - Learner profiles, recording history, feedback ratings, and an administration page.
 
@@ -131,6 +132,7 @@ External datasets, the `env/` environment, external MFA models, and learner data
 | `capt_core.py` | Text processing, syllables, and expected tone contexts. |
 | `tone_pipeline.py` | Calibration, MFA alignment, F0 extraction, and tone verification. |
 | `tone_assessment.py` | Word and phrase feedback assembled from verification results. |
+| `model_voice.py`, `model_voice_contours.json` | The model-voice scoring mode (DTW against teacher contours) and its data; `tools/build_model_voice_contours.py` rebuilds the data. |
 | `mfa_warm.py`, `mfa_oneshot_worker.py` | Preloaded alignment worker management. |
 | `practice_store.py`, `user_archive.py` | Profiles, history, recordings, and archive copies. |
 | `chapter5_word_practice/`, `assets/calibration/`, `mfa/` | Runtime data and resources. |

@@ -36,6 +36,7 @@ import audio_prep
 from assessment_concurrency import assessment_capacity
 import capt_core
 import mfa_warm
+import model_voice
 
 CONFIG_PATH = Path(__file__).with_name("tone_v1_config.yaml")
 MFA_EXE = os.environ.get("MFA_EXE", r"D:\CodexData\mfa-runtime\env\Scripts\mfa.exe")
@@ -1352,6 +1353,7 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
 
     expected = context["target_tone"]
     accepted = [expected, *context.get("also_accept_tones", ())]        # sentence practice may accept a sandhi alternative
+    base_reasons = list(result["reasons"])                              # before any verdict-specific reason (the model-voice mode starts from these)
     config = context_config(config, context)                            # tolerance that depends on the neighbours (off by default)
     score_start, score_end = scoring_window(config, context, seg_start, seg_end)
     score_times, score_st, score_feats = times, st, feats
@@ -1423,7 +1425,47 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         result["reasons"].append(
             "low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
     result["feedback"] = student_feedback(result["status"], expected, config)
+    if (config.get("model_voice") or {}).get("enabled"):
+        _apply_model_voice(result, st, clean, accepted, context, quality, config, base_reasons, seg_ms=(seg_end - seg_start) * 1000.0,
+                           accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment, trimmed_frames=trimmed_frames)
     return result
+
+
+def _apply_model_voice(result, st, clean, accepted, context, quality, config, base_reasons, *, seg_ms, accuse_ok, doubtful_alignment, trimmed_frames):
+    """The "Theo giọng mẫu" mode: the verdict of a judged syllable comes from the comparison with the teachers' contours (model_voice.py).
+
+    The rules' verdict is kept as `rule_status`. What the rules guard against stays guarded: a syllable can be accused only when the recording is stable, nothing
+    was cut off behind a tracking jump, the alignment is not doubtful, the window is long enough and the second syllable of a reduplication is not involved."""
+    settings = config["model_voice"]
+    contours = model_voice.load_contours()
+    expected = accepted[0]
+    judged = model_voice.judge(model_voice.judged_values(st), model_voice.recording_std(clean["st"]), accepted, settings, contours)
+    result["rule_status"] = result["status"]
+    if judged is None:
+        return                                                          # too little to compare: the rules' verdict stays
+    floor = (config["confidence"].get("practice_min_window_ms_by_tone") or {}).get(expected, config["confidence"].get("practice_min_window_ms", 0))
+    short_window = seg_ms < floor
+    softened = bool(config["tone"].get("soften_reduplication") and context.get("is_reduplicated"))
+    can_accuse = accuse_ok and trimmed_frames == 0 and not doubtful_alignment and not short_window and not softened
+    status = model_voice.verdict(judged["score"], quality, can_accuse, config)
+    reasons = list(base_reasons)
+    if status == "insufficient_evidence":
+        if judged["score"] <= float(settings["practice_at"]) and not can_accuse:      # it would be an accusation: say why it is held back
+            reasons.append("short_analysis_window" if short_window else "bad_alignment" if doubtful_alignment else
+                           "reduplicated_second_syllable" if softened else "unstable_pitch_track" if not accuse_ok else "octave_jump_in_segment")
+        else:
+            reasons.append("low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
+    scores = judged["scores"]
+    if status != "likely_correct":
+        best, scores = model_voice.closest_tone(judged["sequence"], scores, settings, contours)
+        if best not in accepted:
+            result["model_closest_tone"] = best
+    result.update({
+        "status": status, "reasons": reasons, "model_score": round(judged["score"], 3),
+        "model_scores": {str(tone): round(value, 3) for tone, value in sorted(scores.items())},
+        "feedback": student_feedback(status, expected, config),
+    })
+    result.pop("clause_final_half_t3", None)                            # that flag described a rules verdict
 
 
 def edge_fragment_mask(times, st, step_st, fragment_sec):

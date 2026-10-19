@@ -26,6 +26,7 @@ import audio_prep
 from assessment_concurrency import AssessmentBusy, AssessmentCoordinator, assessment_capacity
 import capt_core as core
 import tts_sample
+import model_voice
 import tone_assessment
 import tone_pipeline
 from practice_store import practice_store
@@ -87,6 +88,10 @@ async def explain_assessment_busy(request: Request, exc: AssessmentBusy):
 def warm_up_alignment():
     """With TONE_MFA_WARM=1 load the aligner now, so the first learner does not wait for `mfa align_one` to start."""
     tone_pipeline.prewarm_mfa()
+    try:
+        model_voice.warm_up()                           # compile the fast DTW of the "Theo giọng mẫu" mode now, not under the first learner
+    except Exception as exc:                            # it only makes it faster
+        print(f"Warning: the model-voice DTW could not be pre-compiled: {exc}")
 
 ADMIN_PASSWORD = os.environ.get("MANDARIN_ADMIN_PASSWORD", "").strip()
 ADMIN_SESSION_COOKIE = "mandarin_admin_session"
@@ -1327,6 +1332,10 @@ async def read_index():
             .item-progress { margin: 6px 0 0; }
             .item-meaning { margin: 8px 0 2px; color: #2d3748; font-size: 15px; line-height: 1.45; }
             .item-meaning b { color: #4a5568; }
+            .scoring-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 10px 0 4px; }
+            .scoring-mode select { width: auto; max-width: 100%; }
+            .scoring-mode .upload-hint { flex-basis: 100%; margin: 0; }
+            .scoring-badge { margin: 4px 0 10px; padding: 6px 10px; border-left: 3px solid #805ad5; background: #faf5ff; color: #44337a; font-size: 14px; }
             .item-progress.practiced { color: #276749; font-weight: 600; }
             #practiceMode { scroll-margin-top: 12px; }
             @media (min-width: 1280px) {
@@ -1478,6 +1487,15 @@ async def read_index():
                 <label><input type="radio" name="practiceMode" value="chapter5_word" onchange="changePracticeMode()"><span data-i18n="chapter5WordMode">Topics</span></label>
                 <label><input type="radio" name="practiceMode" value="custom" onchange="changePracticeMode()"><span data-i18n="customTextMode">My own text</span></label>
             </fieldset>
+
+            <div class="scoring-mode">
+                <label for="scoringModeSelect"><b data-i18n="scoringModeLabel">Scoring</b></label>
+                <select id="scoringModeSelect" onchange="changeScoringMode()">
+                    <option value="rules" data-i18n="scoringModeRules">Rules</option>
+                    <option value="model_voice" data-i18n="scoringModeModelVoice">Follow the model voice</option>
+                </select>
+                <p id="scoringModeHint" class="upload-hint" hidden></p>
+            </div>
 
             <div id="chapter5CategoryPicker" class="chapter5-category-picker" hidden>
                 <label for="chapter5CategorySelect"><b data-i18n="chapter5Topic">Topic</b></label>
@@ -1639,6 +1657,9 @@ async def read_index():
             let voiceCalibrationTimer = null;
             let isVoiceCalibrationRecording = false;
             let isVoiceCalibrationProcessing = false;
+            // How the syllables are judged: "rules" (the default) or "model_voice" (compared with the teachers' recordings, "Theo giọng mẫu"). Remembered in this browser;
+            // own text has no teacher recording to follow and is always judged by the rules.
+            let scoringMode = (() => { try { return localStorage.getItem("scoringMode") === "model_voice" ? "model_voice" : "rules"; } catch (error) { return "rules"; } })();
             let isRecording = false;
             let isProcessing = false;
             let calibrationHadError = false;   // "Do this later" only appears once calibration has failed (or is done)
@@ -1721,6 +1742,13 @@ async def read_index():
             itemProgress: "Latest result: {last}% \u00b7 {when}",
             itemNotPracticed: "Not practised yet.",
             itemMeaning: "Meaning",
+            scoringModeLabel: "Scoring",
+            scoringModeRules: "Rules",
+            scoringModeModelVoice: "Follow the model voice",
+            scoringModeNotCounted: "Compared with the teachers' recordings. These attempts are shown but not counted on the leaderboards.",
+            scoringModeCustomHint: "Your own text is always judged by the rules (there is no teacher recording to follow).",
+            scoringBadgeModelVoice: "Judged by following the model voice (not counted on the leaderboards).",
+            adviceHeardAs: "“{char}” – sounds closer to tone {tone}.",
             customTextPlaceholder: "Type or paste Mandarin text here…", customTextReady: "Your text is ready. Record yourself reading it.",
             customTextRequiresHanzi: "Enter Chinese characters to assess Mandarin tones.",
                     sampleRecording: "Sample recording (Lessons 5–8):", loadingSamples: "Loading sample recordings...", matchingScript: "Matching script:",
@@ -1887,6 +1915,13 @@ async def read_index():
                     itemProgress: "最近成績：{last}%\u30fb{when}",
                     itemNotPracticed: "還沒練習過。",
                     itemMeaning: "意思",
+                    scoringModeLabel: "評分方式",
+                    scoringModeRules: "規則",
+                    scoringModeModelVoice: "對照範例發音",
+                    scoringModeNotCounted: "與老師的錄音比對。這類練習會顯示結果，但不列入排行榜。",
+                    scoringModeCustomHint: "自己輸入的文字一律用規則評分（沒有老師的錄音可以對照）。",
+                    scoringBadgeModelVoice: "以對照範例發音評分（不列入排行榜）。",
+                    adviceHeardAs: "「{char}」聽起來比較接近第{tone}聲。",
                     customTextPlaceholder: "在此輸入或貼上華語文本…", customTextReady: "文本已準備好，請依照內容錄音。",
                     customTextRequiresHanzi: "請輸入中文字才能評估華語聲調。",
                     sampleRecording: "範例錄音（第 5–8 課）：", loadingSamples: "正在載入範例錄音…", matchingScript: "練習文本：",
@@ -2052,6 +2087,13 @@ async def read_index():
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
                     itemNotPracticed: "Chưa luyện.",
                     itemMeaning: "Nghĩa",
+                    scoringModeLabel: "Cách chấm",
+                    scoringModeRules: "Quy tắc",
+                    scoringModeModelVoice: "Theo giọng mẫu",
+                    scoringModeNotCounted: "So với bản ghi của giáo viên. Các lần đọc này được hiện kết quả nhưng không tính vào bảng xếp hạng.",
+                    scoringModeCustomHint: "Chữ bạn tự nhập luôn được chấm theo quy tắc (không có bản ghi giáo viên để so).",
+                    scoringBadgeModelVoice: "Chấm theo giọng mẫu (không tính vào bảng xếp hạng).",
+                    adviceHeardAs: "“{char}” – nghe gần với thanh {tone} hơn.",
                     customTextPlaceholder: "Nhập hoặc dán văn bản tiếng Trung tại đây…", customTextReady: "Đã sẵn sàng. Hãy đọc văn bản và ghi âm.",
                     customTextRequiresHanzi: "Hãy nhập chữ Hán để đánh giá thanh điệu tiếng Trung.",
                     sampleRecording: "Bản ghi mẫu (Bài 5–8):", loadingSamples: "Đang tải bản ghi mẫu...", matchingScript: "Nội dung luyện đọc:",
@@ -2236,6 +2278,13 @@ async def read_index():
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
                     itemNotPracticed: "Belum dilatih.",
                     itemMeaning: "Arti",
+                    scoringModeLabel: "Cara penilaian",
+                    scoringModeRules: "Aturan",
+                    scoringModeModelVoice: "Sesuai suara contoh",
+                    scoringModeNotCounted: "Dibandingkan dengan rekaman guru. Hasil percobaan ini ditampilkan tetapi tidak dihitung di papan peringkat.",
+                    scoringModeCustomHint: "Teks yang Anda ketik sendiri selalu dinilai dengan aturan (tidak ada rekaman guru untuk dibandingkan).",
+                    scoringBadgeModelVoice: "Dinilai sesuai suara contoh (tidak dihitung di papan peringkat).",
+                    adviceHeardAs: "“{char}” – terdengar lebih dekat ke nada {tone}.",
                     customTextPlaceholder: "Ketik atau tempel teks Mandarin di sini…",
                     customTextReady: "Teks Anda siap. Rekam diri Anda membacanya.",
                     customTextRequiresHanzi: "Masukkan aksara Mandarin untuk menilai nada Mandarin.",
@@ -2510,6 +2559,13 @@ async def read_index():
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
                     itemNotPracticed: "अभी अभ्यास नहीं किया।",
                     itemMeaning: "अर्थ",
+                    scoringModeLabel: "मूल्यांकन का तरीका",
+                    scoringModeRules: "नियम",
+                    scoringModeModelVoice: "आदर्श आवाज़ के अनुसार",
+                    scoringModeNotCounted: "शिक्षकों की रिकॉर्डिंग से तुलना। इन प्रयासों के नतीजे दिखते हैं, लेकिन लीडरबोर्ड में नहीं गिने जाते।",
+                    scoringModeCustomHint: "आपका अपना लिखा पाठ हमेशा नियमों से जाँचा जाता है (तुलना के लिए शिक्षक की रिकॉर्डिंग नहीं है)।",
+                    scoringBadgeModelVoice: "आदर्श आवाज़ के अनुसार जाँचा गया (लीडरबोर्ड में नहीं गिना जाता)।",
+                    adviceHeardAs: "“{char}” – स्वर {tone} के ज़्यादा क़रीब सुनाई देता है।",
                     customTextPlaceholder: "यहाँ मंदारिन पाठ लिखें या चिपकाएँ…",
                     customTextReady: "आपका पाठ तैयार है। इसे पढ़ते हुए अपनी रिकॉर्डिंग करें।",
                     customTextRequiresHanzi: "मंदारिन टोन जाँचने के लिए चीनी अक्षर दर्ज करें।",
@@ -2822,6 +2878,7 @@ async def read_index():
                 renderBoardHeader();
                 if (lastLeaderboard) renderLeaderboard(lastLeaderboard);
                 syncResultButtons();
+                syncScoringMode();
                 renderItemMeaning();
                 renderItemProgress();
                 const status = document.getElementById("status");
@@ -2987,6 +3044,28 @@ async def read_index():
 
             function selectedPracticeMode() {
                 return document.querySelector('input[name="practiceMode"]:checked')?.value || "book";
+            }
+
+            function effectiveScoringMode(mode = selectedPracticeMode()) {
+                return mode === "custom" ? "rules" : scoringMode;
+            }
+
+            function changeScoringMode() {
+                scoringMode = document.getElementById("scoringModeSelect").value === "model_voice" ? "model_voice" : "rules";
+                try { localStorage.setItem("scoringMode", scoringMode); } catch (error) { /* a private window: the choice lasts for this visit */ }
+                syncScoringMode();
+            }
+
+            function syncScoringMode() {
+                const select = document.getElementById("scoringModeSelect");
+                const hint = document.getElementById("scoringModeHint");
+                if (!select || !hint) return;
+                const custom = selectedPracticeMode() === "custom";
+                select.value = effectiveScoringMode();
+                select.disabled = custom || isProcessing || isRecording || isSavingStudent;
+                const key = custom ? "scoringModeCustomHint" : scoringMode === "model_voice" ? "scoringModeNotCounted" : "";
+                hint.hidden = !key;
+                hint.textContent = key ? t(key) : "";
             }
 
             function hasMandarinCharacters(text) {
@@ -3933,6 +4012,7 @@ async def read_index():
                 fileInput.disabled = busy || !canPractice;
                 document.getElementById("uploadBtn").disabled = busy || !canPractice || !hasScript || Boolean(audioFileError(fileInput.files[0]));
                 syncResultButtons();
+                syncScoringMode();
                 renderItemMeaning();
                 renderItemProgress();
             }
@@ -4035,6 +4115,7 @@ async def read_index():
                 formData.append("script", script);
                 formData.append("sample_id", sampleId);
                 formData.append("practice_mode", practiceMode);
+                formData.append("scoring_mode", effectiveScoringMode(practiceMode));
                 formData.append("student_id", activeStudent.id);
                 formData.append("include_transcript", "true");
 
@@ -4548,6 +4629,7 @@ async def read_index():
                     const iconClass = icon ? "status-icon" : "status-icon half";
                     const advice = (Array.isArray(phrase.feedback_items) ? phrase.feedback_items : []).map(item =>
                         item.type === "tone" && item.tone >= 1 && item.tone <= 4 ? t(`adviceTone${item.tone}`, { char: item.char })
+                        : item.type === "heard_as" && item.tone >= 1 && item.tone <= 4 ? t("adviceHeardAs", { char: item.char, tone: item.tone })
                         : item.type === "retry" && retryKeys[item.code]
                             ? (item.char ? `\u201c${item.char}\u201d \u2013 ` : "") + t(retryKeys[item.code]) : "").filter(Boolean);
                     return `<button type="button" class="word-card ${statusClass(phrase.status)}" aria-controls="pitchChart" aria-pressed="false" onclick="selectPhrase(${index})">
@@ -4561,6 +4643,7 @@ async def read_index():
                 document.getElementById("pronunciationResults").innerHTML = `
                     <section class="pronunciation-results" aria-labelledby="pronunciation-title">
                         <h3 id="pronunciation-title">${t("pronunciationFeedback")}</h3>
+                        ${data.scoring_mode === "model_voice" ? `<p class="scoring-badge">${escapeHtml(t("scoringBadgeModelVoice"))}</p>` : ""}
                         <details class="results-notes">
                             <summary>${t("resultNotes")}</summary>
                             <p class="results-note">${transcriptNote} ${t("renderPhraseScores")}</p>
@@ -4602,9 +4685,10 @@ def assess_pronunciation(
     include_transcript: bool = Form(default=True),   # accepted for older clients; ASR is no longer used
     practice_mode: str = Form(default="book"),
     level: str = Form(default=""),          # API / tools only (the page has no switch and never sends it): "" = the default for the learner's group (easy for everybody), or "standard" / "easy"
+    scoring_mode: str = Form(default="rules"),    # "rules" (the default) or "model_voice" ("Theo giọng mẫu": compared with the teachers' recordings; shown, not counted on the boards)
 ):
     with ASSESSMENTS.assessment(student_id):
-        return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level)
+        return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level, scoring_mode)
 
 
 def _assess_pronunciation(
@@ -4614,6 +4698,7 @@ def _assess_pronunciation(
     student_id: str,
     practice_mode: str = "book",
     level: str = "",
+    scoring_mode: str = "rules",
 ):
     """Verify the learner's tones against the known script (calibrated Praat AC+CC F0, MFA alignment)."""
     allowed_extensions = (".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm")
@@ -4634,6 +4719,13 @@ def _assess_pronunciation(
     practice_mode = str(practice_mode or "book").strip().lower()
     if practice_mode not in {"book", "custom", "chapter5_word"}:
         raise HTTPException(status_code=400, detail="Invalid practice mode.")
+    scoring_mode = str(scoring_mode or model_voice.MODE_RULES).strip().lower()
+    if scoring_mode not in model_voice.MODES:
+        raise HTTPException(status_code=400, detail="Invalid scoring mode.")
+    if practice_mode == "custom":
+        scoring_mode = model_voice.MODE_RULES              # typed text has no teacher recordings to follow
+    elif scoring_mode == model_voice.MODE_MODEL_VOICE and not model_voice.available():
+        raise HTTPException(status_code=503, detail="The model-voice scoring data is not available on this server.")
     target_script = converter.convert(script.strip())
     practice_item = None
     if practice_mode == "book":
@@ -4693,7 +4785,7 @@ def _assess_pronunciation(
             payload = tone_assessment.assess_chapter5_item(
                 prepared, item=practice_item, sample_id=sample_id,
                 target_script=target_script, calibration=voice_calibration, normalize=converter.convert,
-                level=assessment_level,
+                level=assessment_level, scoring_mode=scoring_mode,
             )
         else:
             words = (tone_assessment.segment_words(clauses, SEGMENT_LEXICON) if practice_mode == "custom"
@@ -4704,7 +4796,7 @@ def _assess_pronunciation(
                 prepared, clauses=clauses, contexts=contexts, groups=groups,
                 word_annotation_status=word_annotation_status, calibration=voice_calibration,
                 practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
-                level=assessment_level,
+                level=assessment_level, scoring_mode=scoring_mode,
             )
         try:
             payload["saved_attempt"] = practice_store.save_attempt(

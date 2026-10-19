@@ -8,17 +8,20 @@ per-syllable diagnostics under `tone_verification`. No web framework and no mode
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 
 import numpy as np
 
 import audio_prep
 import capt_core
+import model_voice
 import tone_pipeline as tp
 
 MODE = "tone_pipeline_v1"
 _CONFIG = None
 _SENTENCE_CONFIG = None
 _LEVEL_CONFIGS = {}
+_MODEL_VOICE_CONFIGS = {}
 STANDARD = "standard"
 
 
@@ -31,11 +34,26 @@ def _layer(*layers):
     return merged
 
 
-def get_config(profile=None, level=None):
+def get_config(profile=None, level=None, scoring_mode=None):
     """The frozen configuration. profile="sentence" layers the `sentence` overrides on top (book / custom practice).
 
     `level` ("easy", ...) layers the matching `levels:` section of the config on top of that: the same pipeline asking for a
-    smaller contour movement (see `levels` in tone_v1_config.yaml). None / "standard" is the config as it is."""
+    smaller contour movement (see `levels` in tone_v1_config.yaml). None / "standard" is the config as it is.
+
+    `scoring_mode="model_voice"` is the same configuration with the "Theo giọng mẫu" verdict switched on (model_voice.py); None / "rules" is as it is."""
+    if scoring_mode in (None, model_voice.MODE_RULES):
+        return _rules_config(profile, level)
+    if scoring_mode != model_voice.MODE_MODEL_VOICE:
+        raise ValueError(f"Unknown scoring mode: {scoring_mode}")
+    key = (profile, level)
+    if key not in _MODEL_VOICE_CONFIGS:
+        config = deepcopy(_rules_config(profile, level))
+        config.setdefault("model_voice", {})["enabled"] = True
+        _MODEL_VOICE_CONFIGS[key] = config
+    return _MODEL_VOICE_CONFIGS[key]
+
+
+def _rules_config(profile=None, level=None):
     global _CONFIG, _SENTENCE_CONFIG
     if _CONFIG is None:
         _CONFIG = tp.load_config()
@@ -338,6 +356,15 @@ def _doubtful_character(group, names=None):
 
 
 def phrase_feedback(group):
+    """`_phrase_advice` plus, in the "Theo giọng mẫu" mode, which tone a syllable that is not Good sounds closest to."""
+    items = _phrase_advice(group)
+    heard = next((s for s in group if s.get("model_closest_tone") and s["status"] != "likely_correct"), None)
+    if heard is not None:
+        items = [*items, {"type": "heard_as", "char": heard["character"], "tone": int(heard["model_closest_tone"])}]
+    return items
+
+
+def _phrase_advice(group):
     """What to do to improve a word, as codes for the UI to word in the learner's language (no measurements).
 
     practice -> the tone to work on for each flagged syllable; not enough evidence -> how to try again;
@@ -526,9 +553,9 @@ def _verify(prepared, clauses, contexts, calibration, force_mfa=False, config=No
 
 
 def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_status,
-                     calibration, practice_mode, sample_id, target_script, level=None):
+                     calibration, practice_mode, sample_id, target_script, level=None, scoring_mode=None):
     """Book / custom practice: one script, grouped into phrases by word annotation or clause."""
-    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence", level))
+    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence", level, scoring_mode))
     payload = build_payload(
         result, groups=groups, word_annotation_status=word_annotation_status,
         boundaries_from=("word-level JSON grouped over MFA syllable boundaries"
@@ -538,6 +565,7 @@ def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_sta
     payload["level"] = level or STANDARD
     payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
     payload["length_check"] = (payload["tone_verification"].get("f0_extraction") or {}).get("length_check")
+    _mark_scoring_mode(payload, scoring_mode)
     return payload
 
 
@@ -589,7 +617,14 @@ def best_variant(prepared, candidates, verify, config=None):
     return candidate, window, result, tried
 
 
-def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibration, normalize, level=None):
+def _mark_scoring_mode(payload, scoring_mode):
+    """Say which verdict the syllables carry, in the payload and in the summary that is saved with the attempt (the boards read it there)."""
+    mode = scoring_mode or model_voice.MODE_RULES
+    payload["scoring_mode"] = mode
+    payload["summary"]["scoring_mode"] = mode
+
+
+def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibration, normalize, level=None, scoring_mode=None):
     """Chapter 5 word: score the reading in the recording that matches one of the allowed variants."""
     candidates = [c for c in chapter5_candidates(item, target_script, normalize)
                   if len(chapter5_contexts(c["clauses"], item)) == len(c["chars"])]
@@ -601,7 +636,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
     def verify(audio, candidate):
         # With several variants every one is force-aligned so they compare fairly.
         return _verify(audio, candidate["clauses"], chapter5_contexts(candidate["clauses"], item), calibration,
-                       force_mfa=len(candidates) > 1, config=get_config(None, level))
+                       force_mfa=len(candidates) > 1, config=get_config(None, level, scoring_mode))
 
     candidate, window, result, tried = best_variant(prepared, candidates, verify)
     payload = build_payload(
@@ -620,4 +655,5 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
         "start_sec": round(window[0], 2), "end_sec": round(window[1], 2),
         "note": "the recording holds more than one reading; only this one was scored"}
     payload["tone_verification"]["script_variants_tried"] = tried
+    _mark_scoring_mode(payload, scoring_mode)
     return payload

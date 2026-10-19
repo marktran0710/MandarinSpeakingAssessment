@@ -47,6 +47,8 @@ def _syllable_record(s):
     record["reasons"] = list(s.get("reasons") or [])
     if s.get("also_accepted_tones"):
         record["also_accepted_tones"] = list(s["also_accepted_tones"])
+    if s.get("model_score") is not None:                              # "Theo giọng mẫu": the score, and what the rules said
+        record.update({"model_score": s["model_score"], "rule_status": s.get("rule_status"), "model_closest_tone": s.get("model_closest_tone")})
     return record
 
 
@@ -60,7 +62,7 @@ def build_record(student, attempt, audio_name, original_filename, payload):
         "target_script": payload.get("target_script"), "audio_file": audio_name, "original_filename": original_filename,
         "audio_quality": {"passed": quality.get("passed"), "reasons": list(quality.get("reasons") or [])},
         "alignment_error": (verification.get("alignment") or {}).get("error"),      # why no pitch chart: kept so it can be diagnosed
-        "summary": payload.get("summary"),
+        "summary": payload.get("summary"), "scoring_mode": payload.get("scoring_mode"),
         "phrases": [{"word": p.get("word"), "status": p.get("status"), "strict_status": p.get("strict_status"),
                      "expected_tones": p.get("expected_tone_sequence"), "advice": p.get("feedback_items")}
                     for p in payload.get("phrases") or []],
