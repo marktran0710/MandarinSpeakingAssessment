@@ -121,6 +121,7 @@ alignment:
   min_voiced_frames: 6
   allow_unk: false
   allow_spn: false
+  nucleus_includes_medial_glide: true   # the window that is judged starts at a medial glide (w, j, ɥ) before the vowel, not at the vowel: the aligner often gives the glide half of it
   # Voiced speech outside every aligned syllable (a hesitation, a repeated or extra word, loose boundaries). Up to max_unaligned_voiced_fraction all is
   # well. Above hard_unaligned_voiced_fraction the alignment is not trusted and nothing is judged. In between it is DOUBTFUL: the syllables are judged
   # as usual but the recording cannot accuse anyone (Good or Okay, never Needs practice). Measured 2026-10-17: learners

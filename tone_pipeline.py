@@ -40,6 +40,7 @@ CONFIG_PATH = Path(__file__).with_name("tone_v1_config.yaml")
 MFA_EXE = os.environ.get("MFA_EXE", r"D:\CodexData\mfa-runtime\env\Scripts\mfa.exe")
 MFA_ROOT_DIR = os.environ.get("MFA_ROOT_DIR", r"D:\CodexData\mfa-runtime\models")
 TONE_LETTERS = set("˥˦˧˨˩")
+MEDIAL_GLIDES = {"w", "j", "ɥ"}
 SILENCE_LABELS = {"", "<eps>", "sil", "sp"}
 METHOD = "tone_pipeline_v1"
 STATUSES = ("likely_correct", "practice", "insufficient_evidence")
@@ -975,10 +976,15 @@ def syllables_from_tiers(tiers, chars, config=None):
         if any(p[2] == "spn" for p in inside) and not align["allow_spn"]:
             raise AlignmentError(f"Character {char} aligned to spn; fix the dictionary.")
         nucleus = next((i for i, p in enumerate(inside) if TONE_LETTERS & set(p[2])), None)
+        nucleus_start = None if nucleus is None else float(inside[nucleus][0])
+        # A medial glide (m-w-o in 末, ts-w-o in 做, j-ia, ...) is voiced and carries the pitch like the vowel after it, and the aligner often lets it
+        # take the first half of the vowel (a 200 ms "w" in 末): the window then holds only the creaky tail. It belongs to the nucleus.
+        if nucleus is not None and nucleus >= 2 and align.get("nucleus_includes_medial_glide") and inside[nucleus - 1][2] in MEDIAL_GLIDES:
+            nucleus_start = float(inside[nucleus - 1][0])
         syllables.append({
             "char": char, "start": float(start), "end": float(end),
             "phones": [(float(p[0]), float(p[1]), p[2]) for p in inside],
-            "nucleus": None if nucleus is None else (float(inside[nucleus][0]), float(inside[-1][1])),
+            "nucleus": None if nucleus is None else (nucleus_start, float(inside[-1][1])),
         })
     return syllables
 
