@@ -8,6 +8,7 @@ import os
 import shutil
 import sqlite3
 import tempfile
+import threading
 import unicodedata
 import uuid
 from contextlib import contextmanager
@@ -37,6 +38,9 @@ def _normalize_name(name):
 
 class PracticeStore:
     def __init__(self, database_path=DATABASE_PATH, recordings_dir=RECORDINGS_DIR):
+        self._board_lock = threading.Lock()
+        self._board_generation = 0
+        self._board_cache = {}
         self.database_path = Path(database_path)
         self.recordings_dir = Path(recordings_dir)
         self.initialize()
@@ -212,6 +216,25 @@ class PracticeStore:
         return student
 
     def leaderboard(self, viewer_id=None, limit=10):
+        """The leaderboard answer (see `_leaderboard`), worked out once until an attempt is saved or a learner is deleted: it reads every attempt of every
+        learner, which is cheap with a few hundred and not with tens of thousands, and the page asks for it on every visit and after every assessment."""
+        key = (viewer_id, limit)
+        with self._board_lock:
+            generation, cached = self._board_generation, self._board_cache.get(key)
+        if cached is not None:
+            return cached
+        board = self._leaderboard(viewer_id, limit)
+        with self._board_lock:
+            if generation == self._board_generation:                # nothing was saved while it was being worked out
+                self._board_cache[key] = board
+        return board
+
+    def _boards_changed(self):
+        with self._board_lock:
+            self._board_generation += 1
+            self._board_cache.clear()
+
+    def _leaderboard(self, viewer_id=None, limit=10):
         """The best-scoring learners. A lesson (a book sentence or a Chapter 5 word) is worth 0-100 points: the BEST attempt at it,
         100 x (Good syllables + half of the Okay ones) / all syllables; the points of all lessons add up. Own text does not count (a single easy
         character would give full points), nor does an attempt without a single Good syllable (silence, a failed alignment: all Okay).
@@ -400,10 +423,17 @@ class PracticeStore:
             audio_path.unlink(missing_ok=True)
             raise
 
+        self._boards_changed()
         return saved_attempt
 
     def delete_student_data(self, student_id):
         """Delete a profile and every linked record, with recoverable audio cleanup."""
+        try:
+            return self._delete_student_data(student_id)
+        finally:
+            self._boards_changed()
+
+    def _delete_student_data(self, student_id):
         connection = self._connect()
         staging_dir = None
         manifest_path = None

@@ -18,7 +18,9 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from functools import lru_cache
 from pydantic import BaseModel
+from starlette.middleware.gzip import GZipMiddleware
 from pypinyin import lazy_pinyin, Style
 
 import audio_prep
@@ -34,6 +36,26 @@ user_archive = UserArchive.from_env()
 
 # Initialize the FastAPI app
 app = FastAPI(title="Taiwan Mandarin CAPT API")
+
+
+class TextGzip:
+    """gzip for the page and the JSON answers (the page is 280 KB, an assessment answer with its pitch contours several hundred): about a fifth of the bytes
+    on a slow connection. Never for audio: it is compressed already, and the players seek with Range requests."""
+
+    def __init__(self, app):
+        self.plain = app
+        self.compressed = GZipMiddleware(app, minimum_size=1000, compresslevel=4)
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        wants_range = any(name == b"range" for name, _ in scope.get("headers", []))
+        if scope["type"] == "http" and not wants_range and "audio" not in path and not path.startswith(("/api/tts-sample", "/api/calibration-sound")):
+            await self.compressed(scope, receive, send)
+        else:
+            await self.plain(scope, receive, send)
+
+
+app.add_middleware(TextGzip)
 
 
 @app.exception_handler(RequestValidationError)
@@ -159,7 +181,32 @@ CHAPTER5_CATEGORY_MANIFEST = CHAPTER5_WORD_DATA_DIR / "categories.json"
 CHAPTER5_AUDIO_DIR = CHAPTER5_WORD_DATA_DIR / "audio"
 
 
+_CHAPTER5_TAXONOMY = {"stamp": None, "payload": None}
+_CHAPTER5_DISPLAY = {}
+
+
+def chapter5_display(item):
+    """(character pinyin, display cells) of a word: fixed data, worked out once."""
+    shown = _CHAPTER5_DISPLAY.get(item["word_key"])
+    if shown is None:
+        shown = _CHAPTER5_DISPLAY[item["word_key"]] = (tone_assessment.chapter5_character_pinyin(item), tone_assessment.chapter5_display_cells(item))
+    return shown
+
+
 def load_chapter5_taxonomy():
+    """The category data, read again only when the file changes."""
+    try:
+        stamp = (str(CHAPTER5_CATEGORY_MANIFEST), CHAPTER5_CATEGORY_MANIFEST.stat().st_mtime_ns)
+    except OSError:
+        stamp = None
+    if stamp is not None and _CHAPTER5_TAXONOMY["stamp"] == stamp:
+        return _CHAPTER5_TAXONOMY["payload"]
+    payload = _read_chapter5_taxonomy()
+    _CHAPTER5_TAXONOMY.update(stamp=stamp, payload=payload)
+    return payload
+
+
+def _read_chapter5_taxonomy():
     if not CHAPTER5_CATEGORY_MANIFEST.is_file():
         print(f"Warning: Chapter 5 category data was not found: {CHAPTER5_CATEGORY_MANIFEST}")
         return {"categories": [], "items": {}}
@@ -249,6 +296,9 @@ async def get_pinyin(text: str = ""):
 
 
 
+_sample_pinyin = lru_cache(maxsize=1024)(core.display_pinyin)           # the readings are fixed data: work each script out once
+
+
 @app.get("/api/sample-lessons")
 async def get_sample_lessons():
     return [
@@ -259,7 +309,7 @@ async def get_sample_lessons():
             "scene": sample["scene"],
             "character": sample["character"],
             "script": sample["script"],
-            "pinyin": core.display_pinyin(sample["script"]),
+            "pinyin": _sample_pinyin(sample["script"]),
             "audio_available": bool(sample.get("audio_available", Path(sample["audio_path"]).is_file())),
             "audio_url": (
                 f"/api/sample-lessons/{sample['id']}/audio"
@@ -295,8 +345,8 @@ async def get_chapter5_word_items():
             "script": item["script"],
             "traditional_chinese": item["traditional_chinese"],
             "pinyin": item["pinyin"],
-            "character_pinyin": tone_assessment.chapter5_character_pinyin(item),
-            "display_cells": tone_assessment.chapter5_display_cells(item),   # full form with the optional part marked, or null
+            "character_pinyin": chapter5_display(item)[0],
+            "display_cells": chapter5_display(item)[1],      # full form with the optional part marked, or null
             "category_id": category_assignments.get(str(item["word_id"]), {}).get("category_id"),
             "subcategory_id": category_assignments.get(str(item["word_id"]), {}).get("subcategory_id"),
             "pos": item["pos"],

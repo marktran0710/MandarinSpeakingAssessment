@@ -253,7 +253,8 @@ class OptionalPartTests(unittest.TestCase):
 
     def test_the_page_renders_cells_and_explains_the_optional_part_in_every_language(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
-        self.assertIn('"display_cells": tone_assessment.chapter5_display_cells(item)', source)
+        self.assertIn('"display_cells": chapter5_display(item)[1]', source)
+        self.assertIn("tone_assessment.chapter5_display_cells(item)", source)
         self.assertIn('renderTranscript(cells ? { cells } : { script: item.script, pinyin: item.character_pinyin || [] });', source)
         self.assertIn('id="chapter5OptionalHint"', source)
         self.assertIn(".transcript-char.optional {", source)

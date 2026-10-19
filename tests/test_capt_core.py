@@ -204,8 +204,9 @@ class TestDisplayPinyin(unittest.TestCase):
     def test_the_pages_use_it(self):
         with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "main.py"), encoding="utf-8") as handle:
             source = handle.read()
-        self.assertIn('core.display_pinyin(sample["script"])', source)
-        self.assertIn('tone_assessment.chapter5_character_pinyin(item)', source)
+        self.assertIn("_sample_pinyin = lru_cache(maxsize=1024)(core.display_pinyin)", source)               # worked out once per script
+        self.assertIn('_sample_pinyin(sample["script"])', source)
+        self.assertIn('tone_assessment.chapter5_character_pinyin(item)', source)                       # once per word (chapter5_display)
         self.assertNotIn("lazy_pinyin(sample", source)
 
 
