@@ -1271,7 +1271,8 @@ def track_stability(track_ok, jumps_by_syllable, scope="utterance"):
     return stable, [stable] * len(jumps_by_syllable)
 
 
-def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True, accuse_ok=True, doubtful_alignment=False):
+def verify_syllable(syllable, context, extraction, clean, config, speaker, stable_track=True, accuse_ok=True,
+                    doubtful_alignment=False, model_voice_accepted_tones=None, model_voice_reference=None):
     align = config["alignment"]
     seg_start, seg_end, source = _segment_for(syllable, config)
     mask = (clean["times"] >= seg_start) & (clean["times"] < seg_end)
@@ -1316,6 +1317,13 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
         "quality_components": {k: round(v, 3) for k, v in components.items()},
         "_syllable_sec": syllable_sec, "_feats": feats,
     })
+    if (config.get("model_voice") or {}).get("capture_reference_inputs"):
+        reference_values = model_voice.judged_values(st)
+        if reference_values is not None:
+            result["_model_voice_reference_input"] = {
+                "values": reference_values.tolist(),
+                "spread": model_voice.recording_std(clean["st"]),
+            }
     if feats["voiced_frames"]:
         if speaker.get("baseline_hz"):                                 # the same points on the absolute MIDI scale
             reference = float(hz_to_midi(speaker["baseline_hz"]))
@@ -1427,11 +1435,13 @@ def verify_syllable(syllable, context, extraction, clean, config, speaker, stabl
     result["feedback"] = student_feedback(result["status"], expected, config)
     if (config.get("model_voice") or {}).get("enabled"):
         _apply_model_voice(result, st, clean, accepted, context, quality, config, base_reasons, seg_ms=(seg_end - seg_start) * 1000.0,
-                           accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment, trimmed_frames=trimmed_frames)
+                           accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment, trimmed_frames=trimmed_frames,
+                           accepted_tones=model_voice_accepted_tones, reference=model_voice_reference)
     return result
 
 
-def _apply_model_voice(result, st, clean, accepted, context, quality, config, base_reasons, *, seg_ms, accuse_ok, doubtful_alignment, trimmed_frames):
+def _apply_model_voice(result, st, clean, accepted, context, quality, config, base_reasons, *, seg_ms, accuse_ok,
+                       doubtful_alignment, trimmed_frames, accepted_tones=None, reference=None):
     """The "Theo giọng mẫu" mode: the verdict of a judged syllable comes from the comparison with the teachers' contours (model_voice.py).
 
     The rules' verdict is kept as `rule_status`. What the rules guard against stays guarded: a syllable can be accused only when the recording is stable, nothing
@@ -1439,15 +1449,24 @@ def _apply_model_voice(result, st, clean, accepted, context, quality, config, ba
     settings = config["model_voice"]
     contours = model_voice.load_contours()
     expected = accepted[0]
-    judged = model_voice.judge(model_voice.judged_values(st), model_voice.recording_std(clean["st"]), accepted, settings, contours)
+    scoring_tones = list(accepted_tones) if accepted_tones else accepted
+    judged_values = model_voice.judged_values(st)
+    spread = model_voice.recording_std(clean["st"])
+    judged = model_voice.judge(judged_values, spread, scoring_tones, settings, contours)
     result["rule_status"] = result["status"]
     if judged is None:
         return                                                          # too little to compare: the rules' verdict stays
-    floor = (config["confidence"].get("practice_min_window_ms_by_tone") or {}).get(expected, config["confidence"].get("practice_min_window_ms", 0))
+    scoring_expected = scoring_tones[0]
+    floor = (config["confidence"].get("practice_min_window_ms_by_tone") or {}).get(
+        scoring_expected, config["confidence"].get("practice_min_window_ms", 0))
     short_window = seg_ms < floor
     softened = bool(config["tone"].get("soften_reduplication") and context.get("is_reduplicated"))
     can_accuse = accuse_ok and trimmed_frames == 0 and not doubtful_alignment and not short_window and not softened
     status = model_voice.verdict(judged["score"], quality, can_accuse, config)
+    best = judged["best_tone"]
+    if status == "likely_correct" and not judged["accepted_match"]:
+        # A high expected-tone sigmoid cannot override a stronger cosine match to another tone.
+        status = "insufficient_evidence"
     reasons = list(base_reasons)
     if status == "insufficient_evidence":
         if judged["score"] <= float(settings["practice_at"]) and not can_accuse:      # it would be an accusation: say why it is held back
@@ -1455,16 +1474,32 @@ def _apply_model_voice(result, st, clean, accepted, context, quality, config, ba
                            "reduplicated_second_syllable" if softened else "unstable_pitch_track" if not accuse_ok else "octave_jump_in_segment")
         else:
             reasons.append("low_acoustic_quality" if quality < config["confidence"]["likely_correct_quality"] else "ambiguous_contour")
+    reference_cosine = None
+    if status != "likely_correct" and reference and judged_values is not None:
+        reference_cosine = model_voice.same_sample_similarity(
+            judged_values, spread, reference.get("values", ()), reference.get("spread", 1.0), settings)
+    reference_used = False
+    if (status != "likely_correct" and reference_cosine is not None
+            and reference_cosine >= float(settings.get("reference_sample_good_at", 0.65))
+            and quality >= float(settings.get("reference_sample_min_quality", 0.80))
+            and not doubtful_alignment and trimmed_frames == 0):
+        status = "likely_correct"
+        reasons = [reason for reason in reasons if reason not in {"ambiguous_contour", "low_acoustic_quality"}]
+        reasons.append("matched_same_sample_reference")
+        reference_used = True
     scores = judged["scores"]
-    if status != "likely_correct":
-        best, scores = model_voice.closest_tone(judged["sequence"], scores, settings, contours)
-        if best not in accepted:
-            result["model_closest_tone"] = best
+    if best not in accepted:
+        result["model_closest_tone"] = best
     result.update({
         "status": status, "reasons": reasons, "model_score": round(judged["score"], 3),
         "model_scores": {str(tone): round(value, 3) for tone, value in sorted(scores.items())},
+        "model_similarities": {str(tone): round(value, 3) for tone, value in sorted(judged["similarities"].items())},
+        "model_voice_scoring_tones": scoring_tones,
         "feedback": student_feedback(status, expected, config),
     })
+    if reference_cosine is not None:
+        result["model_voice_reference_cosine"] = round(reference_cosine, 3)
+        result["model_voice_reference_used"] = reference_used
     result.pop("clause_final_half_t3", None)                            # that flag described a rules verdict
 
 
@@ -1604,6 +1639,22 @@ def syllable_count(script):
 def needs_mfa(syllable_count, config):
     """A one-syllable script needs no forced alignment: the syllable is simply the voiced run."""
     return not (syllable_count == 1 and config["alignment"]["skip_mfa_single_syllable"])
+
+
+def _model_voice_scoring_tones(rule_context, model_context):
+    """Use Rules' explicit sandhi surface tones while keeping the book tone as Model Voice's displayed target.
+
+    A strict Rules sandhi replaces the tone to compare; an explicitly optional Rules alternative adds to the
+    target. Other Rules readings (for example Taiwanese lexical variants) do not override book-Pinyin scoring.
+    """
+    if model_context.get("tone_source") != "book_pinyin":
+        return None
+    rule = rule_context.get("tone_rule")
+    if rule not in {"third_tone_sandhi", "third_tone_sandhi_optional", "bu_sandhi", "yi_sandhi"}:
+        return None
+    tones = [rule_context.get("target_tone"), *rule_context.get("also_accept_tones", ())]
+    tones = list(dict.fromkeys(int(tone) for tone in tones if tone in model_voice.TONES))
+    return tones or None
 
 
 def single_syllable_alignment(extraction, char, config):
@@ -1771,12 +1822,15 @@ def search_boundaries(syllables, contexts, clean, config):
 
 
 def verify_utterance(samples, sample_rate, script, calibration=None, *, alignment=None, config=None,
-                     pitch_range=None, contexts=None, rejected_reasons=None, force_mfa=False):
+                     pitch_range=None, contexts=None, rejected_reasons=None, force_mfa=False,
+                     model_voice_contexts=None, model_voice_reference_inputs=None):
     """Full pipeline on one recording of a known script.
 
     `alignment` can inject syllables (tests, cached alignments); `pitch_range=(floor, ceiling)` overrides the
     calibrated range while keeping the calibrated median for semitone normalisation (fixed-range comparison);
     `contexts` replaces the default surface-tone contexts (word-boundary sandhi, catalog pinyin overrides).
+    When Model Voice needs a different expected path, `model_voice_contexts` supplies its book-Pinyin targets while
+    `contexts` continue to drive Rules diagnostics and alignment/boundary decisions.
     A failed alignment never raises: every syllable becomes insufficient_evidence. `rejected_reasons` (from
     audio_prep: clipped, too_quiet, noisy, ...) short-circuits before alignment with the same outcome.
     A one-syllable script is aligned by its voiced run instead of MFA unless `force_mfa` is set; set it when the
@@ -1785,6 +1839,18 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
     config = config or load_config()
     if contexts is None:
         contexts = capt_core.expected_tone_contexts(capt_core.prepare_target(script))
+    use_model_voice_contexts = bool((config.get("model_voice") or {}).get("enabled") and model_voice_contexts is not None)
+    if use_model_voice_contexts:
+        if len(model_voice_contexts) != len(contexts) or any(
+                mode_ctx.get("char") != rule_ctx.get("char")
+                for rule_ctx, mode_ctx in zip(contexts, model_voice_contexts)):
+            raise ValueError("Model-voice expected tones do not match the aligned script.")
+    if model_voice_reference_inputs is not None and len(model_voice_reference_inputs) != len(contexts):
+        raise ValueError("Model-voice reference contours do not match the aligned script.")
+    output_contexts = model_voice_contexts if use_model_voice_contexts else contexts
+    rules_config = deepcopy(config) if use_model_voice_contexts else config
+    if use_model_voice_contexts:
+        rules_config.setdefault("model_voice", {})["enabled"] = False
     chars = [c["char"] for c in contexts]
     if not chars:
         raise ValueError("The script contains no Chinese characters.")
@@ -1796,8 +1862,15 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
             "calibration_version": (calibration or {}).get("calibration_version") if calibrated else None,
             "acoustic_profile": (calibration or {}).get("acoustic_profile") if calibrated else None}
     if rejected_reasons:
-        results = [_empty_result(c, c["char"], config, speaker, reasons=["audio_quality_failed", *rejected_reasons])
-                   for c in contexts]
+        results = []
+        for rule_context, output_context in zip(contexts, output_contexts):
+            result = _empty_result(output_context, output_context["char"], config,
+                                   speaker, reasons=["audio_quality_failed", *rejected_reasons])
+            if use_model_voice_contexts:
+                result["rule_expected_surface_tone"] = rule_context["target_tone"]
+                result["rule_tone_rule"] = rule_context["tone_rule"]
+                result["rule_status"] = result["status"]
+            results.append(result)
         message = config["feedback"]["audio_quality"].get(
             rejected_reasons[0], config["feedback"]["insufficient_evidence"])
         for result in results:
@@ -1826,7 +1899,14 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
         alignment_error = str(exc)
 
     if alignment_error:
-        results = [_empty_result(c, c["char"], config, speaker, reasons=["alignment_failed"]) for c in contexts]
+        results = []
+        for rule_context, output_context in zip(contexts, output_contexts):
+            result = _empty_result(output_context, output_context["char"], config, speaker, reasons=["alignment_failed"])
+            if use_model_voice_contexts:
+                result["rule_expected_surface_tone"] = rule_context["target_tone"]
+                result["rule_tone_rule"] = rule_context["tone_rule"]
+                result["rule_status"] = result["status"]
+            results.append(result)
         return {**base, "alignment_error": alignment_error, "audio_quality_failed": None,
                 "f0_extraction": None, "contour": None, "boundary_search": None,
                 "syllables": results,
@@ -1890,16 +1970,51 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
                                       "octave_jumps_in_segments": jumps_in_segments,
                                       "octave_frames_corrected": int(clean["octave_corrected"].sum())})
     raw = []
+    rule_raw = []
     for index, (s, ctx) in enumerate(zip(syllables, contexts)):
-        if index and ctx.get("adjacent_previous_tone") is not None and config["tone"].get("left_context"):
+        mode_ctx = output_contexts[index]
+        needs_previous_end = (ctx.get("adjacent_previous_tone") is not None
+                              or mode_ctx.get("adjacent_previous_tone") is not None)
+        if index and needs_previous_end and config["tone"].get("left_context"):
             end = previous_end_level(syllables[index - 1], clean, config)
             if end is not None and np.isfinite(end):
-                ctx = {**ctx, "previous_end_st": float(end)}
-        raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index],
-                                  accuse_ok=stable and not trimmed_anywhere,   # a recording that needed a cut cannot accuse anyone
-                                  doubtful_alignment=doubtful or bool(s.get("alignment_repaired"))))
+                if ctx.get("adjacent_previous_tone") is not None:
+                    ctx = {**ctx, "previous_end_st": float(end)}
+                if mode_ctx.get("adjacent_previous_tone") is not None:
+                    mode_ctx = {**mode_ctx, "previous_end_st": float(end)}
+        accuse_ok = stable and not trimmed_anywhere
+        doubtful_alignment = doubtful or bool(s.get("alignment_repaired"))
+        if use_model_voice_contexts:
+            rule_result = verify_syllable(s, ctx, extraction, clean, rules_config, speaker, syllable_stable[index],
+                                          accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment)
+            model_voice_accepted_tones = _model_voice_scoring_tones(ctx, mode_ctx)
+            model_voice_reference = (model_voice_reference_inputs[index]
+                                     if model_voice_reference_inputs is not None else None)
+            mode_result = verify_syllable(s, mode_ctx, extraction, clean, config, speaker, syllable_stable[index],
+                                          accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment,
+                                          model_voice_accepted_tones=model_voice_accepted_tones,
+                                          model_voice_reference=model_voice_reference)
+            rule_raw.append(rule_result)
+            raw.append(mode_result)
+        else:
+            raw.append(verify_syllable(s, ctx, extraction, clean, config, speaker, syllable_stable[index],
+                                       accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment))
     finalize_neutral(raw, config)
     enforce_neutral_policy(raw, config)
+    if use_model_voice_contexts:
+        finalize_neutral(rule_raw, rules_config)
+        enforce_neutral_policy(rule_raw, rules_config)
+        for mode_result, rule_result, rule_context in zip(raw, rule_raw, contexts):
+            mode_result["rule_status"] = rule_result["status"]
+            mode_result["rule_expected_surface_tone"] = rule_context["target_tone"]
+            mode_result["rule_tone_rule"] = rule_context["tone_rule"]
+            mode_result["rule_lexical_tone"] = rule_context["lexical_tone"]
+            for key in ("tone_match", "tone_mismatch", "detected_alternative", "tone_scores", "also_accepted_tones", "clause_final_half_t3"):
+                if key in rule_result:
+                    mode_result[f"rule_{key}"] = rule_result[key]
+    captured_reference_inputs = None
+    if (config.get("model_voice") or {}).get("capture_reference_inputs"):
+        captured_reference_inputs = [r.get("_model_voice_reference_input") for r in raw]
     results = [_public(r) for r in raw]
     counts = {k: sum(r["status"] == k for r in results) for k in STATUSES}
     overall_status = aggregate_status(results)
@@ -1916,6 +2031,8 @@ def verify_utterance(samples, sample_rate, script, calibration=None, *, alignmen
                           "speaker_f0_median": round(baseline, 1), "speaker_f0_median_midi": round(float(hz_to_midi(baseline)), 2),
                           **extraction["diagnostics"]},
         "syllables": results,
+        **({"model_voice_reference_inputs": captured_reference_inputs}
+           if captured_reference_inputs is not None else {}),
         "summary": counts,
         "feedback": overall,
         "contour": {**_contour_payload(clean), "baseline_midi": round(float(hz_to_midi(baseline)), 2)},

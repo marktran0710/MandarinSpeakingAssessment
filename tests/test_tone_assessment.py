@@ -234,6 +234,33 @@ class SentenceProfileTests(unittest.TestCase):
         self.assertEqual(missing[0]["target_tone"], 2)                 # plain sandhi inside one clause, as always
         self.assertNotIn("also_accept_tones", missing[0])
 
+    def test_book_mode_uses_printed_sentence_tones_without_rules_sandhi(self):
+        entry = ta._BOOK_SENTENCE_TONES["5-1-1"]
+        clauses = capt_core.prepare_target(entry["script"])
+        groups = [("sentence", 0, sum(map(len, clauses)))]
+        rules = ta.sentence_contexts(clauses, groups, "matched")
+        book = ta.book_sentence_contexts("5-1-1", clauses, rules)
+
+        self.assertEqual(rules[0]["target_tone"], 2)                  # 友美: spoken third-tone sandhi
+        self.assertEqual(book[0]["target_tone"], 3)                   # the book prints yǒu měi
+        self.assertEqual(book[0]["tone_source"], "book_pinyin")
+        self.assertEqual(book[0]["tone_rule"], "book_pinyin")
+
+    def test_book_pinyin_tones_cover_neutral_and_variant_paths(self):
+        self.assertEqual(ta.book_pinyin_tone_paths("nǎlǐ/nǎr"), [[3, 3], [3]])
+        self.assertEqual(ta.book_pinyin_tone_paths("méi(yǒu) kòng"), [[2, 4], [2, 3, 4]])
+        self.assertEqual(ta.book_pinyin_tone_paths("jiějie"), [[3, 5]])
+
+        clauses = capt_core.prepare_target("你好")
+        rules = capt_core.expected_tone_contexts(clauses)
+        book = ta._contexts_with_book_tones(rules, [3, 3])
+        self.assertEqual(rules[1]["adjacent_previous_tone"], 2)
+        self.assertEqual(book[1]["adjacent_previous_tone"], 3)
+
+        item = {"traditional_chinese": "哪裡/哪兒", "pinyin": "nǎlǐ/nǎr"}
+        contexts = ta.chapter5_book_contexts(["哪"], item, "哪兒", IDENTITY)
+        self.assertEqual([context["target_tone"] for context in contexts], [3])
+
     def test_word_practice_contexts_are_the_plain_ones(self):
         item = {"pinyin": ""}
         self.assertEqual(ta.chapter5_contexts(["我也"], item), capt_core.expected_tone_contexts(["我也"]))

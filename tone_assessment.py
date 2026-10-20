@@ -7,8 +7,12 @@ per-syllable diagnostics under `tone_verification`. No web framework and no mode
 """
 from __future__ import annotations
 
+import json
 import re
+import threading
 from copy import deepcopy
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 
@@ -18,11 +22,17 @@ import model_voice
 import tone_pipeline as tp
 
 MODE = "tone_pipeline_v1"
+BOOK_SENTENCE_TONES_PATH = Path(__file__).with_name("book_sentence_tones.json")
 _CONFIG = None
 _SENTENCE_CONFIG = None
 _LEVEL_CONFIGS = {}
 _MODEL_VOICE_CONFIGS = {}
 STANDARD = "standard"
+
+try:
+    _BOOK_SENTENCE_TONES = json.loads(BOOK_SENTENCE_TONES_PATH.read_text(encoding="utf-8"))["samples"]
+except (OSError, ValueError, KeyError, TypeError):
+    _BOOK_SENTENCE_TONES = {}
 
 
 def _layer(*layers):
@@ -43,7 +53,7 @@ def get_config(profile=None, level=None, scoring_mode=None):
     `scoring_mode="model_voice"` is the same configuration with the "Theo giọng mẫu" verdict switched on (model_voice.py); None / "rules" is as it is."""
     if scoring_mode in (None, model_voice.MODE_RULES):
         return _rules_config(profile, level)
-    if scoring_mode != model_voice.MODE_MODEL_VOICE:
+    if scoring_mode not in model_voice.MODES_USING_MODEL_VOICE:
         raise ValueError(f"Unknown scoring mode: {scoring_mode}")
     key = (profile, level)
     if key not in _MODEL_VOICE_CONFIGS:
@@ -247,6 +257,107 @@ def chapter5_contexts(clauses, item):
     if "".join(clauses) in {"沒空", "沒有空"} and supplied_pinyin.endswith("kòng") and contexts:
         contexts[-1] = {**contexts[-1], "lexical_tone": 4, "target_tone": 4, "tone_rule": "catalog_pinyin_disambiguation"}
     return contexts
+
+
+_PINYIN_SYLLABLE = re.compile(
+    r"(?:[zcs]h|[bpmfdtnlgkhjqxrzcswy])?[aeiouüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+(?:ng|n|r)?"
+    r"(?![aeiouüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ])"
+)
+_PINYIN_MARK_TONE = {
+    char: tone
+    for tone, group in enumerate(("āēīōūǖ", "áéíóúǘ", "ǎěǐǒǔǚ", "àèìòùǜ"), start=1)
+    for char in group
+}
+
+
+def book_pinyin_tone_paths(pinyin):
+    """Tone-number paths (5 = unmarked/neutral) in a workbook's tone-marked Pinyin."""
+    paths = []
+    for variant in str(pinyin or "").split("/"):
+        text = variant.replace(" ", "").replace("'", "").lower()
+        for form in expand_optional(text):
+            form = form.replace("（", "").replace("）", "").replace("(", "").replace(")", "")
+            paths.append([
+                next((_PINYIN_MARK_TONE[ch] for ch in match.group(0) if ch in _PINYIN_MARK_TONE), 5)
+                for match in _PINYIN_SYLLABLE.finditer(form)
+            ])
+    return paths
+
+
+def _contexts_with_book_tones(contexts, tones):
+    if len(contexts) != len(tones):
+        raise ValueError(f"Book Pinyin has {len(tones)} syllables, but the script has {len(contexts)}.")
+    out = []
+    for index, (context, tone) in enumerate(zip(contexts, tones)):
+        if tone not in (1, 2, 3, 4, 5):
+            raise ValueError(f"Invalid book tone: {tone!r}.")
+        same_previous_clause = index > 0 and contexts[index - 1].get("clause_index") == context.get("clause_index")
+        same_next_clause = index + 1 < len(contexts) and contexts[index + 1].get("clause_index") == context.get("clause_index")
+        previous_tone = int(tones[index - 1]) if same_previous_clause else None
+        next_tone = int(tones[index + 1]) if same_next_clause else None
+        item = {
+            **context,
+            "lexical_tone": int(tone),
+            "target_tone": int(tone),
+            "tone_rule": "book_pinyin",
+            "tone_source": "book_pinyin",
+            "tone_confidence": 1.0,
+            "neutral_state": "required" if tone == 5 else None,
+            "previous_tone": previous_tone,
+            "next_tone": next_tone,
+            "adjacent_previous_tone": previous_tone,
+            "adjacent_next_tone": next_tone,
+            "allow_half_t3": tone == 3 and not context.get("is_clause_final") and next_tone in {1, 2, 4, 5},
+        }
+        # Book mode follows the printed target. Do not carry the Rules mode's optional sandhi tones over.
+        item.pop("also_accept_tones", None)
+        out.append(item)
+    return out
+
+
+def book_sentence_contexts(sample_id, clauses, contexts):
+    """Book-printed expected tones for one lesson sentence, separate from surface-tone rule contexts."""
+    entry = _BOOK_SENTENCE_TONES.get(str(sample_id))
+    if not entry:
+        raise ValueError(f"No book Pinyin tone data is available for sample {sample_id}.")
+    actual_script = "".join(clauses)
+    book_script = "".join(capt_core.prepare_target(entry.get("script", "")))
+    if actual_script != book_script:
+        raise ValueError(f"Book Pinyin tone data does not match sample {sample_id}.")
+    return _contexts_with_book_tones(contexts, entry.get("tones", []))
+
+
+def chapter5_book_contexts(clauses, item, script_variant, normalize=lambda text: text):
+    """Book-Pinyin targets for one Chapter 5 transcript variant."""
+    contexts = chapter5_contexts(clauses, item)
+    paths = book_pinyin_tone_paths(item.get("pinyin"))
+    if not paths:
+        raise ValueError(f"No book Pinyin tone data is available for {script_variant}.")
+
+    def script_key(text):
+        return "".join(capt_core.prepare_target(normalize(text)))
+
+    source_text = str(item.get("traditional_chinese") or item.get("script") or "")
+    script_forms = [form for alternative in split_variants(source_text) for form in expand_optional(alternative)]
+    tone_by_script = {}
+    if len(script_forms) == len(paths):
+        tone_by_script = {script_key(text): tones for text, tones in zip(script_forms, paths)}
+    else:
+        for text in script_forms:
+            key = script_key(text)
+            matching = [tones for tones in paths if len(tones) == len(key)]
+            if len(matching) == 1:
+                tone_by_script[key] = matching[0]
+
+    key = script_key(script_variant)
+    tones = tone_by_script.get(key)
+    if tones is None:
+        matching = [path for path in paths if len(path) == len(contexts)]
+        if len(matching) == 1:
+            tones = matching[0]
+    if tones is None:
+        raise ValueError(f"Book Pinyin tone data does not match Chapter 5 variant {script_variant}.")
+    return _contexts_with_book_tones(contexts, tones)
 
 
 def chapter5_display_cells(item):
@@ -545,17 +656,148 @@ def sentence_contexts(clauses, groups, annotation_status):
         cross_word_sandhi=True)
 
 
-def _verify(prepared, clauses, contexts, calibration, force_mfa=False, config=None):
+def _verify(prepared, clauses, contexts, calibration, force_mfa=False, config=None, model_voice_contexts=None,
+            model_voice_reference_inputs=None):
     """`prepared` is audio_prep.PreparedAudio: a recording that failed the quality check is not analysed."""
+    mode_contexts = {}
+    if model_voice_contexts is not None:
+        mode_contexts["model_voice_contexts"] = model_voice_contexts
+    if model_voice_reference_inputs is not None:
+        mode_contexts["model_voice_reference_inputs"] = model_voice_reference_inputs
     return tp.verify_utterance(prepared.samples, prepared.sample_rate, "".join(clauses), calibration,
                                contexts=contexts, config=config or get_config(), rejected_reasons=prepared.rejected_reasons,
-                               force_mfa=force_mfa)
+                               force_mfa=force_mfa, **mode_contexts)
+
+
+_REFERENCE_CONTOUR_LOCK = threading.RLock()
+
+
+@lru_cache(maxsize=256)
+def _cached_reference_voice_inputs(path, mtime_ns, size, script, profile, level, contexts_json, model_contexts_json):
+    """Extract one aligned teacher contour per syllable; cache successful and unavailable references."""
+    try:
+        contexts = json.loads(contexts_json)
+        model_contexts = json.loads(model_contexts_json) if model_contexts_json else None
+        config = deepcopy(get_config(profile, level, model_voice.MODE_MODEL_VOICE))
+        config.setdefault("model_voice", {})["capture_reference_inputs"] = True
+        prepared = audio_prep.prepare_recording(path, config)
+        if not prepared.passed:
+            return ()
+        calibration = tp.pooled_calibration([(prepared.samples, prepared.sample_rate)], config)
+        result = tp.verify_utterance(
+            prepared.samples, prepared.sample_rate, script, calibration,
+            contexts=contexts, model_voice_contexts=model_contexts, config=config,
+        )
+        captured = result.get("model_voice_reference_inputs") or []
+        if len(captured) != len(contexts):
+            return ()
+        return tuple(None if not item else (tuple(float(value) for value in item["values"]), float(item["spread"]))
+                     for item in captured)
+    except Exception:
+        # Reference matching is optional: an unavailable or unalignable sample must not stop ordinary scoring.
+        return ()
+
+
+def model_voice_reference_inputs(audio_path, script, contexts, model_voice_contexts=None, *, level=None, profile="sentence"):
+    """Return cached per-syllable contours for a known book recording, or None if it cannot be aligned."""
+    try:
+        path = Path(audio_path).resolve()
+        stat = path.stat()
+        contexts_json = json.dumps(contexts, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        model_contexts_json = (json.dumps(model_voice_contexts, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                               if model_voice_contexts is not None else "")
+        with _REFERENCE_CONTOUR_LOCK:
+            cached = _cached_reference_voice_inputs(
+                str(path), stat.st_mtime_ns, stat.st_size, str(script), profile, level or STANDARD,
+                contexts_json, model_contexts_json)
+        if not cached:
+            return None
+        return [None if item is None else {"values": np.asarray(item[0], dtype=float), "spread": item[1]}
+                for item in cached]
+    except (OSError, TypeError, ValueError):
+        return None
+
+
+def _fuse_verification_result(result):
+    """Combine the already-computed Rules and Model Voice verdicts without changing either scorer."""
+    counts = {key: 0 for key in ("rules_only", "model_voice_only", "both", "both_practice", "unresolved")}
+    for syllable in result["syllables"]:
+        rules_status = syllable.get("rule_status")
+        if rules_status is None:
+            raise ValueError("Fusion requires a Rules verdict for every syllable.")
+
+        model_status = syllable["status"]
+        model_tone = syllable.get("expected_surface_tone")
+        model_judged = model_tone == 5 or "model_score" in syllable
+        syllable["rules_expected_surface_tone"] = syllable.get("rule_expected_surface_tone")
+        syllable["model_voice_expected_surface_tone"] = model_tone
+        syllable["model_voice_tone_rule"] = syllable.get("tone_rule")
+        syllable["model_voice_status"] = model_status if model_judged else "insufficient_evidence"
+        syllable["model_voice_judged"] = bool(model_judged and model_tone != 5)
+
+        rules_good = rules_status == "likely_correct"
+        model_good = model_judged and model_status == "likely_correct"
+        both_practice = rules_status == "practice" and model_judged and model_status == "practice"
+        if rules_good and model_good:
+            basis, final = "both", "likely_correct"
+        elif rules_good:
+            basis, final = "rules_only", "likely_correct"
+        elif model_good:
+            basis, final = "model_voice_only", "likely_correct"
+        elif both_practice:
+            basis, final = "both_practice", "practice"
+        else:
+            basis, final = "unresolved", "insufficient_evidence"
+
+        syllable["fusion_basis"] = basis
+        syllable["status"] = final
+        if basis == "rules_only":
+            syllable["expected_surface_tone"] = syllable.get("rule_expected_surface_tone", model_tone)
+            syllable["lexical_tone"] = syllable.get("rule_lexical_tone", syllable.get("lexical_tone"))
+            syllable["tone_rule"] = syllable.get("rule_tone_rule", syllable.get("tone_rule"))
+            syllable["tone_source"] = "rules"
+            for key in ("tone_match", "tone_mismatch", "detected_alternative", "tone_scores", "also_accepted_tones", "clause_final_half_t3"):
+                rule_key = f"rule_{key}"
+                if rule_key in syllable:
+                    syllable[key] = syllable[rule_key]
+        counts[basis] += 1
+
+    summary = {status: sum(item["status"] == status for item in result["syllables"])
+               for status in tp.STATUSES}
+    result["summary"] = summary
+    overall = tp.aggregate_status(result["syllables"])
+    if overall == "practice":
+        expected = next(item["expected_surface_tone"] for item in result["syllables"] if item["status"] == "practice")
+        result["feedback"] = result["config"]["feedback"]["practice"].get(expected)
+    else:
+        result["feedback"] = result["config"]["feedback"][overall]
+    result["fusion"] = counts
+    return result
+
+
+def _fusion_payload_metadata(payload, result):
+    payload["fusion"] = result.get("fusion") or {}
+    payload["score_semantics"] = {
+        **payload.get("score_semantics", {}),
+        "status": "Fusion keeps both original verdicts: either likely-correct verdict is accepted; practice requires both scorers to say practice; otherwise evidence is insufficient.",
+        "expected_tone": "A Rules-only acceptance displays the Rules target. Otherwise the displayed target follows the book Pinyin used by Model Voice.",
+    }
+    return payload
 
 
 def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_status,
-                     calibration, practice_mode, sample_id, target_script, level=None, scoring_mode=None):
+                     calibration, practice_mode, sample_id, target_script, level=None, scoring_mode=None,
+                     model_voice_contexts=None, model_voice_reference_inputs=None):
     """Book / custom practice: one script, grouped into phrases by word annotation or clause."""
-    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence", level, scoring_mode))
+    verify_args = {}
+    if model_voice_contexts is not None:
+        verify_args["model_voice_contexts"] = model_voice_contexts
+    if model_voice_reference_inputs is not None:
+        verify_args["model_voice_reference_inputs"] = model_voice_reference_inputs
+    result = _verify(prepared, clauses, contexts, calibration, config=get_config("sentence", level, scoring_mode),
+                     **verify_args)
+    if scoring_mode == model_voice.MODE_FUSION:
+        result = _fuse_verification_result(result)
     payload = build_payload(
         result, groups=groups, word_annotation_status=word_annotation_status,
         boundaries_from=("word-level JSON grouped over MFA syllable boundaries"
@@ -565,6 +807,8 @@ def assess_recording(prepared, *, clauses, contexts, groups, word_annotation_sta
     payload["level"] = level or STANDARD
     payload["pace"] = pace_summary(payload["tone_verification"]["syllables"])
     payload["length_check"] = (payload["tone_verification"].get("f0_extraction") or {}).get("length_check")
+    if scoring_mode == model_voice.MODE_FUSION:
+        _fusion_payload_metadata(payload, result)
     _mark_scoring_mode(payload, scoring_mode)
     return payload
 
@@ -635,8 +879,24 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
 
     def verify(audio, candidate):
         # With several variants every one is force-aligned so they compare fairly.
-        return _verify(audio, candidate["clauses"], chapter5_contexts(candidate["clauses"], item), calibration,
-                       force_mfa=len(candidates) > 1, config=get_config(None, level, scoring_mode))
+        contexts = chapter5_contexts(candidate["clauses"], item)
+        model_contexts = None
+        if scoring_mode in model_voice.MODES_USING_MODEL_VOICE:
+            model_contexts = chapter5_book_contexts(candidate["clauses"], item, candidate["script_variant"], normalize)
+        verify_args = {} if model_contexts is None else {"model_voice_contexts": model_contexts}
+        reference_inputs = None
+        reference_script = "".join(capt_core.prepare_target(str(item.get("script") or "")))
+        if (model_contexts is not None and "".join(candidate["chars"]) == reference_script
+                and item.get("audio_path")):
+            reference_inputs = model_voice_reference_inputs(
+                item["audio_path"], reference_script, contexts, model_contexts,
+                level=level, profile=None)
+        if reference_inputs is not None:
+            verify_args["model_voice_reference_inputs"] = reference_inputs
+        result = _verify(audio, candidate["clauses"], contexts, calibration,
+                         force_mfa=len(candidates) > 1, config=get_config(None, level, scoring_mode),
+                         **verify_args)
+        return _fuse_verification_result(result) if scoring_mode == model_voice.MODE_FUSION else result
 
     candidate, window, result, tried = best_variant(prepared, candidates, verify)
     payload = build_payload(
@@ -655,5 +915,7 @@ def assess_chapter5_item(prepared, *, item, sample_id, target_script, calibratio
         "start_sec": round(window[0], 2), "end_sec": round(window[1], 2),
         "note": "the recording holds more than one reading; only this one was scored"}
     payload["tone_verification"]["script_variants_tried"] = tried
+    if scoring_mode == model_voice.MODE_FUSION:
+        _fusion_payload_metadata(payload, result)
     _mark_scoring_mode(payload, scoring_mode)
     return payload

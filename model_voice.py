@@ -1,9 +1,10 @@
 """Second assessment mode, "Theo giọng mẫu" (follow the model voice).
 
 The rule-based verdict (tone_pipeline) asks whether the judged pitch window has the shape a tone needs. This mode asks how close it is to
-the way the teachers said the same tone: the window is normalised by itself, aligned by DTW to each of N teacher contours of the tone, and the
-median similarity goes through a per-tone sigmoid to a 0..1 score. A syllable whose script accepts a second tone (a third tone before another
+the way the teachers said the same tone: the window is normalised by itself, aligned by DTW to each of N teacher contours of every tone, and the
+median cosine similarity goes through a per-tone sigmoid to a 0..1 score. The highest raw cosine identifies the closest tone. A syllable whose script accepts a second tone (a third tone before another
 third tone: T2 too) is also scored against that tone, which counts only when it clearly matches (`alternative_tone_min`).
+When that comparison does not accept the syllable, the mode can compare it with the same syllable in the selected book audio as a fallback.
 
 The contours and the sigmoids are data (`model_voice_contours.json`, rebuilt by tools/build_model_voice_contours.py); the other numbers are
 the `model_voice` section of tone_v1_config.yaml. Nothing here imports tone_pipeline: the pipeline calls in.
@@ -19,7 +20,9 @@ import numpy as np
 
 MODE_RULES = "rules"
 MODE_MODEL_VOICE = "model_voice"
-MODES = (MODE_RULES, MODE_MODEL_VOICE)
+MODE_FUSION = "fusion"
+MODES = (MODE_RULES, MODE_MODEL_VOICE, MODE_FUSION)
+MODES_USING_MODEL_VOICE = (MODE_MODEL_VOICE, MODE_FUSION)
 CONTOURS_PATH = Path(__file__).with_name("model_voice_contours.json")
 TONES = (1, 2, 3, 4)
 
@@ -111,16 +114,19 @@ def _dtw_python(ref, lr, band):
     return np.array(ia[::-1]), np.array(ib[::-1])
 
 
-def _similarity_python(ref, lr, band_fraction, window, tau):
+def _similarity_python(ref, lr, band_fraction, window):
     band = int(math.ceil(band_fraction * max(len(ref), len(lr)))) if band_fraction is not None else -1
     ia, ib = _dtw_python(ref.tolist(), lr.tolist(), band)
     a, b = _smooth(ref[ia], window), _smooth(lr[ib], window)
-    return math.exp(-float(np.mean((a - b) ** 2)) / (tau * tau))
+    denominator = float(np.linalg.norm(a) * np.linalg.norm(b))
+    if denominator <= 1e-12:
+        return 0.0
+    return float(np.clip(np.dot(a, b) / denominator, -1.0, 1.0))
 
 
 if numba is not None:
     @numba.njit(cache=True)
-    def _similarities_numba(flat, offsets, lr, band_fraction, window, tau2):
+    def _similarities_numba(flat, offsets, lr, band_fraction, window):
         out = np.empty(len(offsets) - 1)
         m = len(lr)
         for r in range(len(offsets) - 1):
@@ -188,10 +194,18 @@ if numba is not None:
                         sa[p] = ta / size
                         sb[p] = tb / size
                     a, b = sa, sb
-            total = 0.0
+            dot = 0.0
+            norm_a = 0.0
+            norm_b = 0.0
             for p in range(k):
-                total += (a[p] - b[p]) ** 2
-            out[r] = np.exp(-(total / k) / tau2)
+                dot += a[p] * b[p]
+                norm_a += a[p] * a[p]
+                norm_b += b[p] * b[p]
+            denominator = np.sqrt(norm_a * norm_b)
+            if denominator <= 1e-12:
+                out[r] = 0.0
+            else:
+                out[r] = min(1.0, max(-1.0, dot / denominator))
         return out
 
 
@@ -201,7 +215,7 @@ USE_NUMBA = numba is not None
 def warm_up():
     """Compile the fast path now (first call), so the first learner does not wait for it."""
     if USE_NUMBA:
-        _similarities_numba(np.array([0.0, 1.0, 2.0]), np.array([0, 3], dtype=np.int64), np.array([0.0, 1.0, 2.0, 3.0]), 0.15, 5, 0.64)
+        _similarities_numba(np.array([0.0, 1.0, 2.0]), np.array([0, 3], dtype=np.int64), np.array([0.0, 1.0, 2.0, 3.0]), 0.15, 5)
 
 
 # ----------------------------------------------------------------------------------------------- the contours ----
@@ -222,22 +236,25 @@ class Contours:
         return tuple(t for t in TONES if self.references.get(t) and t in self.sigmoid)
 
     def similarity(self, tone, sequence, settings, count=None):
-        """Median similarity of the normalised `sequence` to the first `count` (default: all) contours of `tone`."""
+        """Median DTW-aligned cosine similarity to the first `count` (default: all) contours of `tone`."""
         refs = self.references[tone]
         count = min(count or settings["references_per_tone"], len(refs))
         band = float(settings["band"]) if settings.get("band") is not None else -1.0
-        window, tau = int(settings["smooth"]), float(settings["tau"])
+        window = int(settings["smooth"])
         if USE_NUMBA:
             flat, offsets = self._flat[tone]
-            values = _similarities_numba(flat, offsets[:count + 1], np.ascontiguousarray(sequence, dtype=float), band, window, tau * tau)
+            values = _similarities_numba(flat, offsets[:count + 1], np.ascontiguousarray(sequence, dtype=float), band, window)
         else:
-            values = [_similarity_python(ref, sequence, None if band < 0 else band, window, tau) for ref in refs[:count]]
+            values = [_similarity_python(ref, sequence, None if band < 0 else band, window) for ref in refs[:count]]
         return float(np.median(values))
 
-    def score(self, tone, sequence, settings, count=None):
+    def score_from_similarity(self, tone, similarity):
         midpoint, steepness = self.sigmoid[tone]
-        exponent = max(-60.0, min(60.0, -steepness * (self.similarity(tone, sequence, settings, count) - midpoint)))
+        exponent = max(-60.0, min(60.0, -steepness * (similarity - midpoint)))
         return 1.0 / (1.0 + math.exp(exponent))
+
+    def score(self, tone, sequence, settings, count=None):
+        return self.score_from_similarity(tone, self.similarity(tone, sequence, settings, count))
 
 
 @lru_cache(maxsize=4)
@@ -258,32 +275,39 @@ def available(path=None):
 def judge(values, spread, accepted, settings, contours):
     """Score a judged window against the accepted tones (the expected one first).
 
-    Returns None when the window is too short to judge, else {"score": best accepted score, "scores": {tone: score of every tone that was scored}}.
-    A tone other than the expected one counts only at `alternative_tone_min` or more."""
+    Returns None when the window is too short to judge. Otherwise scores every tone: cosine chooses the closest tone,
+    and the corresponding tone-specific sigmoid supplies the confidence score. A tone other than the expected one counts
+    as an accepted reading only at `alternative_tone_min` or more."""
     if values is None or len(values) < int(settings.get("min_frames", 2)):
         return None
     sequence = normalise(values, spread, float(settings["std_floor"]))
-    scores = {}
     expected = accepted[0]
     if expected not in contours.tones():
         return None
-    scores[expected] = contours.score(expected, sequence, settings)
-    best = scores[expected]
-    for tone in accepted[1:]:
-        if tone in contours.tones():
-            scores[tone] = contours.score(tone, sequence, settings)
-            if scores[tone] >= float(settings["alternative_tone_min"]):
-                best = max(best, scores[tone])
-    return {"score": best, "scores": scores, "sequence": sequence}
+    similarities = {tone: contours.similarity(tone, sequence, settings) for tone in contours.tones()}
+    scores = {tone: contours.score_from_similarity(tone, similarity) for tone, similarity in similarities.items()}
+    best_tone = max(similarities, key=similarities.get)
+    accepted_tones = [tone for tone in accepted if tone in similarities]
+    eligible = [expected, *(tone for tone in accepted_tones[1:]
+                             if scores[tone] >= float(settings["alternative_tone_min"]))]
+    selected = max(eligible, key=similarities.get)
+    competing = [similarity for tone, similarity in similarities.items() if tone not in eligible]
+    competing_lead = max(competing, default=-1.0) - similarities[selected]
+    within_competing_margin = competing_lead <= float(settings.get("max_competing_cosine_margin", 0.0))
+    accepted_match = within_competing_margin
+    return {"score": scores[selected], "scores": scores, "similarities": similarities,
+            "best_tone": best_tone, "selected_accepted_tone": selected,
+            "accepted_match": accepted_match, "sequence": sequence}
 
 
 def closest_tone(sequence, scores, settings, contours):
-    """The tone whose contours the window matches best, scoring the tones not yet scored; None when it is one of `scores`' best anyway."""
+    """Return the tone with the highest raw DTW-aligned cosine, plus every tone's sigmoid score."""
     every = dict(scores)
     for tone in contours.tones():
         if tone not in every:
             every[tone] = contours.score(tone, sequence, settings)
-    best = max(every, key=every.get)
+    similarities = {tone: contours.similarity(tone, sequence, settings) for tone in contours.tones()}
+    best = max(similarities, key=similarities.get)
     return best, every
 
 
@@ -295,3 +319,18 @@ def verdict(score, quality, can_accuse, config):
     if score <= float(settings["practice_at"]) and can_accuse and quality >= confidence["practice_quality"]:
         return "practice"
     return "insufficient_evidence"
+
+
+def same_sample_similarity(values, spread, reference_values, reference_spread, settings):
+    """DTW cosine against this exact syllable in the selected teacher audio, or None if either contour is too short."""
+    learner = np.asarray(values, dtype=float)
+    reference = np.asarray(reference_values, dtype=float)
+    learner = learner[np.isfinite(learner)]
+    reference = reference[np.isfinite(reference)]
+    minimum = int(settings.get("min_frames", 2))
+    if len(learner) < minimum or len(reference) < minimum:
+        return None
+    learner = normalise(learner, spread, float(settings["std_floor"]))
+    reference = normalise(reference, reference_spread, float(settings["std_floor"]))
+    band = float(settings["band"]) if settings.get("band") is not None else None
+    return _similarity_python(reference, learner, band, int(settings["smooth"]))

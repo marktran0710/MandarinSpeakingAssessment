@@ -107,22 +107,9 @@ def candidate_scripts(chinese):
     return scripts
 
 
-PINYIN_SYLLABLE = __import__("re").compile(
-    r"(?:[zcs]h|[bpmfdtnlgkhjqxrzcswy])?[aeiouüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+(?:ng|n|r)?(?![aeiouüāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ])")
-MARK_TONE = {c: t for t, group in enumerate(("āēīōūǖ", "áéíóúǘ", "ǎěǐǒǔǚ", "àèìòùǜ"), start=1) for c in group}
-
-
 def workbook_tones(pinyin):
-    """Tone numbers (5 = unmarked / neutral) for every spoken path of a tone-marked Pinyin string:
-    each slash variant, with optional (…) text omitted and present."""
-    paths = []
-    for variant in pinyin.split("/"):
-        text = variant.replace(" ", "").replace("'", "").lower()
-        for form in ta.expand_optional(text):
-            form = form.replace("（", "").replace("）", "").replace("(", "").replace(")", "")
-            paths.append([next((MARK_TONE[ch] for ch in m.group(0) if ch in MARK_TONE), 5)
-                          for m in PINYIN_SYLLABLE.finditer(form)])
-    return paths
+    """Tone-number paths from the shared workbook-Pinyin parser."""
+    return ta.book_pinyin_tone_paths(pinyin)
 
 
 def script_check(item, script_used):

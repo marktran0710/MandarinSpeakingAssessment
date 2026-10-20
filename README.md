@@ -9,7 +9,7 @@ The system checks recordings against a **known transcript**: audio preparation �
 - Chapter 5 word and phrase practice, textbook sentence practice, and custom text practice.
 - Personalized pitch-range calibration using five reference tones.
 - `Good`, `Okay`, or `Needs practice` feedback. Insufficient acoustic evidence results in `Okay`.
-- A second scoring mode on the practice page, "Follow the model voice" (Vietnamese: *Theo giọng mẫu*): the pitch of each syllable is compared with contours taken from the teachers' recordings instead of going through the tone rules. It is the page's default (a learner can switch back to "Rules"; the API's `scoring_mode` field still defaults to `rules`). Its attempts are shown to the learner but not counted on the leaderboards, and own text always uses the rules.
+- Three scoring choices: **Fusion** is the default on every page visit and for API requests that omit `scoring_mode`; a choice of Rules or Follow the model voice applies only until the page is reloaded. Fusion combines the unchanged Rules and Model Voice verdicts: a syllable is accepted when either scorer says it is likely correct, marked for practice only when both say so, and left uncertain when evidence is insufficient. **Follow the model voice** compares pitch contours with teachers' recordings and can fall back to the same syllable in the textbook audio when the contour score is inconclusive; **Rules** uses tone-shape rules. Pure Model Voice attempts are not counted on the leaderboards, Fusion attempts are counted, and own text always uses Rules.
 - English, Traditional Chinese, Vietnamese, Indonesian, and Hindi interfaces.
 - Learner profiles, recording history, feedback ratings, and an administration page.
 
@@ -132,7 +132,7 @@ External datasets, the `env/` environment, external MFA models, and learner data
 | `capt_core.py` | Text processing, syllables, and expected tone contexts. |
 | `tone_pipeline.py` | Calibration, MFA alignment, F0 extraction, and tone verification. |
 | `tone_assessment.py` | Word and phrase feedback assembled from verification results. |
-| `model_voice.py`, `model_voice_contours.json` | The model-voice scoring mode (DTW against teacher contours) and its data; `tools/build_model_voice_contours.py` rebuilds the data. |
+| `model_voice.py`, `model_voice_contours.json` | Follow Voice scoring (DTW alignment, five-point smoothing, cosine similarity, and per-tone sigmoid) and teacher contours; `tools/build_model_voice_contours.py` rebuilds the data. |
 | `mfa_warm.py`, `mfa_oneshot_worker.py` | Preloaded alignment worker management. |
 | `practice_store.py`, `user_archive.py` | Profiles, history, recordings, and archive copies. |
 | `chapter5_word_practice/`, `assets/calibration/`, `mfa/` | Runtime data and resources. |

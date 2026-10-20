@@ -1,0 +1,1935 @@
+{
+  "schema_version": 1,
+  "source": "Book pinyin_by_word for lessons 5-8; unmarked pinyin is tone 5. Tones for erhua characters omitted by the scorer are omitted too.",
+  "samples": {
+    "5-1-1": {
+      "script": "友美，妳這個週末要做什麼？",
+      "pinyin_by_word": "yǒu měi | nǐ | zhè gè | zhōu mò | yào zuò shén me",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        4,
+        1,
+        4,
+        4,
+        4,
+        2,
+        5
+      ]
+    },
+    "5-1-2": {
+      "script": "我要在家看書、聽音樂。",
+      "pinyin_by_word": "wǒ | yào | zài | jiā | kàn shū | tīng | yīn yuè",
+      "tones": [
+        3,
+        4,
+        4,
+        1,
+        4,
+        1,
+        1,
+        1,
+        4
+      ]
+    },
+    "5-1-3": {
+      "script": "妳星期六下午有空嗎？我們一起去喝下午茶，怎麼樣？",
+      "pinyin_by_word": "nǐ | xīng qí liù | xià wǔ | yǒu kòng | ma | wǒ men | yì qǐ | qù | hē | xià wǔ chá | zěn me yàng",
+      "tones": [
+        3,
+        1,
+        2,
+        4,
+        4,
+        3,
+        3,
+        4,
+        5,
+        3,
+        5,
+        4,
+        3,
+        4,
+        1,
+        4,
+        3,
+        2,
+        3,
+        5,
+        4
+      ]
+    },
+    "5-1-4": {
+      "script": "好啊！你想去哪裡？",
+      "pinyin_by_word": "hǎo | a | nǐ | xiǎng | qù nǎ lǐ",
+      "tones": [
+        3,
+        5,
+        3,
+        3,
+        4,
+        3,
+        3
+      ]
+    },
+    "5-1-5": {
+      "script": "我知道一家很不錯的咖啡廳，那裡的冰淇淋很好吃。",
+      "pinyin_by_word": "wǒ | zhī dao | yì jiā | hěn | bú cuò | de | kā fēi tīng | nà lǐ | de | bīng qí lín | hěn | hǎo | chī",
+      "tones": [
+        3,
+        1,
+        5,
+        4,
+        1,
+        3,
+        2,
+        4,
+        5,
+        1,
+        1,
+        1,
+        4,
+        3,
+        5,
+        1,
+        2,
+        2,
+        3,
+        3,
+        1
+      ]
+    },
+    "5-1-6": {
+      "script": "他們有巧克力冰淇淋嗎？",
+      "pinyin_by_word": "tā men | yǒu | qiǎo kè lì | bīng qí lín | ma",
+      "tones": [
+        1,
+        5,
+        3,
+        3,
+        4,
+        4,
+        1,
+        2,
+        2,
+        5
+      ]
+    },
+    "5-1-7": {
+      "script": "有啊！他們有很多種冰淇淋。",
+      "pinyin_by_word": "yǒu | a | tā men | yǒu | hěn duō | zhǒng | bīng qí lín",
+      "tones": [
+        3,
+        5,
+        1,
+        5,
+        3,
+        3,
+        1,
+        3,
+        1,
+        2,
+        2
+      ]
+    },
+    "5-1-8": {
+      "script": "我們這個星期六下午兩點半去吧。",
+      "pinyin_by_word": "wǒ men | zhè gè | xīng qí liù | xià wǔ | liǎng diǎn bàn | qù | ba",
+      "tones": [
+        3,
+        5,
+        4,
+        4,
+        1,
+        2,
+        4,
+        4,
+        3,
+        3,
+        3,
+        4,
+        4,
+        5
+      ]
+    },
+    "5-1-9": {
+      "script": "好。",
+      "pinyin_by_word": "hǎo",
+      "tones": [
+        3
+      ]
+    },
+    "5-2-1": {
+      "script": "媽，我跟友美要去喝下午茶，可是我的錢包不在房間裡。",
+      "pinyin_by_word": "mā | wǒ | gēn | yǒu měi | yào | qù | hē | xià wǔ chá | kě shì | wǒ | de | qián bāo | bú | zài | fáng jiān | lǐ",
+      "tones": [
+        1,
+        3,
+        1,
+        3,
+        3,
+        4,
+        4,
+        1,
+        4,
+        3,
+        2,
+        3,
+        4,
+        3,
+        5,
+        2,
+        1,
+        2,
+        4,
+        2,
+        1,
+        3
+      ]
+    },
+    "5-2-2": {
+      "script": "客廳的桌子上有一個錢包，是不是你的？",
+      "pinyin_by_word": "kè tīng | de | zhuō zi | shàng | yǒu | yí gè | qián bāo | shì bu shì | nǐ | de",
+      "tones": [
+        4,
+        1,
+        5,
+        1,
+        5,
+        4,
+        3,
+        2,
+        4,
+        2,
+        1,
+        4,
+        5,
+        4,
+        3,
+        5
+      ]
+    },
+    "5-2-3": {
+      "script": "那不是我的，是哥哥的。我的錢包不在客廳裡。",
+      "pinyin_by_word": "nà | bú shì | wǒ | de | shì | gē ge | de | wǒ | de | qián bāo | bú | zài | kè tīng | lǐ",
+      "tones": [
+        4,
+        2,
+        4,
+        3,
+        5,
+        4,
+        1,
+        5,
+        5,
+        3,
+        5,
+        2,
+        1,
+        2,
+        4,
+        4,
+        1,
+        3
+      ]
+    },
+    "5-2-4": {
+      "script": "沙發下面呢？",
+      "pinyin_by_word": "shā fā | xià miàn | ne",
+      "tones": [
+        1,
+        1,
+        4,
+        4,
+        5
+      ]
+    },
+    "5-2-5": {
+      "script": "沙發上面、下面跟旁邊都沒有。媽，妳幫我找，好嗎？",
+      "pinyin_by_word": "shā fā | shàng miàn | xià miàn | gēn | páng biān | dōu | méi yǒu | mā | nǐ | bāng | wǒ | zhǎo | hǎo ma",
+      "tones": [
+        1,
+        1,
+        4,
+        4,
+        4,
+        4,
+        1,
+        2,
+        1,
+        1,
+        2,
+        3,
+        1,
+        3,
+        1,
+        3,
+        3,
+        3,
+        5
+      ]
+    },
+    "5-2-6": {
+      "script": "我很忙，現在要去廚房做飯，你再去房間找吧。",
+      "pinyin_by_word": "wǒ | hěn | máng | xiàn zài | yào | qù | chú fáng | zuò fàn | nǐ | zài | qù | fáng jiān | zhǎo | ba",
+      "tones": [
+        3,
+        3,
+        2,
+        4,
+        4,
+        4,
+        4,
+        2,
+        2,
+        4,
+        4,
+        3,
+        4,
+        4,
+        2,
+        1,
+        3,
+        5
+      ]
+    },
+    "5-2-7": {
+      "script": "啊！在這裡！錢包在我的書下面。",
+      "pinyin_by_word": "a | zài | zhè lǐ | qián bāo | zài | wǒ | de | shū | xià miàn",
+      "tones": [
+        5,
+        4,
+        4,
+        3,
+        2,
+        1,
+        4,
+        3,
+        5,
+        1,
+        4,
+        4
+      ]
+    },
+    "5-3-1": {
+      "script": "我的房間裡有一張桌子、一張床跟一張沙發。",
+      "pinyin_by_word": "wǒ | de | fáng jiān | lǐ | yǒu | yì zhāng | zhuō zi | yì zhāng | chuáng | gēn | yì zhāng | shā fā",
+      "tones": [
+        3,
+        5,
+        2,
+        1,
+        3,
+        3,
+        4,
+        1,
+        1,
+        5,
+        4,
+        1,
+        2,
+        1,
+        4,
+        1,
+        1,
+        1
+      ]
+    },
+    "5-3-2": {
+      "script": "沙發前面有一台很新的電視機，可是我不常看電視，我最喜歡在沙發上看書。",
+      "pinyin_by_word": "shā fā | qián miàn | yǒu | yì tái | hěn | xīn | de | diàn shì jī | kě shì | wǒ | bù cháng | kàn | diàn shì | wǒ | zuì | xǐ huān | zài | shā fā | shàng | kàn shū",
+      "tones": [
+        1,
+        1,
+        2,
+        4,
+        3,
+        4,
+        2,
+        3,
+        1,
+        5,
+        4,
+        4,
+        1,
+        3,
+        4,
+        3,
+        4,
+        2,
+        4,
+        4,
+        4,
+        3,
+        4,
+        3,
+        1,
+        4,
+        1,
+        1,
+        4,
+        4,
+        1
+      ]
+    },
+    "5-3-3": {
+      "script": "我的書很多，有中文書，也有英文書。",
+      "pinyin_by_word": "wǒ | de | shū | hěn duō | yǒu | zhōng wén shū | yě | yǒu | yīng wén shū",
+      "tones": [
+        3,
+        5,
+        1,
+        3,
+        1,
+        3,
+        1,
+        2,
+        1,
+        3,
+        3,
+        1,
+        2,
+        1
+      ]
+    },
+    "5-3-4": {
+      "script": "我房間的窗戶很大，我的貓喜歡在窗戶旁邊曬太陽。",
+      "pinyin_by_word": "wǒ | fáng jiān | de | chuāng hù | hěn | dà | wǒ | de | māo | xǐ huān | zài | chuāng hù | páng biān | shài tài yáng",
+      "tones": [
+        3,
+        2,
+        1,
+        5,
+        1,
+        4,
+        3,
+        4,
+        3,
+        5,
+        1,
+        3,
+        1,
+        4,
+        1,
+        4,
+        2,
+        1,
+        4,
+        4,
+        2
+      ]
+    },
+    "6-1-1": {
+      "script": "今天天氣不錯，海邊的風景也很漂亮，我想去游泳，你們想去嗎？",
+      "pinyin_by_word": "jīn tiān | tiān qì | bú cuò | hǎi biān | de | fēng jǐng | yě | hěn | piào liang | wǒ | xiǎng | qù | yóu yǒng | nǐ men | xiǎng | qù | ma",
+      "tones": [
+        1,
+        1,
+        1,
+        4,
+        2,
+        4,
+        3,
+        1,
+        5,
+        1,
+        3,
+        3,
+        3,
+        4,
+        5,
+        3,
+        3,
+        4,
+        2,
+        3,
+        3,
+        5,
+        3,
+        4,
+        5
+      ]
+    },
+    "6-1-2": {
+      "script": "我不會游泳。宜文，你會游泳嗎？",
+      "pinyin_by_word": "wǒ | bú | huì | yóu yǒng | yí wén | nǐ | huì | yóu yǒng | ma",
+      "tones": [
+        3,
+        2,
+        4,
+        2,
+        3,
+        2,
+        2,
+        3,
+        4,
+        2,
+        3,
+        5
+      ]
+    },
+    "6-1-3": {
+      "script": "我會游泳，可是游得不太好。",
+      "pinyin_by_word": "wǒ | huì | yóu yǒng | kě shì | yóu de | bú | tài | hǎo",
+      "tones": [
+        3,
+        4,
+        2,
+        3,
+        3,
+        4,
+        2,
+        5,
+        2,
+        4,
+        3
+      ]
+    },
+    "6-1-4": {
+      "script": "我們去跑步，怎麼樣？",
+      "pinyin_by_word": "wǒ men | qù | pǎo bù | zěn me yàng",
+      "tones": [
+        3,
+        5,
+        4,
+        3,
+        4,
+        3,
+        5,
+        4
+      ]
+    },
+    "6-1-5": {
+      "script": "我不喜歡跑步，我跑步跑得很慢。",
+      "pinyin_by_word": "wǒ | bù | xǐ huān | pǎo bù | wǒ | pǎo bù | pǎo de | hěn | màn",
+      "tones": [
+        3,
+        4,
+        3,
+        1,
+        3,
+        4,
+        3,
+        3,
+        4,
+        3,
+        5,
+        3,
+        4
+      ]
+    },
+    "6-1-6": {
+      "script": "打網球怎麼樣？中明說妳的網球打得很好，我們一起去打吧。",
+      "pinyin_by_word": "dǎ | wǎng qiú | zěn me yàng | zhōng míng | shuō | nǐ | de | wǎng qiú | dǎ de | hěn | hǎo | wǒ men | yì qǐ | qù | dǎ | ba",
+      "tones": [
+        3,
+        3,
+        2,
+        3,
+        5,
+        4,
+        1,
+        2,
+        1,
+        3,
+        5,
+        3,
+        2,
+        3,
+        5,
+        3,
+        3,
+        3,
+        5,
+        4,
+        3,
+        4,
+        3,
+        5
+      ]
+    },
+    "6-1-7": {
+      "script": "好啊。",
+      "pinyin_by_word": "hǎo | a",
+      "tones": [
+        3,
+        5
+      ]
+    },
+    "6-2-1": {
+      "script": "聽說這部電影很有趣，我們晚上一起去看，好不好？",
+      "pinyin_by_word": "tīng shuō | zhè bù | diàn yǐng | hěn | yǒu qù | wǒ men | wǎn shang | yì qǐ | qù | kàn | hǎo bu hǎo",
+      "tones": [
+        1,
+        1,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        4,
+        3,
+        5,
+        3,
+        5,
+        4,
+        3,
+        4,
+        4,
+        3,
+        5,
+        3
+      ]
+    },
+    "6-2-2": {
+      "script": "我覺得有一點兒累，我想回家休息。",
+      "pinyin_by_word": "wǒ | jué de | yǒu | yì diǎn ér | lèi | wǒ | xiǎng | huí jiā | xiū xí",
+      "tones": [
+        3,
+        2,
+        5,
+        3,
+        4,
+        3,
+        4,
+        3,
+        3,
+        2,
+        1,
+        1,
+        2
+      ]
+    },
+    "6-2-3": {
+      "script": "你不要常常在家上網、看電腦、玩手機，應該去運動。明天我有空，我們可以一起去騎腳踏車。",
+      "pinyin_by_word": "nǐ | bú | yào | cháng cháng | zài | jiā | shàng wǎng | kàn | diàn nǎo | wán | shǒu jī | yīng gāi | qù | yùn dòng | míng tiān | wǒ | yǒu kòng | wǒ men | kě yǐ | yì qǐ | qù | qí jiǎo tà chē",
+      "tones": [
+        3,
+        2,
+        4,
+        2,
+        2,
+        4,
+        1,
+        4,
+        3,
+        4,
+        4,
+        3,
+        2,
+        3,
+        1,
+        1,
+        1,
+        4,
+        4,
+        4,
+        2,
+        1,
+        3,
+        3,
+        4,
+        3,
+        5,
+        3,
+        3,
+        4,
+        3,
+        4,
+        2,
+        3,
+        4,
+        1
+      ]
+    },
+    "6-2-4": {
+      "script": "可是我只想聽音樂、睡覺。",
+      "pinyin_by_word": "kě shì | wǒ | zhǐ | xiǎng | tīng | yīn yuè | shuì jiào",
+      "tones": [
+        3,
+        4,
+        3,
+        3,
+        3,
+        1,
+        1,
+        4,
+        4,
+        4
+      ]
+    },
+    "6-2-5": {
+      "script": "後天去呢？",
+      "pinyin_by_word": "hòu tiān | qù | ne",
+      "tones": [
+        4,
+        1,
+        4,
+        5
+      ]
+    },
+    "6-2-6": {
+      "script": "這兩天天氣有點兒冷，我們週末去，好嗎？",
+      "pinyin_by_word": "zhè | liǎng tiān | tiān qì | yǒu diǎn ér | lěng | wǒ men | zhōu mò | qù | hǎo ma",
+      "tones": [
+        4,
+        3,
+        1,
+        1,
+        4,
+        3,
+        3,
+        3,
+        3,
+        5,
+        1,
+        4,
+        4,
+        3,
+        5
+      ]
+    },
+    "6-3-1": {
+      "script": "我有幾個好朋友。",
+      "pinyin_by_word": "wǒ | yǒu | jǐ gè | hǎo péng yǒu",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        3,
+        2,
+        3
+      ]
+    },
+    "6-3-2": {
+      "script": "我們都喜歡學中文、聽音樂、唱歌。",
+      "pinyin_by_word": "wǒ men | dōu | xǐ huān | xué | zhōng wén | tīng | yīn yuè | chàng gē",
+      "tones": [
+        3,
+        5,
+        1,
+        3,
+        1,
+        2,
+        1,
+        2,
+        1,
+        1,
+        4,
+        4,
+        1
+      ]
+    },
+    "6-3-3": {
+      "script": "中明最愛唱歌。",
+      "pinyin_by_word": "zhōng míng | zuì ài | chàng gē",
+      "tones": [
+        1,
+        2,
+        4,
+        4,
+        4,
+        1
+      ]
+    },
+    "6-3-4": {
+      "script": "他的中文歌唱得很好。",
+      "pinyin_by_word": "tā | de | zhōng wén gē | chàng de | hěn | hǎo",
+      "tones": [
+        1,
+        5,
+        1,
+        2,
+        1,
+        4,
+        5,
+        3,
+        3
+      ]
+    },
+    "6-3-5": {
+      "script": "平常我們都有點兒忙。",
+      "pinyin_by_word": "píng cháng | wǒ men | dōu | yǒu diǎn ér | máng",
+      "tones": [
+        2,
+        2,
+        3,
+        5,
+        1,
+        3,
+        3,
+        2
+      ]
+    },
+    "6-3-6": {
+      "script": "可是週末我們常一起去運動。",
+      "pinyin_by_word": "kě shì | zhōu mò | wǒ men | cháng | yì qǐ | qù | yùn dòng",
+      "tones": [
+        3,
+        4,
+        1,
+        4,
+        3,
+        5,
+        2,
+        4,
+        3,
+        4,
+        4,
+        4
+      ]
+    },
+    "6-3-7": {
+      "script": "宜文游泳游得不錯。",
+      "pinyin_by_word": "yí wén | yóu yǒng | yóu de | bú cuò",
+      "tones": [
+        2,
+        2,
+        2,
+        3,
+        2,
+        5,
+        2,
+        4
+      ]
+    },
+    "6-3-8": {
+      "script": "國安的籃球打得很好。",
+      "pinyin_by_word": "guó ān | de | lán qiú | dǎ de | hěn | hǎo",
+      "tones": [
+        2,
+        1,
+        5,
+        2,
+        2,
+        3,
+        5,
+        3,
+        3
+      ]
+    },
+    "6-3-9": {
+      "script": "我喜歡打網球。",
+      "pinyin_by_word": "wǒ | xǐ huān | dǎ | wǎng qiú",
+      "tones": [
+        3,
+        3,
+        1,
+        3,
+        3,
+        2
+      ]
+    },
+    "6-3-10": {
+      "script": "有時候我們也一起去看運動比賽。",
+      "pinyin_by_word": "yǒu shí hòu | wǒ men | yě | yì qǐ | qù | kàn | yùn dòng | bǐ sài",
+      "tones": [
+        3,
+        2,
+        4,
+        3,
+        5,
+        3,
+        4,
+        3,
+        4,
+        4,
+        4,
+        4,
+        3,
+        4
+      ]
+    },
+    "6-3-11": {
+      "script": "有這幾個好朋友，我真高興！",
+      "pinyin_by_word": "yǒu | zhè | jǐ gè | hǎo péng yǒu | wǒ | zhēn | gāo xìng",
+      "tones": [
+        3,
+        4,
+        3,
+        4,
+        3,
+        2,
+        3,
+        3,
+        1,
+        1,
+        4
+      ]
+    },
+    "7-1-1": {
+      "script": "元真，我們明天幾點去找你的韓國朋友？",
+      "pinyin_by_word": "yuán zhēn | wǒ men | míng tiān | jǐ | diǎn | qù | zhǎo | nǐ | de | hán guó | péng yǒu",
+      "tones": [
+        2,
+        1,
+        3,
+        5,
+        2,
+        1,
+        3,
+        3,
+        4,
+        3,
+        3,
+        5,
+        2,
+        2,
+        2,
+        3
+      ]
+    },
+    "7-1-2": {
+      "script": "我們下午四點要到天美飯店，她在那裡等我們。",
+      "pinyin_by_word": "wǒ men | xià wǔ | sì diǎn | yào | dào | tiān měi fàn diàn | tā | zài | nà lǐ | děng | wǒ men",
+      "tones": [
+        3,
+        5,
+        4,
+        3,
+        4,
+        3,
+        4,
+        4,
+        1,
+        3,
+        4,
+        4,
+        1,
+        4,
+        4,
+        3,
+        3,
+        3,
+        5
+      ]
+    },
+    "7-1-3": {
+      "script": "我們要怎麼去？坐捷運還是坐公車？",
+      "pinyin_by_word": "wǒ men | yào | zěn me qù | zuò | jié yùn | hái shì | zuò | gōng chē",
+      "tones": [
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        4,
+        2,
+        4,
+        2,
+        4,
+        4,
+        1,
+        1
+      ]
+    },
+    "7-1-4": {
+      "script": "聽說那家飯店不遠，我想我們可以從學校走路去。",
+      "pinyin_by_word": "tīng shuō | nà jiā | fàn diàn | bù | yuǎn | wǒ | xiǎng | wǒ men | kě yǐ | cóng | xué xiào | zǒu lù | qù",
+      "tones": [
+        1,
+        1,
+        4,
+        1,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        3,
+        5,
+        3,
+        3,
+        2,
+        2,
+        4,
+        3,
+        4,
+        4
+      ]
+    },
+    "7-1-5": {
+      "script": "可是我不知道怎麼走，你知道嗎？",
+      "pinyin_by_word": "kě shì | wǒ | bù zhī dao | zěn me zǒu | nǐ | zhī dao | ma",
+      "tones": [
+        3,
+        4,
+        3,
+        4,
+        1,
+        5,
+        3,
+        5,
+        3,
+        3,
+        1,
+        5,
+        5
+      ]
+    },
+    "7-1-6": {
+      "script": "我也不知道。我們可以先上網看地圖。",
+      "pinyin_by_word": "wǒ | yě | bù zhī dao | wǒ men | kě yǐ | xiān | shàng wǎng | kàn | dì tú",
+      "tones": [
+        3,
+        3,
+        4,
+        1,
+        5,
+        3,
+        5,
+        3,
+        3,
+        1,
+        4,
+        3,
+        4,
+        4,
+        2
+      ]
+    },
+    "7-1-7": {
+      "script": "啊！上課了！我們先上課吧。",
+      "pinyin_by_word": "a | shàng kè | le | wǒ men | xiān | shàng kè | ba",
+      "tones": [
+        5,
+        4,
+        4,
+        5,
+        3,
+        5,
+        1,
+        4,
+        4,
+        5
+      ]
+    },
+    "7-1-8": {
+      "script": "好。",
+      "pinyin_by_word": "hǎo",
+      "tones": [
+        3
+      ]
+    },
+    "7-2-1": {
+      "script": "友美，妳看，天美飯店在大學路。我現在知道怎麼走了。",
+      "pinyin_by_word": "yǒu měi | nǐ | kàn | tiān měi fàn diàn | zài | dà xué lù | wǒ | xiàn zài | zhī dao | zěn me zǒu | le",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        1,
+        3,
+        4,
+        4,
+        4,
+        4,
+        2,
+        4,
+        3,
+        4,
+        4,
+        1,
+        5,
+        3,
+        5,
+        3,
+        5
+      ]
+    },
+    "7-2-2": {
+      "script": "啊！天美飯店在這裡！我知道這個地方，附近有郵局跟超級市場。",
+      "pinyin_by_word": "a | tiān měi fàn diàn | zài | zhè lǐ | wǒ | zhī dao | zhè gè | dì fāng | fù jìn | yǒu | yóu jú | gēn | chāo jí shì chǎng",
+      "tones": [
+        5,
+        1,
+        3,
+        4,
+        4,
+        4,
+        4,
+        3,
+        3,
+        1,
+        5,
+        4,
+        4,
+        4,
+        1,
+        4,
+        4,
+        3,
+        2,
+        2,
+        1,
+        1,
+        2,
+        4,
+        3
+      ]
+    },
+    "7-2-3": {
+      "script": "我想走路一定沒問題。",
+      "pinyin_by_word": "wǒ | xiǎng | zǒu lù | yí dìng | méi wèn tí",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ]
+    },
+    "7-2-4": {
+      "script": "可是我覺得那裡有點兒遠，走路去太累了。",
+      "pinyin_by_word": "kě shì | wǒ | jué de | nà lǐ | yǒu diǎn ér | yuǎn | zǒu lù | qù | tài | lèi | le",
+      "tones": [
+        3,
+        4,
+        3,
+        2,
+        5,
+        4,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        5
+      ]
+    },
+    "7-2-5": {
+      "script": "妳想怎麼去？",
+      "pinyin_by_word": "nǐ | xiǎng | zěn me qù",
+      "tones": [
+        3,
+        3,
+        3,
+        5,
+        4
+      ]
+    },
+    "7-2-6": {
+      "script": "坐捷運又方便又舒服，我們可以坐捷運。",
+      "pinyin_by_word": "zuò | jié yùn | yòu | fāng biàn | yòu | shū fu | wǒ men | kě yǐ | zuò | jié yùn",
+      "tones": [
+        4,
+        2,
+        4,
+        4,
+        1,
+        4,
+        4,
+        1,
+        5,
+        3,
+        5,
+        3,
+        3,
+        4,
+        2,
+        4
+      ]
+    },
+    "7-2-7": {
+      "script": "好，我們明天坐捷運去吧。",
+      "pinyin_by_word": "hǎo | wǒ men | míng tiān | zuò | jié yùn | qù | ba",
+      "tones": [
+        3,
+        3,
+        5,
+        2,
+        1,
+        4,
+        2,
+        4,
+        4,
+        5
+      ]
+    },
+    "7-3-1": {
+      "script": "我家附近有三條捷運線。",
+      "pinyin_by_word": "wǒ | jiā | fù jìn | yǒu | sān tiáo | jié yùn xiàn",
+      "tones": [
+        3,
+        1,
+        4,
+        4,
+        3,
+        1,
+        2,
+        2,
+        4,
+        4
+      ]
+    },
+    "7-3-2": {
+      "script": "一條紅的、一條綠的和一條藍的。",
+      "pinyin_by_word": "yì tiáo | hóng | de | yì tiáo | lǜ | de | hé | yì tiáo | lán | de",
+      "tones": [
+        4,
+        2,
+        2,
+        5,
+        4,
+        2,
+        4,
+        5,
+        2,
+        4,
+        2,
+        2,
+        5
+      ]
+    },
+    "7-3-3": {
+      "script": "我平常坐紅線去學校上課。",
+      "pinyin_by_word": "wǒ | píng cháng | zuò | hóng xiàn | qù | xué xiào | shàng kè",
+      "tones": [
+        3,
+        2,
+        2,
+        4,
+        2,
+        4,
+        4,
+        2,
+        4,
+        4,
+        4
+      ]
+    },
+    "7-3-4": {
+      "script": "週末也坐捷運去運動、看電影。",
+      "pinyin_by_word": "zhōu mò | yě | zuò | jié yùn | qù | yùn dòng | kàn | diàn yǐng",
+      "tones": [
+        1,
+        4,
+        3,
+        4,
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3
+      ]
+    },
+    "7-3-5": {
+      "script": "朋友常來找我。",
+      "pinyin_by_word": "péng yǒu | cháng | lái zhǎo | wǒ",
+      "tones": [
+        2,
+        3,
+        2,
+        2,
+        3,
+        3
+      ]
+    },
+    "7-3-6": {
+      "script": "他們都覺得坐捷運來我家，又快又方便。",
+      "pinyin_by_word": "tā men | dōu | jué de | zuò | jié yùn | lái | wǒ | jiā | yòu | kuài yòu fāng biàn",
+      "tones": [
+        1,
+        5,
+        1,
+        2,
+        5,
+        4,
+        2,
+        4,
+        2,
+        3,
+        1,
+        4,
+        4,
+        4,
+        1,
+        4
+      ]
+    },
+    "7-3-7": {
+      "script": "從我家到機場也不遠。",
+      "pinyin_by_word": "cóng | wǒ | jiā | dào | jī chǎng | yě | bù | yuǎn",
+      "tones": [
+        2,
+        3,
+        1,
+        4,
+        1,
+        3,
+        3,
+        4,
+        3
+      ]
+    },
+    "7-3-8": {
+      "script": "開車去、坐捷運去都可以。",
+      "pinyin_by_word": "kāi chē | qù | zuò | jié yùn | qù | dōu | kě yǐ",
+      "tones": [
+        1,
+        1,
+        4,
+        4,
+        2,
+        4,
+        4,
+        1,
+        3,
+        3
+      ]
+    },
+    "7-3-9": {
+      "script": "機場附近的風景也很漂亮。",
+      "pinyin_by_word": "jī chǎng | fù jìn | de | fēng jǐng | yě | hěn | piào liang",
+      "tones": [
+        1,
+        3,
+        4,
+        4,
+        5,
+        1,
+        3,
+        3,
+        3,
+        4,
+        5
+      ]
+    },
+    "7-3-10": {
+      "script": "我常常去看風景、看飛機。",
+      "pinyin_by_word": "wǒ | cháng cháng | qù | kàn | fēng jǐng | kàn | fēi jī",
+      "tones": [
+        3,
+        2,
+        2,
+        4,
+        4,
+        1,
+        3,
+        4,
+        1,
+        1
+      ]
+    },
+    "8-1-1": {
+      "script": "元真，妳的這條裙子真好看，我很喜歡。",
+      "pinyin_by_word": "yuán zhēn | nǐ | de | zhè tiáo | qún zi | zhēn | hǎo kàn | wǒ | hěn | xǐ huān",
+      "tones": [
+        2,
+        1,
+        3,
+        5,
+        4,
+        2,
+        2,
+        5,
+        1,
+        3,
+        4,
+        3,
+        3,
+        3,
+        1
+      ]
+    },
+    "8-1-2": {
+      "script": "謝謝，這是我去年的生日禮物。",
+      "pinyin_by_word": "xiè xie | zhè | shì | wǒ | qù nián | de | shēng rì | lǐ wù",
+      "tones": [
+        4,
+        5,
+        4,
+        4,
+        3,
+        4,
+        2,
+        5,
+        1,
+        4,
+        3,
+        4
+      ]
+    },
+    "8-1-3": {
+      "script": "聽說這個牌子的東西很貴，可是很多人喜歡。",
+      "pinyin_by_word": "tīng shuō | zhè gè pái zi | de | dōng xi | hěn | guì | kě shì | hěn duō | rén | xǐ huān",
+      "tones": [
+        1,
+        1,
+        4,
+        4,
+        2,
+        5,
+        5,
+        1,
+        5,
+        3,
+        4,
+        3,
+        4,
+        3,
+        1,
+        2,
+        3,
+        1
+      ]
+    },
+    "8-1-4": {
+      "script": "是啊，因為這個牌子很有名，衣服、褲子和裙子也都很好看，所以很多人買。",
+      "pinyin_by_word": "shì | a | yīn wèi | zhè gè pái zi | hěn | yǒu míng | yī fu | kù zi | hé | qún zi | yě | dōu | hěn | hǎo kàn | suǒ yǐ | hěn duō | rén | mǎi",
+      "tones": [
+        4,
+        5,
+        1,
+        4,
+        4,
+        4,
+        2,
+        5,
+        3,
+        3,
+        2,
+        1,
+        5,
+        4,
+        5,
+        2,
+        2,
+        5,
+        3,
+        1,
+        3,
+        3,
+        4,
+        3,
+        3,
+        3,
+        1,
+        2,
+        3
+      ]
+    },
+    "8-1-5": {
+      "script": "妳知道去哪裡買這個牌子的衣服嗎？",
+      "pinyin_by_word": "nǐ | zhī dao | qù nǎ lǐ | mǎi | zhè gè pái zi | de | yī fu | ma",
+      "tones": [
+        3,
+        1,
+        5,
+        4,
+        3,
+        3,
+        3,
+        4,
+        4,
+        2,
+        5,
+        5,
+        1,
+        5,
+        5
+      ]
+    },
+    "8-1-6": {
+      "script": "知道，百貨公司都有，不難找。",
+      "pinyin_by_word": "zhī dao | bǎi huò gōng sī | dōu | yǒu | bù | nán | zhǎo",
+      "tones": [
+        1,
+        5,
+        3,
+        4,
+        1,
+        1,
+        1,
+        3,
+        4,
+        2,
+        3
+      ]
+    },
+    "8-1-7": {
+      "script": "我很想去看，可是我最近胖了五公斤，我怕衣服不好買。",
+      "pinyin_by_word": "wǒ | hěn | xiǎng | qù | kàn | kě shì | wǒ | zuì jìn | pàng | le | wǔ gōng jīn | wǒ | pà | yī fu | bù | hǎo | mǎi",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        4,
+        3,
+        4,
+        3,
+        4,
+        4,
+        4,
+        5,
+        3,
+        1,
+        1,
+        3,
+        4,
+        1,
+        5,
+        4,
+        3,
+        3
+      ]
+    },
+    "8-1-8": {
+      "script": "妳胖了嗎？我不覺得啊，我跟妳一起去看。我也想去買今年夏天的新衣服。",
+      "pinyin_by_word": "nǐ | pàng | le | ma | wǒ | bù | jué de | a | wǒ | gēn | nǐ | yì qǐ | qù | kàn | wǒ | yě | xiǎng | qù | mǎi | jīn nián | xià tiān | de | xīn yī fu",
+      "tones": [
+        3,
+        4,
+        5,
+        5,
+        3,
+        4,
+        2,
+        5,
+        5,
+        3,
+        1,
+        3,
+        4,
+        3,
+        4,
+        4,
+        3,
+        3,
+        3,
+        4,
+        3,
+        1,
+        2,
+        4,
+        1,
+        5,
+        1,
+        1,
+        5
+      ]
+    },
+    "8-1-9": {
+      "script": "好，我們找時間一起去。",
+      "pinyin_by_word": "hǎo | wǒ men | zhǎo shí jiān | yì qǐ | qù",
+      "tones": [
+        3,
+        3,
+        5,
+        3,
+        2,
+        1,
+        4,
+        3,
+        4
+      ]
+    },
+    "8-2-1": {
+      "script": "妳看，這條黃色的褲子不錯吧？",
+      "pinyin_by_word": "nǐ | kàn | zhè tiáo | huáng sè | de | kù zi | bú cuò | ba",
+      "tones": [
+        3,
+        4,
+        4,
+        2,
+        2,
+        4,
+        5,
+        4,
+        5,
+        2,
+        4,
+        5
+      ]
+    },
+    "8-2-2": {
+      "script": "很好看。這條藍的也很漂亮，藍色是今年很流行的顏色。",
+      "pinyin_by_word": "hěn | hǎo kàn | zhè tiáo | lán | de | yě | hěn | piào liang | lán sè | shì | jīn nián | hěn | liú xíng | de | yán sè",
+      "tones": [
+        3,
+        3,
+        4,
+        4,
+        2,
+        2,
+        5,
+        3,
+        3,
+        4,
+        5,
+        2,
+        4,
+        4,
+        1,
+        2,
+        3,
+        2,
+        2,
+        5,
+        2,
+        4
+      ]
+    },
+    "8-2-3": {
+      "script": "這兩條我都去穿穿看。",
+      "pinyin_by_word": "zhè | liǎng tiáo | wǒ | dōu | qù | chuān chuan kàn",
+      "tones": [
+        4,
+        3,
+        2,
+        3,
+        1,
+        4,
+        1,
+        5,
+        4
+      ]
+    },
+    "8-2-4": {
+      "script": "妳覺得怎麼樣？",
+      "pinyin_by_word": "nǐ | jué de | zěn me yàng",
+      "tones": [
+        3,
+        2,
+        5,
+        3,
+        5,
+        4
+      ]
+    },
+    "8-2-5": {
+      "script": "都太短，也太小了。",
+      "pinyin_by_word": "dōu | tài | duǎn | yě | tài | xiǎo | le",
+      "tones": [
+        1,
+        4,
+        3,
+        3,
+        4,
+        3,
+        5
+      ]
+    },
+    "8-2-6": {
+      "script": "沒關係，我們可以下個週末再來看。對了，妳要買鞋子吧？",
+      "pinyin_by_word": "méi guān xì | wǒ men | kě yǐ | xià gè | zhōu mò | zài | lái | kàn | duì le | nǐ | yào | mǎi | xié zi | ba",
+      "tones": [
+        2,
+        1,
+        4,
+        3,
+        5,
+        3,
+        3,
+        4,
+        4,
+        1,
+        4,
+        4,
+        2,
+        4,
+        4,
+        5,
+        3,
+        4,
+        3,
+        2,
+        5,
+        5
+      ]
+    },
+    "8-2-7": {
+      "script": "是啊，我想買一雙黑色的。",
+      "pinyin_by_word": "shì | a | wǒ | xiǎng | mǎi | yì shuāng | hēi sè | de",
+      "tones": [
+        4,
+        5,
+        3,
+        3,
+        3,
+        4,
+        1,
+        1,
+        4,
+        5
+      ]
+    },
+    "8-2-8": {
+      "script": "鞋子都在一樓，我們到樓下去吧！九點了，百貨公司快要關了。",
+      "pinyin_by_word": "xié zi | dōu | zài | yì lóu | wǒ men | dào | lóu xià | qù | ba | jiǔ diǎn | le | bǎi huò gōng sī | kuài yào | guān | le",
+      "tones": [
+        2,
+        5,
+        1,
+        4,
+        4,
+        2,
+        3,
+        5,
+        4,
+        2,
+        4,
+        4,
+        5,
+        3,
+        3,
+        5,
+        3,
+        4,
+        1,
+        1,
+        4,
+        4,
+        1,
+        5
+      ]
+    },
+    "8-2-9": {
+      "script": "電梯在那裡！我們現在去買。",
+      "pinyin_by_word": "diàn tī | zài | nà lǐ | wǒ men | xiàn zài | qù | mǎi",
+      "tones": [
+        4,
+        1,
+        4,
+        4,
+        3,
+        3,
+        5,
+        4,
+        4,
+        4,
+        3
+      ]
+    },
+    "8-3-1": {
+      "script": "百貨公司裡有很多衣服、鞋子和皮包。",
+      "pinyin_by_word": "bǎi huò gōng sī | lǐ | yǒu | hěn duō | yī fu | xié zi | hé | pí bāo",
+      "tones": [
+        3,
+        4,
+        1,
+        1,
+        3,
+        3,
+        3,
+        1,
+        1,
+        5,
+        2,
+        5,
+        2,
+        2,
+        1
+      ]
+    },
+    "8-3-2": {
+      "script": "都是最新的。",
+      "pinyin_by_word": "dōu shì | zuì | xīn | de",
+      "tones": [
+        1,
+        4,
+        4,
+        1,
+        5
+      ]
+    },
+    "8-3-3": {
+      "script": "所以很多年輕女生喜歡到百貨公司去。",
+      "pinyin_by_word": "suǒ yǐ | hěn duō | nián qīng | nǚ shēng | xǐ huān | dào | bǎi huò gōng sī | qù",
+      "tones": [
+        3,
+        3,
+        3,
+        1,
+        2,
+        1,
+        3,
+        1,
+        3,
+        1,
+        4,
+        3,
+        4,
+        1,
+        1,
+        4
+      ]
+    },
+    "8-3-4": {
+      "script": "漂亮的、流行的衣服，她們都想穿穿看。",
+      "pinyin_by_word": "piào liang | de | liú xíng | de | yī fu | tā men | dōu | xiǎng | chuān chuan kàn",
+      "tones": [
+        4,
+        5,
+        5,
+        2,
+        2,
+        5,
+        1,
+        5,
+        1,
+        5,
+        1,
+        3,
+        1,
+        5,
+        4
+      ]
+    },
+    "8-3-5": {
+      "script": "很多年輕男生愛在書店看汽車雜誌。",
+      "pinyin_by_word": "hěn duō | nián qīng | nán shēng | ài | zài | shū diàn | kàn | qì chē | zá zhì",
+      "tones": [
+        3,
+        1,
+        2,
+        1,
+        2,
+        1,
+        4,
+        4,
+        1,
+        4,
+        4,
+        4,
+        1,
+        2,
+        4
+      ]
+    },
+    "8-3-6": {
+      "script": "汽車很貴。",
+      "pinyin_by_word": "qì chē | hěn | guì",
+      "tones": [
+        4,
+        1,
+        3,
+        4
+      ]
+    },
+    "8-3-7": {
+      "script": "他們不一定可以買新車。",
+      "pinyin_by_word": "tā men | bù yí dìng | kě yǐ | mǎi | xīn chē",
+      "tones": [
+        1,
+        5,
+        4,
+        2,
+        4,
+        3,
+        3,
+        3,
+        1,
+        1
+      ]
+    },
+    "8-3-8": {
+      "script": "可是都看得很開心。",
+      "pinyin_by_word": "kě shì | dōu | kàn | de | hěn | kāi xīn",
+      "tones": [
+        3,
+        4,
+        1,
+        4,
+        5,
+        3,
+        1,
+        1
+      ]
+    },
+    "8-3-9": {
+      "script": "我覺得有的舊東西很不錯。",
+      "pinyin_by_word": "wǒ | jué de | yǒu | de | jiù dōng xi | hěn | bú cuò",
+      "tones": [
+        3,
+        2,
+        5,
+        3,
+        5,
+        4,
+        1,
+        5,
+        3,
+        2,
+        4
+      ]
+    },
+    "8-3-10": {
+      "script": "有的新東西也很有趣。",
+      "pinyin_by_word": "yǒu | de | xīn dōng xi | yě | hěn | yǒu qù",
+      "tones": [
+        3,
+        5,
+        1,
+        1,
+        5,
+        3,
+        3,
+        3,
+        4
+      ]
+    },
+    "8-3-11": {
+      "script": "我很喜歡看新車、新衣服。",
+      "pinyin_by_word": "wǒ | hěn | xǐ huān | kàn | xīn chē | xīn yī fu",
+      "tones": [
+        3,
+        3,
+        3,
+        1,
+        4,
+        1,
+        1,
+        1,
+        1,
+        5
+      ]
+    },
+    "8-3-12": {
+      "script": "可是因為我的錢不多。",
+      "pinyin_by_word": "kě shì | yīn wèi | wǒ | de | qián | bù | duō",
+      "tones": [
+        3,
+        4,
+        1,
+        4,
+        3,
+        5,
+        2,
+        4,
+        1
+      ]
+    },
+    "8-3-13": {
+      "script": "所以我不常買。",
+      "pinyin_by_word": "suǒ yǐ | wǒ | bù cháng | mǎi",
+      "tones": [
+        3,
+        3,
+        3,
+        4,
+        2,
+        3
+      ]
+    }
+  }
+}

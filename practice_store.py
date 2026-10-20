@@ -29,21 +29,23 @@ def _now():
 
 # Accounts made by tests and tools: never on the leaderboard.
 def _model_voice_view(result):
-    """For the admin dashboard only: an attempt judged by the model voice, as the rules' and the model voice's share of Good syllables of the same recording,
+    """For the admin dashboard only: model-voice and Fusion attempts, with both scorers' share of Good syllables,
     and the syllables they disagree on (None for any other attempt)."""
-    if result.get("scoring_mode") != "model_voice":
+    if result.get("scoring_mode") not in {"model_voice", "fusion"}:
         return None
     syllables = (result.get("tone_verification") or {}).get("syllables") or []
     if not syllables:
         return None
     rules = [s.get("rule_status") or s.get("status") for s in syllables]
+    model_statuses = [s.get("model_voice_status") or s.get("status") for s in syllables]
     differences = [
-        {"character": s.get("character"), "tone": s.get("expected_surface_tone"), "rules": rule, "model": s.get("status"),
+        {"character": s.get("character"), "tone": s.get("model_voice_expected_surface_tone", s.get("expected_surface_tone")),
+         "rules": rule, "model": model_status,
          "score": s.get("model_score"), "closest_tone": s.get("model_closest_tone")}
-        for s, rule in zip(syllables, rules) if rule != s.get("status")
+        for s, rule, model_status in zip(syllables, rules, model_statuses) if rule != model_status
     ]
     return {"total": len(syllables), "rules_good": sum(r == "likely_correct" for r in rules),
-            "model_good": sum(s.get("status") == "likely_correct" for s in syllables), "differences": differences[:40]}
+            "model_good": sum(status == "likely_correct" for status in model_statuses), "differences": differences[:40]}
 
 
 MODEL_VOICE_MODE = "model_voice"                  # scoring_mode of an attempt judged by following the teachers' recordings: not on the boards, not a lesson result

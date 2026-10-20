@@ -21,7 +21,7 @@ import model_voice  # noqa: E402
 import tone_assessment as ta  # noqa: E402
 import tone_pipeline as tp  # noqa: E402
 from practice_store import PracticeStore  # noqa: E402
-from test_tone_pipeline import CONFIG, SPEAKER, STEP, make_track  # noqa: E402
+from test_tone_pipeline import CONFIG, SPEAKER, STEP, SR, make_track, tone_audio  # noqa: E402
 
 SOURCE = (ROOT / "main.py").read_text(encoding="utf-8")
 SETTINGS = dict(CONFIG["model_voice"])
@@ -34,11 +34,12 @@ def shape(kind, n=24):
 
 
 def fixture_contours():
-    """Four tones, five slightly different contours each (a fall, a rise, a level line, a dip), one sigmoid for all."""
+    """Four tones, five slightly different contours each (a fall, rise, level line, or dip)."""
     kinds = {1: "flat", 2: "rise", 3: "dip", 4: "fall"}
     references = {tone: [model_voice.normalise(shape(kind, n) * scale, SPREAD, SETTINGS["std_floor"]) for n, scale in ((20, 1.0), (24, 0.9), (28, 1.1), (22, 1.0), (26, 0.95))]
                   for tone, kind in kinds.items()}
-    return model_voice.Contours(references, {str(t): {"midpoint": 0.35, "steepness": 14.0} for t in kinds})
+    sigmoid = {str(tone): {"midpoint": 0.35, "steepness": 14.0} for tone in kinds}
+    return model_voice.Contours(references, sigmoid)
 
 
 FIXTURE = fixture_contours()
@@ -68,14 +69,14 @@ class NormaliseTests(unittest.TestCase):
 class SimilarityTests(unittest.TestCase):
     def test_a_contour_is_identical_to_itself_and_a_fall_is_closer_to_the_falling_tone(self):
         reference = FIXTURE.references[4][0]
-        solo = model_voice.Contours({4: [reference]}, {"4": {"midpoint": 0.0, "steepness": 1.0}})
+        solo = model_voice.Contours({4: [reference]}, {"4": {"midpoint": 0.35, "steepness": 14.0}})
         self.assertAlmostEqual(solo.similarity(4, reference, SETTINGS), 1.0, places=9)
         falling = sequence("fall")
         self.assertGreater(FIXTURE.similarity(4, falling, SETTINGS), FIXTURE.similarity(2, falling, SETTINGS) + 0.3)
         self.assertGreater(FIXTURE.score(4, falling, SETTINGS), 0.9)
         self.assertLess(FIXTURE.score(2, falling, SETTINGS), 0.1)
 
-    def test_the_plain_python_path_gives_the_numbers_of_the_numba_path(self):
+    def test_the_plain_python_path_matches_the_numba_path(self):
         if model_voice.numba is None:
             self.skipTest("numba is not installed")
         rng = np.random.default_rng(3)
@@ -88,40 +89,110 @@ class SimilarityTests(unittest.TestCase):
                     slow = FIXTURE.similarity(tone, seq, SETTINGS)
                 self.assertAlmostEqual(fast, slow, places=9, msg=(n, tone))
 
-    def test_a_band_narrower_than_the_length_difference_is_widened_to_it(self):
+    def test_dtw_path_starts_and_ends_at_both_contour_endpoints(self):
         short, long_ = sequence("fall", 8), sequence("fall", 40)
         a, b = model_voice._dtw_python(short.tolist(), long_.tolist(), 1)
-        self.assertEqual((int(a[0]), int(b[0]), int(a[-1]), int(b[-1])), (0, 0, 7, 39))      # a path from corner to corner exists
+        self.assertEqual((int(a[0]), int(b[0]), int(a[-1]), int(b[-1])), (0, 0, 7, 39))
+
+    def test_five_point_moving_average_smooths_without_changing_length(self):
+        smoothed = model_voice._smooth([0.0, 0.0, 5.0, 0.0, 0.0], 5)
+        np.testing.assert_allclose(smoothed, [1.0, 1.0, 1.0, 1.0, 1.0])
+
+    def test_per_tone_sigmoid_is_centered_on_its_fitted_midpoint(self):
+        solo = model_voice.Contours({4: [sequence("fall")]}, {"4": {"midpoint": 0.35, "steepness": 14.0}})
+        with mock.patch.object(solo, "similarity", return_value=0.35):
+            self.assertAlmostEqual(solo.score(4, sequence("fall"), SETTINGS), 0.5)
 
     def test_the_number_of_contours_used_can_be_limited(self):
         full = FIXTURE.similarity(4, sequence("rise"), SETTINGS)
         self.assertNotEqual(full, FIXTURE.similarity(4, sequence("rise"), SETTINGS, count=1))
+
+    def test_same_sample_cosine_is_high_for_the_same_contour_and_low_for_a_different_one(self):
+        rising = shape("rise")
+        same = model_voice.same_sample_similarity(rising, SPREAD, rising, SPREAD, SETTINGS)
+        different = model_voice.same_sample_similarity(rising, SPREAD, shape("fall"), SPREAD, SETTINGS)
+        self.assertGreaterEqual(same, 0.99)
+        self.assertLess(different, 0.65)
 
 
 class JudgeTests(unittest.TestCase):
     def values_of(self, kind, n=30):
         return shape(kind, n)
 
-    def test_the_expected_tone_alone_decides_without_alternatives(self):
+    def test_cosine_compares_all_tones_and_expected_tone_is_still_reported(self):
         judged = model_voice.judge(self.values_of("fall"), SPREAD, [4], SETTINGS, FIXTURE)
         self.assertGreater(judged["score"], 0.9)
-        self.assertEqual(list(judged["scores"]), [4])
+        self.assertEqual(set(judged["scores"]), {1, 2, 3, 4})
+        self.assertEqual(set(judged["similarities"]), {1, 2, 3, 4})
+        self.assertEqual(judged["best_tone"], 4)
+
+    def test_a_clearer_competing_cosine_prevents_a_high_expected_sigmoid_from_accepting_the_tone(self):
+        similarities = {1: 0.548, 2: 0.273, 3: 0.202, 4: 0.337}
+        with mock.patch.dict(FIXTURE.sigmoid, {3: (-0.5213, 3.014)}):
+            with mock.patch.object(FIXTURE, "similarity", side_effect=lambda tone, *_args, **_kwargs: similarities[tone]):
+                judged = model_voice.judge(self.values_of("flat"), SPREAD, [3], SETTINGS, FIXTURE)
+        self.assertEqual(judged["best_tone"], 1)
+        self.assertGreater(judged["score"], SETTINGS["good_at"])
+        self.assertFalse(judged["accepted_match"])
+
+    def test_good_cutoff_uses_the_sigmoid_score_for_every_tone(self):
+        config = {**CONFIG, "model_voice": SETTINGS}
+        self.assertEqual(model_voice.verdict(0.60, 1.0, True, config), "likely_correct")
+        self.assertEqual(model_voice.verdict(0.5999, 1.0, True, config), "insufficient_evidence")
 
     def test_a_second_accepted_tone_counts_only_when_it_clearly_matches(self):
         rising = self.values_of("rise")
-        alone = model_voice.judge(rising, SPREAD, [3], SETTINGS, FIXTURE)["score"]
+        alone = model_voice.judge(rising, SPREAD, [3], SETTINGS, FIXTURE)
+        self.assertEqual(alone["best_tone"], 2)
+        self.assertFalse(alone["accepted_match"])
         both = model_voice.judge(rising, SPREAD, [3, 2], SETTINGS, FIXTURE)
-        self.assertLess(alone, 0.6)
+        self.assertLess(alone["score"], 1.0)
         self.assertGreater(both["score"], 0.8)
         self.assertGreater(both["scores"][2], both["scores"][3])
+        self.assertTrue(both["accepted_match"])
         strict = model_voice.judge(rising, SPREAD, [3, 2], {**SETTINGS, "alternative_tone_min": 0.9999}, FIXTURE)
-        self.assertAlmostEqual(strict["score"], alone, places=9)
+        self.assertFalse(strict["accepted_match"])
+        self.assertAlmostEqual(strict["score"], alone["score"], places=9)
+
+    def test_a_weak_optional_tone_does_not_hide_a_good_expected_tone(self):
+        similarities = {1: 0.55, 2: 0.66, 3: 0.60, 4: -0.2}
+        sigmoids = {1: (0.0, 1.0), 2: (0.30, 1.0), 3: (-1.0, 10.0), 4: (0.0, 1.0)}
+        with mock.patch.dict(FIXTURE.sigmoid, sigmoids):
+            with mock.patch.object(FIXTURE, "similarity", side_effect=lambda tone, *_args, **_kwargs: similarities[tone]):
+                judged = model_voice.judge(self.values_of("flat"), SPREAD, [3, 2], SETTINGS, FIXTURE)
+        self.assertEqual(judged["selected_accepted_tone"], 3)
+        self.assertAlmostEqual(judged["score"], 1 / (1 + np.exp(-10.0 * (0.60 + 1.0))))
+        self.assertTrue(judged["accepted_match"])
 
     def test_too_little_to_compare_is_not_judged(self):
         self.assertIsNone(model_voice.judge(None, SPREAD, [4], SETTINGS, FIXTURE))
         self.assertIsNone(model_voice.judge(np.array([1.0]), SPREAD, [4], SETTINGS, FIXTURE))
-        only_two_tones = model_voice.Contours({1: FIXTURE.references[1], 2: FIXTURE.references[2]}, {"1": {"midpoint": 0.3, "steepness": 10}, "2": {"midpoint": 0.3, "steepness": 10}})
+        only_two_tones = model_voice.Contours({1: FIXTURE.references[1], 2: FIXTURE.references[2]},
+                                              {"1": {"midpoint": 0.35, "steepness": 14.0}, "2": {"midpoint": 0.35, "steepness": 14.0}})
         self.assertIsNone(model_voice.judge(self.values_of("fall"), SPREAD, [4], SETTINGS, only_two_tones))
+
+
+class ModelVoiceSandhiContextTests(unittest.TestCase):
+    BOOK_T3 = {"target_tone": 3, "tone_source": "book_pinyin"}
+
+    def test_strict_rules_sandhi_replaces_the_book_tone_used_for_scoring(self):
+        for rule in ("third_tone_sandhi", "bu_sandhi", "yi_sandhi"):
+            with self.subTest(rule=rule):
+                self.assertEqual(tp._model_voice_scoring_tones(
+                    {"tone_rule": rule, "target_tone": 2, "also_accept_tones": ()}, self.BOOK_T3), [2])
+
+    def test_optional_third_tone_sandhi_keeps_both_rules_accepted_readings(self):
+        result = tp._model_voice_scoring_tones(
+            {"tone_rule": "third_tone_sandhi_optional", "target_tone": 3, "also_accept_tones": (2,)},
+            self.BOOK_T3,
+        )
+        self.assertEqual(result, [3, 2])
+
+    def test_non_sandhi_rules_do_not_override_book_pinyin(self):
+        for rule in ("lexical_tone", "taiwan_lexical_reading", "phrase_final_third_tone"):
+            with self.subTest(rule=rule):
+                self.assertIsNone(tp._model_voice_scoring_tones(
+                    {"tone_rule": rule, "target_tone": 2}, self.BOOK_T3))
 
 
 class VerdictTests(unittest.TestCase):
@@ -129,8 +200,8 @@ class VerdictTests(unittest.TestCase):
 
     def test_good_needs_the_score_and_decent_quality(self):
         confidence = CONFIG["confidence"]
-        self.assertEqual(model_voice.verdict(0.60, 1.0, True, self.config), "likely_correct")
-        self.assertEqual(model_voice.verdict(0.59, 1.0, True, self.config), "insufficient_evidence")
+        self.assertEqual(model_voice.verdict(SETTINGS["good_at"], 1.0, True, self.config), "likely_correct")
+        self.assertEqual(model_voice.verdict(SETTINGS["good_at"] - 0.0001, 1.0, True, self.config), "insufficient_evidence")
         self.assertEqual(model_voice.verdict(0.95, confidence["likely_correct_quality"] - 0.01, True, self.config), "insufficient_evidence")
 
     def test_needs_practice_needs_a_low_score_high_quality_and_permission_to_accuse(self):
@@ -141,7 +212,8 @@ class VerdictTests(unittest.TestCase):
         self.assertEqual(model_voice.verdict(0.05, confidence["practice_quality"] - 0.01, True, self.config), "insufficient_evidence")
 
 
-def verify_model(char, st_values, *, accuse_ok=True, doubtful_alignment=False, alignment_ok=True, context=None, settings=None, confidence=None, enabled=True):
+def verify_model(char, st_values, *, accuse_ok=True, doubtful_alignment=False, alignment_ok=True, context=None,
+                 settings=None, confidence=None, enabled=True, reference=None):
     config = copy.deepcopy(CONFIG)
     config["model_voice"].update({"enabled": enabled, **(settings or {})})
     config["confidence"].update(confidence or {})
@@ -150,13 +222,58 @@ def verify_model(char, st_values, *, accuse_ok=True, doubtful_alignment=False, a
     syllable = {"char": char, "start": 0.0, "end": end, "phones": [], "alignment_ok": alignment_ok, "nucleus": (0.0, end)}
     context = context or capt_core.expected_tone_contexts([char])[0]
     with mock.patch.object(model_voice, "load_contours", return_value=FIXTURE):
-        return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True, accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment)
+        return tp.verify_syllable(syllable, context, extraction, clean, config, SPEAKER, True,
+                                  accuse_ok=accuse_ok, doubtful_alignment=doubtful_alignment,
+                                  model_voice_reference=reference)
 
 
 FALL, RISE = np.linspace(6.0, -6.0, 60), np.linspace(-4.0, 4.0, 60)
 
 
 class PipelineTests(unittest.TestCase):
+    def test_mode_voice_uses_book_expected_tones_and_retains_the_rules_path(self):
+        script = "你好"
+        rule_contexts = capt_core.expected_tone_contexts([script])
+        book_contexts = ta._contexts_with_book_tones(rule_contexts, [3, 3])
+        audio, spans = tone_audio([[170, 175, 190, 210], [190, 150, 140, 175]])
+        syllables = [{"char": char, "start": start, "end": end, "phones": [], "nucleus": (start + 0.04, end)}
+                     for char, (start, end) in zip(script, spans)]
+        calibration = {"status": "calibrated", "pitch_floor": 90.0, "pitch_ceiling": 450.0, "f0_median": 200.0}
+        config = ta.get_config("sentence", "easy", "model_voice")
+
+        with mock.patch.object(model_voice, "load_contours", return_value=FIXTURE):
+            result = tp.verify_utterance(audio, SR, script, calibration, alignment=syllables, config=config,
+                                         contexts=rule_contexts, model_voice_contexts=book_contexts)
+
+        self.assertEqual([item["expected_surface_tone"] for item in result["syllables"]], [3, 3])
+        self.assertEqual([item["rule_expected_surface_tone"] for item in result["syllables"]], [2, 3])
+        self.assertTrue(all(item["tone_source"] == "book_pinyin" for item in result["syllables"]))
+        self.assertTrue(all("rule_tone_match" in item for item in result["syllables"]))
+
+    def test_same_sample_reference_is_only_used_to_rescue_a_non_good_model_voice_result(self):
+        context = {**capt_core.expected_tone_contexts(["媽"])[0], "target_tone": 1}
+        reference = {"values": model_voice.judged_values(RISE), "spread": SPREAD}
+        rescued = verify_model("媽", RISE, context=context, reference=reference)
+        unchanged = verify_model("媽", RISE, context=context,
+                                 reference={"values": model_voice.judged_values(FALL), "spread": SPREAD})
+
+        self.assertEqual(rescued["status"], "likely_correct")
+        self.assertTrue(rescued["model_voice_reference_used"])
+        self.assertIn("matched_same_sample_reference", rescued["reasons"])
+        self.assertLess(unchanged["model_voice_reference_cosine"], 0.65)
+        self.assertFalse(unchanged["model_voice_reference_used"])
+
+    def test_same_sample_reference_does_not_rescue_low_quality_or_doubtful_alignment(self):
+        context = {**capt_core.expected_tone_contexts(["媽"])[0], "target_tone": 1}
+        reference = {"values": model_voice.judged_values(RISE), "spread": SPREAD}
+        low_quality = verify_model("媽", RISE, context=context, reference=reference,
+                                   settings={"reference_sample_min_quality": 1.1})
+        doubtful = verify_model("媽", RISE, context=context, reference=reference, doubtful_alignment=True)
+        self.assertNotEqual(low_quality["status"], "likely_correct")
+        self.assertFalse(low_quality.get("model_voice_reference_used", False))
+        self.assertNotEqual(doubtful["status"], "likely_correct")
+        self.assertFalse(doubtful.get("model_voice_reference_used", False))
+
     def test_a_clean_fall_for_tone_4_is_good_and_keeps_the_rules_verdict_beside_it(self):
         result = verify_model("去", FALL)
         self.assertEqual(result["status"], "likely_correct")
@@ -213,11 +330,53 @@ class ConfigAndPayloadTests(unittest.TestCase):
         self.assertIs(ta.get_config("sentence", "easy", None), rules)
         mode = ta.get_config("sentence", "easy", "model_voice")
         self.assertTrue(mode["model_voice"]["enabled"])
+        fusion = ta.get_config("sentence", "easy", "fusion")
+        self.assertTrue(fusion["model_voice"]["enabled"])
         self.assertFalse(rules["model_voice"]["enabled"])
         self.assertIs(ta.get_config("sentence", "easy", "model_voice"), mode)
         self.assertEqual(mode["tone"]["t4_by_duration"], rules["tone"]["t4_by_duration"])           # the level is kept
         with self.assertRaises(ValueError):
             ta.get_config(scoring_mode="bogus")
+
+    def test_fusion_accepts_either_good_verdict_and_needs_both_to_flag_practice(self):
+        statuses = [
+            ("likely_correct", "practice", 2, 3),       # Rules-only good: display the Rules target.
+            ("practice", "likely_correct", 3, 4),       # Model Voice-only good: keep the book target.
+            ("likely_correct", "likely_correct", 1, 1),
+            ("practice", "practice", 2, 3),
+            ("practice", "insufficient_evidence", 2, 3),
+        ]
+        syllables = []
+        for rules, voice, rule_tone, book_tone in statuses:
+            syllables.append({
+                "character": "字", "status": voice, "rule_status": rules,
+                "expected_surface_tone": book_tone, "tone_rule": "book_pinyin", "lexical_tone": book_tone,
+                "rule_expected_surface_tone": rule_tone, "rule_lexical_tone": rule_tone,
+                "rule_tone_rule": "rules", "rule_tone_match": 0.9, "tone_match": 0.1,
+                "model_score": 0.2 if voice == "practice" else 0.9, "reasons": [], "feedback": "feedback",
+            })
+        result = ta._fuse_verification_result({"syllables": syllables, "config": copy.deepcopy(CONFIG),
+                                                "summary": {}, "feedback": "old"})
+        fused = result["syllables"]
+        self.assertEqual([item["status"] for item in fused], [
+            "likely_correct", "likely_correct", "likely_correct", "practice", "insufficient_evidence",
+        ])
+        self.assertEqual([item["fusion_basis"] for item in fused], [
+            "rules_only", "model_voice_only", "both", "both_practice", "unresolved",
+        ])
+        self.assertEqual(fused[0]["expected_surface_tone"], 2)
+        self.assertEqual(fused[0]["model_voice_expected_surface_tone"], 3)
+        self.assertEqual(fused[1]["expected_surface_tone"], 4)
+        self.assertEqual(result["summary"]["likely_correct"], 3)
+        self.assertEqual(result["summary"]["practice"], 1)
+
+        no_voice_verdict = ta._fuse_verification_result({
+            "syllables": [{"character": "字", "status": "practice", "rule_status": "practice",
+                           "expected_surface_tone": 2, "rule_expected_surface_tone": 2, "reasons": []}],
+            "config": copy.deepcopy(CONFIG), "summary": {}, "feedback": "old",
+        })
+        self.assertEqual(no_voice_verdict["syllables"][0]["status"], "insufficient_evidence")
+        self.assertEqual(no_voice_verdict["syllables"][0]["fusion_basis"], "unresolved")
 
     def test_the_payload_and_the_saved_summary_say_which_mode_judged_it(self):
         payload = {"summary": {}}
@@ -241,11 +400,11 @@ class TheDataFileTests(unittest.TestCase):
         self.assertEqual(contours.tones(), (1, 2, 3, 4))
         for tone in model_voice.TONES:
             self.assertEqual(len(contours.references[tone]), SETTINGS["references_per_tone"], tone)
-            midpoint, steepness = contours.sigmoid[tone]
-            self.assertTrue(0.0 < midpoint < 1.0 and steepness > 0.0, tone)
         document = json.loads(model_voice.CONTOURS_PATH.read_text(encoding="utf-8"))
         self.assertEqual(document["std_floor"], SETTINGS["std_floor"])
         self.assertEqual(document["references_per_tone"], SETTINGS["references_per_tone"])
+        self.assertEqual(document["algorithm"], "dtw_alignment_5point_smoothing_cosine_tone_sigmoid")
+        self.assertEqual(set(contours.sigmoid), set(model_voice.TONES))
 
     def test_the_teachers_fall_is_a_fall_for_tone_4_and_not_a_rise_with_the_real_contours(self):
         contours = model_voice.load_contours()
@@ -273,6 +432,11 @@ class EndpointTests(unittest.TestCase):
     def test_the_mode_without_its_data_is_a_503_not_a_silent_fallback_to_the_rules(self):
         with mock.patch.object(model_voice, "available", return_value=False), self.assertRaises(HTTPException) as caught:
             self.call("model_voice")
+        self.assertEqual(caught.exception.status_code, 503)
+
+    def test_fusion_requires_the_model_voice_data(self):
+        with mock.patch.object(model_voice, "available", return_value=False), self.assertRaises(HTTPException) as caught:
+            self.call("fusion")
         self.assertEqual(caught.exception.status_code, 503)
 
     def test_own_text_is_judged_by_the_rules_whatever_is_asked(self):
@@ -313,6 +477,14 @@ class BoardsIgnoreTheModeTests(unittest.TestCase):
         board = self.store.leaderboard()
         self.assertEqual(board["top"][0]["points"], 250)
         self.assertEqual(board["accuracy"]["top"][0]["accuracy"], 50.0)
+
+    def test_fusion_attempts_count_on_both_boards(self):
+        for number in range(5):
+            self.attempt(f"5-1-{number + 1}", good=5, okay=5, mode="rules")
+            self.attempt(f"5-1-{number + 1}", good=9, okay=1, mode="fusion")
+        board = self.store.leaderboard()
+        self.assertEqual(board["top"][0]["points"], 450)
+        self.assertEqual(board["accuracy"]["top"][0]["accuracy"], 70.0)
 
     def test_the_latest_result_of_a_lesson_is_the_newest_attempt_whichever_way_it_was_judged(self):
         self.attempt("5-1-1", good=5, okay=5, mode="rules")                                  # 50
@@ -358,6 +530,16 @@ class AdminDashboardTests(unittest.TestCase):
         self.assertEqual([(d["character"], d["rules"], d["model"], d["score"], d["closest_tone"]) for d in view["differences"]],
                          [("我", "practice", "likely_correct", 0.88, None), ("去", "likely_correct", "practice", 0.12, 2)])
 
+    def test_a_fusion_attempt_keeps_its_final_result_and_both_original_verdicts(self):
+        self.save("fusion", [
+            {"character": "你", "expected_surface_tone": 3, "model_voice_expected_surface_tone": 3,
+             "status": "likely_correct", "model_voice_status": "practice", "rule_status": "likely_correct", "model_score": 0.12},
+        ])
+        attempt = self.store.list_admin_dashboard()[0]["attempts"][0]
+        self.assertEqual(attempt["scoring_mode"], "fusion")
+        self.assertEqual(attempt["model_voice"]["model_good"], 0)
+        self.assertEqual(attempt["model_voice"]["rules_good"], 1)
+
     def test_a_rules_attempt_and_an_old_attempt_have_no_model_voice_view(self):
         self.save("rules", [{"character": "我", "expected_surface_tone": 3, "status": "likely_correct"}])
         self.store.save_attempt(self.student, "5-1-2", "文本", self.audio, "a.webm", {"summary": {"syllables": {"likely_correct": 1}}})
@@ -367,18 +549,18 @@ class AdminDashboardTests(unittest.TestCase):
 
 
 class PageTests(unittest.TestCase):
-    def test_the_page_has_the_selector_with_both_modes_and_the_model_voice_first_as_the_default(self):
+    def test_the_page_defaults_every_visit_to_fusion_even_if_a_browser_has_an_old_choice(self):
         select = SOURCE[SOURCE.index('<select id="scoringModeSelect"'): SOURCE.index('<p id="scoringModeHint"')]
+        self.assertLess(select.index('value="fusion"'), select.index('value="model_voice"'))
         self.assertLess(select.index('value="model_voice"'), select.index('value="rules"'))
-        # nothing stored (a new browser, a private window, a blocked storage) means the model voice; only an explicit "rules" keeps the rules
-        self.assertIn('localStorage.getItem("scoringMode") === "rules" ? "rules" : "model_voice"', SOURCE)
-        self.assertIn('catch (error) { return "model_voice"; }', SOURCE)
+        page_state = SOURCE[SOURCE.index("// Each page visit starts in Fusion"): SOURCE.index("let isRecording", SOURCE.index("// Each page visit starts in Fusion"))]
+        self.assertIn('let scoringMode = "fusion";', page_state)
+        self.assertNotIn('localStorage.getItem("scoringMode")', SOURCE)
         self.assertIn('onchange="changeScoringMode()"', select)
         self.assertLess(SOURCE.index('id="practiceMode"'), SOURCE.index('id="scoringModeSelect"'))
 
-    def test_the_choice_is_remembered_sent_with_every_assessment_and_forced_to_rules_for_own_text(self):
-        self.assertIn('localStorage.getItem("scoringMode")', SOURCE)
-        self.assertIn('localStorage.setItem("scoringMode", scoringMode)', SOURCE)
+    def test_the_choice_is_visit_only_sent_with_every_assessment_and_forced_to_rules_for_own_text(self):
+        self.assertNotIn('localStorage.setItem("scoringMode", scoringMode)', SOURCE)
         self.assertIn('formData.append("scoring_mode", effectiveScoringMode(practiceMode));', SOURCE)
         effective = SOURCE[SOURCE.index("function effectiveScoringMode("): SOURCE.index("function changeScoringMode(")]
         self.assertIn('mode === "custom" ? "rules"', effective)
@@ -386,6 +568,7 @@ class PageTests(unittest.TestCase):
         self.assertIn("select.disabled = custom ||", sync)
         self.assertIn('scoringModeCustomHint', sync)
         self.assertIn('scoringModeNotCounted', sync)
+        self.assertIn('scoringModeFusionHint', sync)
         self.assertIn("let scoringMode", SOURCE[: SOURCE.index("function selectedPracticeMode(")])
 
     def test_the_mode_follows_the_page_state_and_the_language(self):
@@ -429,7 +612,9 @@ class PageTests(unittest.TestCase):
         self.assertIn('scoringModeModelVoice: "對照範例發音",', SOURCE)
 
     def test_the_endpoint_takes_the_mode_and_hands_it_to_both_assessments(self):
-        self.assertIn('scoring_mode: str = Form(default="rules")', SOURCE)
+        self.assertIn('scoring_mode: str = Form(default="fusion")', SOURCE)
+        self.assertIn('scoring_mode: str = "fusion",', SOURCE)
+        self.assertIn('scoring_mode or model_voice.MODE_FUSION', SOURCE)
         self.assertEqual(SOURCE.count("level=assessment_level, scoring_mode=scoring_mode,"), 2)
 
 

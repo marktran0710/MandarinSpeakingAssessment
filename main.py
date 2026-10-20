@@ -88,10 +88,6 @@ async def explain_assessment_busy(request: Request, exc: AssessmentBusy):
 def warm_up_alignment():
     """With TONE_MFA_WARM=1 load the aligner now, so the first learner does not wait for `mfa align_one` to start."""
     tone_pipeline.prewarm_mfa()
-    try:
-        model_voice.warm_up()                           # compile the fast DTW of the "Theo giọng mẫu" mode now, not under the first learner
-    except Exception as exc:                            # it only makes it faster
-        print(f"Warning: the model-voice DTW could not be pre-compiled: {exc}")
 
 ADMIN_PASSWORD = os.environ.get("MANDARIN_ADMIN_PASSWORD", "").strip()
 ADMIN_SESSION_COOKIE = "mandarin_admin_session"
@@ -740,7 +736,8 @@ async def admin_page(request: Request):
                     : attempt.practice_mode === "chapter5_word"
                         ? `Chapter 5 ${attempt.practice_item?.script || attempt.target_script}`
                         : `Sample ${attempt.sample_id}`;
-                const summary = el("summary", `${sourceLabel} | ${dateLabel(attempt.created_at)} | ${scored}${attempt.scoring_mode === "model_voice" ? " | model voice" : ""}`);
+                const modeLabel = attempt.scoring_mode === "model_voice" ? " | model voice" : attempt.scoring_mode === "fusion" ? " | fusion" : "";
+                const summary = el("summary", `${sourceLabel} | ${dateLabel(attempt.created_at)} | ${scored}${modeLabel}`);
                 details.append(summary);
                 const body = el("div", undefined, "attempt-body");
                 body.append(el("div", `Target: ${attempt.target_script || "—"}`));
@@ -750,9 +747,8 @@ async def admin_page(request: Request):
                     scores.append(el("span", `${label}: ${value || 0}`, "score"));
                 }
                 body.append(scores);
-                if (attempt.scoring_mode === "model_voice") {
-                    // learners are not shown this: it is for judging the new mode (the leaderboards ignore these attempts)
-                    body.append(el("h3", "Scoring: follow the model voice (not counted on the leaderboards)"));
+                if (attempt.scoring_mode === "model_voice" || attempt.scoring_mode === "fusion") {
+                    body.append(el("h3", attempt.scoring_mode === "fusion" ? "Fusion: combined Rules and model-voice result" : "Scoring: follow the model voice (not counted on the leaderboards)"));
                     const view = attempt.model_voice;
                     if (view && view.total) {
                         const percent = count => Math.round(100 * count / view.total);
@@ -1503,6 +1499,7 @@ async def read_index():
             <div class="scoring-mode">
                 <label for="scoringModeSelect"><b data-i18n="scoringModeLabel">Scoring</b></label>
                 <select id="scoringModeSelect" onchange="changeScoringMode()">
+                    <option value="fusion" data-i18n="scoringModeFusion">Fusion</option>
                     <option value="model_voice" data-i18n="scoringModeModelVoice">Follow the model voice</option>
                     <option value="rules" data-i18n="scoringModeRules">Rules</option>
                 </select>
@@ -1667,9 +1664,8 @@ async def read_index():
             let voiceCalibrationTimer = null;
             let isVoiceCalibrationRecording = false;
             let isVoiceCalibrationProcessing = false;
-            // How the syllables are judged: "model_voice" (the default since 2026-10-19, on request: compared with the teachers' recordings, "Theo giọng mẫu") or "rules".
-            // Remembered in this browser once chosen; own text has no teacher recording to follow and is always judged by the rules.
-            let scoringMode = (() => { try { return localStorage.getItem("scoringMode") === "rules" ? "rules" : "model_voice"; } catch (error) { return "model_voice"; } })();
+            // Each page visit starts in Fusion, including returning users; a choice applies for this visit only. Own text always uses Rules.
+            let scoringMode = "fusion";
             let isRecording = false;
             let isProcessing = false;
             let calibrationHadError = false;   // "Do this later" only appears once calibration has failed (or is done)
@@ -1753,6 +1749,8 @@ async def read_index():
             itemNotPracticed: "Not practised yet.",
             itemMeaning: "Meaning",
             scoringModeLabel: "Scoring",
+            scoringModeFusion: "Fusion",
+            scoringModeFusionHint: "Either scorer can accept a tone; practice feedback requires both to flag it. If evidence is unclear, Fusion stays uncertain.",
             scoringModeRules: "Rules",
             scoringModeModelVoice: "Follow the model voice",
             scoringModeNotCounted: "Compared with the teachers' recordings. These attempts are shown but not counted on the leaderboards.",
@@ -1924,6 +1922,8 @@ async def read_index():
                     itemProgress: "最近成績：{last}%\u30fb{when}",
                     itemNotPracticed: "還沒練習過。",
                     itemMeaning: "意思",
+                    scoringModeFusion: "融合",
+                    scoringModeFusionHint: "任一評分模式判為正確即接受；只有兩者都判為需練習時才標記練習。證據不足時仍顯示不確定。",
                     scoringModeLabel: "評分方式",
                     scoringModeRules: "規則",
                     scoringModeModelVoice: "對照範例發音",
@@ -2095,6 +2095,8 @@ async def read_index():
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
                     itemNotPracticed: "Chưa luyện.",
                     itemMeaning: "Nghĩa",
+                    scoringModeFusion: "Kết hợp",
+                    scoringModeFusionHint: "Âm được chấp nhận nếu một trong hai cách chấm đánh giá là đúng; chỉ yêu cầu luyện tập khi cả hai cùng đánh dấu. Nếu thiếu bằng chứng, kết quả vẫn chưa rõ.",
                     scoringModeLabel: "Cách chấm",
                     scoringModeRules: "Quy tắc",
                     scoringModeModelVoice: "Theo giọng mẫu",
@@ -2285,6 +2287,8 @@ async def read_index():
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
                     itemNotPracticed: "Belum dilatih.",
                     itemMeaning: "Arti",
+                    scoringModeFusion: "Gabungan",
+                    scoringModeFusionHint: "Suku kata diterima jika salah satu penilai menyatakan benar; latihan hanya ditandai jika keduanya setuju. Jika bukti belum cukup, hasil tetap belum pasti.",
                     scoringModeLabel: "Cara penilaian",
                     scoringModeRules: "Aturan",
                     scoringModeModelVoice: "Sesuai suara contoh",
@@ -2564,6 +2568,8 @@ async def read_index():
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
                     itemNotPracticed: "अभी अभ्यास नहीं किया।",
                     itemMeaning: "अर्थ",
+                    scoringModeFusion: "संयुक्त",
+                    scoringModeFusionHint: "किसी भी एक तरीके से सही माना गया स्वर स्वीकार होगा; अभ्यास तभी सुझाएँगे जब दोनों गलत कहें। प्रमाण स्पष्ट न हो तो नतीजा अनिश्चित रहेगा।",
                     scoringModeLabel: "मूल्यांकन का तरीका",
                     scoringModeRules: "नियम",
                     scoringModeModelVoice: "आदर्श आवाज़ के अनुसार",
@@ -3054,8 +3060,8 @@ async def read_index():
             }
 
             function changeScoringMode() {
-                scoringMode = document.getElementById("scoringModeSelect").value === "model_voice" ? "model_voice" : "rules";
-                try { localStorage.setItem("scoringMode", scoringMode); } catch (error) { /* a private window: the choice lasts for this visit */ }
+                const selected = document.getElementById("scoringModeSelect").value;
+                scoringMode = ["fusion", "model_voice", "rules"].includes(selected) ? selected : "fusion";
                 syncScoringMode();
             }
 
@@ -3066,7 +3072,8 @@ async def read_index():
                 const custom = selectedPracticeMode() === "custom";
                 select.value = effectiveScoringMode();
                 select.disabled = custom || isProcessing || isRecording || isSavingStudent;
-                const key = custom ? "scoringModeCustomHint" : scoringMode === "model_voice" ? "scoringModeNotCounted" : "";
+                const key = custom ? "scoringModeCustomHint" : scoringMode === "model_voice" ? "scoringModeNotCounted"
+                    : scoringMode === "fusion" ? "scoringModeFusionHint" : "";
                 hint.hidden = !key;
                 hint.textContent = key ? t(key) : "";
             }
@@ -4690,7 +4697,7 @@ def assess_pronunciation(
     include_transcript: bool = Form(default=True),   # accepted for older clients; ASR is no longer used
     practice_mode: str = Form(default="book"),
     level: str = Form(default=""),          # API / tools only (the page has no switch and never sends it): "" = the default for the learner's group (easy for everybody), or "standard" / "easy"
-    scoring_mode: str = Form(default="rules"),    # "rules" (the default) or "model_voice" ("Theo giọng mẫu": compared with the teachers' recordings; shown, not counted on the boards)
+    scoring_mode: str = Form(default="fusion"),   # New page visits and API calls default to Fusion; own text is still forced to Rules.
 ):
     with ASSESSMENTS.assessment(student_id):
         return _assess_pronunciation(file, script, sample_id, student_id, practice_mode, level, scoring_mode)
@@ -4703,7 +4710,7 @@ def _assess_pronunciation(
     student_id: str,
     practice_mode: str = "book",
     level: str = "",
-    scoring_mode: str = "rules",
+    scoring_mode: str = "fusion",
 ):
     """Verify the learner's tones against the known script (calibrated Praat AC+CC F0, MFA alignment)."""
     allowed_extensions = (".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm")
@@ -4724,12 +4731,12 @@ def _assess_pronunciation(
     practice_mode = str(practice_mode or "book").strip().lower()
     if practice_mode not in {"book", "custom", "chapter5_word"}:
         raise HTTPException(status_code=400, detail="Invalid practice mode.")
-    scoring_mode = str(scoring_mode or model_voice.MODE_RULES).strip().lower()
+    scoring_mode = str(scoring_mode or model_voice.MODE_FUSION).strip().lower()
     if scoring_mode not in model_voice.MODES:
         raise HTTPException(status_code=400, detail="Invalid scoring mode.")
     if practice_mode == "custom":
         scoring_mode = model_voice.MODE_RULES              # typed text has no teacher recordings to follow
-    elif scoring_mode == model_voice.MODE_MODEL_VOICE and not model_voice.available():
+    elif scoring_mode in model_voice.MODES_USING_MODEL_VOICE and not model_voice.available():
         raise HTTPException(status_code=503, detail="The model-voice scoring data is not available on this server.")
     target_script = converter.convert(script.strip())
     practice_item = None
@@ -4797,11 +4804,24 @@ def _assess_pronunciation(
                      else WORD_ANNOTATIONS.get(sample_id, []))          # typed text has no annotation: split it into words
             groups, word_annotation_status = tone_assessment.make_groups(clauses, words, converter.convert)
             contexts = tone_assessment.sentence_contexts(clauses, groups, word_annotation_status)
+            model_voice_contexts = None
+            if practice_mode == "book" and scoring_mode in model_voice.MODES_USING_MODEL_VOICE:
+                try:
+                    model_voice_contexts = tone_assessment.book_sentence_contexts(sample_id, clauses, contexts)
+                except ValueError as exc:
+                    raise HTTPException(status_code=503, detail=str(exc))
+            mode_contexts = {} if model_voice_contexts is None else {"model_voice_contexts": model_voice_contexts}
+            if model_voice_contexts is not None:
+                reference_inputs = tone_assessment.model_voice_reference_inputs(
+                    sample["audio_path"], "".join("".join(clause) for clause in clauses),
+                    contexts, model_voice_contexts, level=assessment_level, profile="sentence")
+                if reference_inputs is not None:
+                    mode_contexts["model_voice_reference_inputs"] = reference_inputs
             payload = tone_assessment.assess_recording(
                 prepared, clauses=clauses, contexts=contexts, groups=groups,
                 word_annotation_status=word_annotation_status, calibration=voice_calibration,
                 practice_mode=practice_mode, sample_id=sample_id, target_script=target_script,
-                level=assessment_level, scoring_mode=scoring_mode,
+                level=assessment_level, scoring_mode=scoring_mode, **mode_contexts,
             )
         try:
             payload["saved_attempt"] = practice_store.save_attempt(

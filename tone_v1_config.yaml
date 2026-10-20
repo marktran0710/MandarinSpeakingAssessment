@@ -301,18 +301,18 @@ pace:
   too_short_share: 0.30
   min_syllables: 3
 
-# Second assessment mode, "Theo giọng mẫu" (model_voice.py): the judged pitch window of a syllable is compared with the teachers' contours of the accepted tone(s)
-# instead of going through the shape rules. `enabled` is switched on per request (tone_assessment.get_config(scoring_mode="model_voice")), never here. The contours and the
-# four per-tone sigmoids are data: model_voice_contours.json, rebuilt by tools/build_model_voice_contours.py. Measured 2026-10-19 on the 5 most active learners, the 100
-# teacher sentences and the synthetic wrong tones (docs/superpowers/specs/2026-10-19-model-voice-mode-design.md).
+# Follow Voice compares normalized F0 contours with teacher references by DTW. Its per-request switch is enabled by tone_assessment.
+# Reference contours and tone-specific sigmoid fits are stored in model_voice_contours.json.
 model_voice:
   enabled: false
-  good_at: 0.60               # score at or above it (and acoustic quality as for the rules): Good
+  good_at: 0.60               # sigmoid score at or above it (and sufficient acoustic quality): Good
   practice_at: 0.30           # score at or below it, when the rules' accusation guards allow an accusation and the quality is high: Needs practice
-  alternative_tone_min: 0.80  # a second accepted tone (T2 for a third tone before another) counts only from this score (at 0.60 a wrong tone 1 passed as tone 2 65% of the time, at 0.80 49%)
-  band: 0.15                  # DTW band, as a share of the longer sequence (never narrower than the length difference)
-  smooth: 5                   # moving average over the two aligned sequences
-  tau: 0.8                    # similarity = exp(-MSE / tau^2)
+  reference_sample_good_at: 0.65 # same-syllable teacher-audio cosine, checked only when tone scoring did not accept
+  reference_sample_min_quality: 0.80 # learner segment quality required for a same-sample rescue
+  alternative_tone_min: 0.80  # a second accepted tone (T2 for a third tone before another) counts only from this score
+  max_competing_cosine_margin: 0.30 # tolerate small cross-tone cosine leads; larger leads withhold a Good verdict
+  band: 0.15                  # Sakoe-Chiba DTW band as a share of the longer contour; widened to fit both endpoints
+  smooth: 5                   # moving-average width applied to the DTW-aligned contours
   std_floor: 0.2              # a syllable's std is never below this share of the recording's pitch spread: a level tone keeps a small amplitude
   references_per_tone: 60
   min_frames: 2               # fewest judged 10 ms values; fewer: the rules' verdict stays
