@@ -12,6 +12,8 @@ The system checks recordings against a **known transcript**: audio preparation â
 - Three scoring choices: **Fusion** is the default on every page visit and for API requests that omit `scoring_mode`; a choice of Rules or Follow the model voice applies only until the page is reloaded. Fusion combines the unchanged Rules and Model Voice verdicts: a syllable is accepted when either scorer says it is likely correct, marked for practice only when both say so, and left uncertain when evidence is insufficient. **Follow the model voice** compares pitch contours with teachers' recordings and can fall back to the same syllable in the textbook audio when the contour score is inconclusive; **Rules** uses tone-shape rules. Pure Model Voice attempts are not counted on the leaderboards, Fusion attempts are counted, and own text always uses Rules.
 - English, Traditional Chinese, Vietnamese, Indonesian, and Hindi interfaces.
 - Learner profiles, recording history, feedback ratings, and an administration page.
+- Personalized tone analytics at `/api/analytics?student_id=...`: per-tone accuracy and evidence counts, acoustic averages, recent trend, weakest tone, and recommended sample IDs.
+- A local conversation coach at `POST /api/assistant/message` supports restaurant ordering and free conversation. It starts at L0 and adapts through L1-L4 prompts (question, keyword, sentence starter, fill-in, and example) without requiring an external AI key.
 
 The interface defaults to `easy` for both learner groups (`taiwanese` and `foreigner`). Evaluation tools can still select `standard` or `easy` through the API's `level` field.
 

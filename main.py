@@ -29,6 +29,7 @@ import tts_sample
 import model_voice
 import tone_assessment
 import tone_pipeline
+import assistant_engine
 from practice_store import practice_store
 from user_archive import UserArchive
 
@@ -109,6 +110,17 @@ class UserFeedbackInput(BaseModel):
 
 class AdminLoginInput(BaseModel):
     password: str
+
+
+class AssistantMessageInput(BaseModel):
+    message: str = ""
+    history: list[dict] = []
+    topic: str = "restaurant"
+    menu_id: str = "menu_a"
+    support_level: int | None = None
+    current_sample: str = ""
+    language: str = "en"
+    student_id: str = ""
 
 # Human-recorded practice samples and their verified scripts.
 SAMPLE_DATA_DIR = Path(os.environ.get(
@@ -406,6 +418,44 @@ async def get_leaderboard(student_id: str = ""):
 async def get_progress(student_id: str = ""):
     """What the learner has practised: for every sentence or word the latest result (and the best), see PracticeStore.progress."""
     return practice_store.progress(student_id) if student_id else {"lessons": {}}
+
+
+@app.get("/api/analytics")
+async def get_analytics(student_id: str = ""):
+    """Tone-level statistics and a personalized practice recommendation for one learner."""
+    return practice_store.analytics(student_id) if student_id else {
+        "student_id": "",
+        "attempts": 0,
+        "syllables": 0,
+        "assessed_syllables": 0,
+        "good_syllables": 0,
+        "practice_syllables": 0,
+        "overall_accuracy": None,
+        "trend": None,
+        "tones": [],
+        "weakest_tone": None,
+        "recommendation": {"tone": None, "reason": "not_enough_data", "sample_ids": []},
+    }
+
+
+@app.post("/api/assistant/message")
+async def assistant_message(payload: AssistantMessageInput):
+    """Return a guided conversation turn with adaptive L0-L4 support."""
+    weakest_tone = None
+    if payload.student_id:
+        analytics = practice_store.analytics(payload.student_id)
+        weakest = analytics.get("weakest_tone") or {}
+        weakest_tone = weakest.get("tone")
+    return assistant_engine.respond(
+        payload.message,
+        history=payload.history,
+        topic=payload.topic,
+        menu_id=payload.menu_id,
+        requested_level=payload.support_level,
+        current_sample=payload.current_sample,
+        weakest_tone=weakest_tone,
+        language=payload.language,
+    )
 
 
 @app.get("/api/students/{student_id}")
@@ -1331,6 +1381,25 @@ async def read_index():
             .leaderboard-lessons { display: block; font-size: 11px; font-weight: 400; color: #718096; text-align: right; }
             .leaderboard-me { margin: 10px 0 0; padding: 8px; border-radius: 8px; }
             .leaderboard-me[hidden] { display: none; }
+            .analytics-card h2 { margin: 0 0 6px; font-size: 1.05rem; }
+            .analytics-summary { margin: 8px 0; line-height: 1.5; }
+            .analytics-tone-list { display: grid; gap: 5px; margin: 8px 0 0; }
+            .analytics-tone-row { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; background: #f7fafc; border-radius: 7px; font-variant-numeric: tabular-nums; }
+            .analytics-tone-row.weakest { background: #fff5f5; color: #9b2c2c; font-weight: 600; }
+            .assistant-card { display: flex; flex-direction: column; min-height: 430px; }
+            .assistant-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+            .assistant-head h2 { margin: 0 0 4px; font-size: 1.05rem; }
+            .assistant-badge { border-radius: 999px; padding: 4px 8px; background: #ebf8ff; color: #2b6cb0; font-size: 11px; font-weight: 700; white-space: nowrap; }
+            .assistant-topic { display: flex; gap: 8px; margin: 10px 0; }
+            .assistant-topic select { margin: 0; min-width: 0; flex: 1; }
+            .assistant-menu { margin: 0 0 10px; padding: 8px 10px; border: 1px solid #d9e2ef; border-radius: 9px; background: #f8fafc; font-size: 12px; line-height: 1.45; }
+            .assistant-chat { flex: 1; min-height: 180px; max-height: 310px; overflow-y: auto; display: grid; align-content: start; gap: 8px; padding: 10px; background: #f7fafc; border-radius: 10px; }
+            .assistant-message { max-width: 88%; padding: 8px 10px; border-radius: 10px; font-size: 13px; line-height: 1.4; white-space: pre-wrap; }
+            .assistant-message.coach { background: white; border: 1px solid #e2e8f0; justify-self: start; }
+            .assistant-message.learner { background: #2b6cb0; color: white; justify-self: end; }
+            .assistant-compose { display: flex; gap: 8px; margin-top: 10px; }
+            .assistant-compose input { min-width: 0; flex: 1; margin: 0; }
+            .assistant-support { margin: 8px 0 0; color: #607386; font-size: 11px; }
             .board-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
             .board-tabs button { flex: 1; padding: 6px 8px; font-size: 13px; background: #edf2f7; color: #2d3748; }
             .board-tabs button.active { background: #2b6cb0; color: white; }
@@ -1640,6 +1709,38 @@ async def read_index():
             </div>
         </div>
         </div>
+        <aside id="analyticsCard" class="card analytics-card" aria-labelledby="analyticsTitle" hidden>
+            <h2 id="analyticsTitle" data-i18n="analyticsTitle">Your tone profile</h2>
+            <p id="analyticsSummary" class="analytics-summary"></p>
+            <p id="analyticsRecommendation" class="upload-hint"></p>
+            <div id="analyticsToneList" class="analytics-tone-list"></div>
+        </aside>
+        <aside id="assistantCard" class="card assistant-card" aria-labelledby="assistantTitle">
+            <div class="assistant-head">
+                <div>
+                    <h2 id="assistantTitle" data-i18n="assistantTitle">Conversation coach</h2>
+                    <p class="upload-hint" data-i18n="assistantHint">Practise the current topic. Ask for help when you get stuck.</p>
+                </div>
+                <span id="assistantSupportBadge" class="assistant-badge">L0</span>
+            </div>
+            <div class="assistant-topic">
+                <select id="assistantTopic" aria-label="Conversation topic" data-i18n-aria-label="assistantTopic">
+                    <option value="restaurant" data-i18n="assistantRestaurant">Restaurant ordering</option>
+                    <option value="free" data-i18n="assistantFreeTopic">Free conversation</option>
+                </select>
+                <select id="assistantMenu" aria-label="Menu" data-i18n-aria-label="assistantMenu">
+                    <option value="menu_a">Menu A</option>
+                    <option value="menu_b">Menu B · sold-out challenge</option>
+                </select>
+            </div>
+            <div id="assistantMenuText" class="assistant-menu"></div>
+            <div id="assistantChat" class="assistant-chat" aria-live="polite"></div>
+            <p id="assistantSupportNote" class="assistant-support"></p>
+            <form class="assistant-compose" onsubmit="sendAssistantMessage(event)">
+                <input id="assistantInput" maxlength="500" autocomplete="off" data-i18n-placeholder="assistantPlaceholder" placeholder="Say something in English…">
+                <button type="submit" data-i18n="assistantSend">Send</button>
+            </form>
+        </aside>
         <aside id="leaderboardCard" class="card leaderboard" aria-labelledby="leaderboardTitle">
             <h2 id="leaderboardTitle" data-i18n="leaderboardTitle">Top 10</h2>
             <div class="board-tabs" role="tablist" aria-label="Top 10">
@@ -1683,6 +1784,7 @@ async def read_index():
             let selectedPhrase = 0;                         // the word card whose pitch graph is shown under the cards
             let renderedResult = null;
             let progressData = { lessons: {} };   // what the learner has practised (from /api/progress): the latest result of every sentence and word
+            let analyticsData = null;
             let sampleTouched = false;                      // the learner picked a sample themselves: the page stops choosing the starting one
             let chapter5WordItems = [];
             let chapter5Categories = [];
@@ -1743,6 +1845,20 @@ async def read_index():
             leaderboardAccuracy: "{n}%",
             leaderboardMeAccuracyRank: "You: #{rank} \u00b7 {accuracy}%",
             leaderboardMeAccuracyNeed: "Practice {n} more sentence(s) to join the accuracy board.",
+            assistantTitle: "Conversation coach",
+            assistantHint: "Practise the current topic. Ask for help when you get stuck.",
+            assistantRestaurant: "Restaurant ordering",
+            assistantFreeTopic: "Free conversation",
+            assistantTopic: "Conversation topic",
+            assistantMenu: "Menu",
+            assistantPlaceholder: "Say something in English…",
+            assistantSend: "Send",
+            analyticsTitle: "Your tone profile",
+            analyticsSummary: "{attempts} attempts · {syllables} syllables · {accuracy}% overall accuracy",
+            analyticsNoData: "Complete a few assessed syllables to see your personal tone profile.",
+            analyticsWeakest: "Recommended focus: Tone {tone} ({accuracy}% accuracy).",
+            analyticsTone: "Tone {tone}",
+            analyticsToneStats: "{accuracy}% · {assessed} assessed",
             resultPrevious: "Previous",
             resultNext: "Next",
             itemProgress: "Latest result: {last}% \u00b7 {when}",
@@ -1917,6 +2033,8 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "你：第 {rank} 名\u30fb{accuracy}%",
                     leaderboardMeAccuracyNeed: "再練 {n} 句就能上準確率榜。",
+                    assistantTitle: "對話教練", assistantHint: "練習目前主題，卡住時可以請求提示。", assistantRestaurant: "餐廳點餐", assistantFreeTopic: "自由對話",
+                    assistantTopic: "對話主題", assistantMenu: "菜單", assistantPlaceholder: "用英文說點什麼吧…", assistantSend: "送出",
                     resultPrevious: "上一個",
                     resultNext: "下一個",
                     itemProgress: "最近成績：{last}%\u30fb{when}",
@@ -2090,6 +2208,8 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Bạn: hạng {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Luyện thêm {n} câu để vào bảng độ chính xác.",
+                    assistantTitle: "Trợ lý hội thoại", assistantHint: "Luyện chủ đề hiện tại; khi bí, hãy xin gợi ý.", assistantRestaurant: "Gọi món tại nhà hàng", assistantFreeTopic: "Hội thoại tự do",
+                    assistantTopic: "Chủ đề hội thoại", assistantMenu: "Thực đơn", assistantPlaceholder: "Hãy nói gì đó bằng tiếng Anh…", assistantSend: "Gửi",
                     resultPrevious: "Trước",
                     resultNext: "Tiếp theo",
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
@@ -2282,6 +2402,8 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "Anda: peringkat {rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "Latih {n} kalimat lagi untuk masuk papan akurasi.",
+                    assistantTitle: "Pelatih percakapan", assistantHint: "Latih topik saat ini. Minta petunjuk jika buntu.", assistantRestaurant: "Memesan di restoran", assistantFreeTopic: "Percakapan bebas",
+                    assistantTopic: "Topik percakapan", assistantMenu: "Menu", assistantPlaceholder: "Katakan sesuatu dalam bahasa Inggris…", assistantSend: "Kirim",
                     resultPrevious: "Sebelumnya",
                     resultNext: "Berikutnya",
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
@@ -2563,6 +2685,8 @@ async def read_index():
                     leaderboardAccuracy: "{n}%",
                     leaderboardMeAccuracyRank: "आप: #{rank} \u00b7 {accuracy}%",
                     leaderboardMeAccuracyNeed: "सटीकता बोर्ड में आने के लिए {n} और वाक्य अभ्यास करें।",
+                    assistantTitle: "बातचीत कोच", assistantHint: "वर्तमान विषय का अभ्यास करें। अटकने पर संकेत माँगें।", assistantRestaurant: "रेस्तरां में ऑर्डर", assistantFreeTopic: "मुक्त बातचीत",
+                    assistantTopic: "बातचीत का विषय", assistantMenu: "मेनू", assistantPlaceholder: "अंग्रेज़ी में कुछ कहें…", assistantSend: "भेजें",
                     resultPrevious: "पिछला",
                     resultNext: "अगला",
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
@@ -3443,6 +3567,118 @@ async def read_index():
                 renderItemProgress();
             }
 
+            function renderAnalytics(data) {
+                const card = document.getElementById("analyticsCard");
+                if (!card) return;
+                const tones = (data && data.tones || []).filter(tone => tone.assessed > 0);
+                card.hidden = !activeStudent || !data || !tones.length;
+                if (card.hidden) return;
+                document.getElementById("analyticsSummary").textContent = t("analyticsSummary", {
+                    attempts: data.attempts, syllables: data.syllables, accuracy: data.overall_accuracy
+                });
+                const weakest = data.weakest_tone;
+                document.getElementById("analyticsRecommendation").textContent = weakest
+                    ? t("analyticsWeakest", { tone: weakest.tone, accuracy: weakest.accuracy })
+                    : t("analyticsNoData");
+                const list = document.getElementById("analyticsToneList");
+                list.replaceChildren();
+                tones.forEach(tone => {
+                    const row = document.createElement("div");
+                    row.className = "analytics-tone-row" + (weakest && tone.tone === weakest.tone ? " weakest" : "");
+                    row.textContent = t("analyticsTone", { tone: tone.tone });
+                    const stats = document.createElement("span");
+                    stats.textContent = t("analyticsToneStats", { accuracy: tone.accuracy, assessed: tone.assessed });
+                    row.appendChild(stats);
+                    list.appendChild(row);
+                });
+            }
+
+            async function loadAnalytics() {
+                if (!activeStudent) {
+                    analyticsData = null;
+                    renderAnalytics(null);
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/analytics?student_id=${encodeURIComponent(activeStudent.id)}`);
+                    if (response.ok) {
+                        analyticsData = await response.json();
+                        renderAnalytics(analyticsData);
+                    }
+                } catch (error) { /* the profile stays as it was */ }
+            }
+
+            function assistantMenuText(menuId) {
+                return menuId === "menu_b"
+                    ? "Chicken wrap $6 (sold out) · vegetable sandwich $5 · apple juice $2 · water $1"
+                    : "Burger $6 · sandwich $5 · salad $4 · orange juice $2 · water $1";
+            }
+
+            function appendAssistantMessage(role, text) {
+                const bubble = document.createElement("div");
+                bubble.className = `assistant-message ${role}`;
+                bubble.textContent = text;
+                const chat = document.getElementById("assistantChat");
+                chat.appendChild(bubble);
+                chat.scrollTop = chat.scrollHeight;
+            }
+
+            function resetAssistant() {
+                assistantHistory = [];
+                assistantSupportLevel = 0;
+                document.getElementById("assistantChat").replaceChildren();
+                document.getElementById("assistantMenuText").textContent = assistantMenuText(document.getElementById("assistantMenu").value);
+                document.getElementById("assistantSupportBadge").textContent = "L0";
+                document.getElementById("assistantSupportNote").textContent = "Independent attempt first. Ask for a hint if needed.";
+                appendAssistantMessage("coach", "What would you like to order?");
+            }
+
+            async function sendAssistantMessage(event) {
+                event.preventDefault();
+                const input = document.getElementById("assistantInput");
+                const message = input.value.trim();
+                if (!message) return;
+                appendAssistantMessage("learner", message);
+                assistantHistory.push({ role: "user", content: message });
+                input.value = "";
+                const button = event.submitter;
+                if (button) button.disabled = true;
+                try {
+                    const response = await fetch("/api/assistant/message", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            message,
+                            history: assistantHistory,
+                            topic: document.getElementById("assistantTopic").value,
+                            menu_id: document.getElementById("assistantMenu").value,
+                            support_level: assistantSupportLevel,
+                            current_sample: document.getElementById("scriptInput")?.value || "",
+                            language: currentLanguage,
+                            student_id: activeStudent?.id || ""
+                        })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.detail || "Assistant unavailable");
+                    assistantHistory.push({ role: "assistant", content: data.reply });
+                    appendAssistantMessage("coach", data.reply);
+                    assistantSupportLevel = data.next_support_level ?? assistantSupportLevel;
+                    document.getElementById("assistantSupportBadge").textContent = `L${data.support.level}`;
+                    document.getElementById("assistantSupportNote").textContent = `${data.support.label}: ${data.support.prompt}`;
+                } catch (error) {
+                    appendAssistantMessage("coach", "I could not respond right now. Try: I’d like a ___, please.");
+                } finally {
+                    if (button) button.disabled = false;
+                    input.focus();
+                }
+            }
+
+            let assistantHistory = [];
+            let assistantSupportLevel = 0;
+            document.getElementById("assistantTopic").addEventListener("change", resetAssistant);
+            document.getElementById("assistantMenu").addEventListener("change", resetAssistant);
+            resetAssistant();
+
             // The meaning of the sentence in the language of the page (English where there is none); a Chinese page needs no translation of the Chinese.
             function renderItemMeaning() {
                 const line = document.getElementById("itemMeaning");
@@ -3562,6 +3798,7 @@ async def read_index():
 
             applyLanguage(savedLanguage() || detectBrowserLanguage(), Boolean(savedLanguage()));
             loadLeaderboard();
+            loadAnalytics();
 
             // A full-screen "working" layer for the slow steps (assessment, calibration): a small spinner at the bottom of
             // the page goes unnoticed. It appears only if the step lasts more than a moment, and cannot be dismissed.
@@ -3702,6 +3939,7 @@ async def read_index():
                 syncPracticeControls();
                 loadLeaderboard();                                       // "You" is a different person now
                 loadProgress();
+                loadAnalytics();
                 if (profile && !sampleTouched && sampleLessons.length && selectedPracticeMode() === "book") applyStartSample();
             }
 
@@ -4145,6 +4383,7 @@ async def read_index():
                     renderVisualResults(data);
                     loadLeaderboard();                                   // the attempt may have moved the learner up
                     loadProgress();                                      // the attempt is now the latest result of that sentence
+                    loadAnalytics();
                     showFeedbackPanel(data.saved_attempt?.id);
                     showStatus(data.reference_pitch_warning ? `${t("assessmentSaved")} ${data.reference_pitch_warning}` : t("assessmentSaved"), false, data.reference_pitch_warning ? null : { key: "assessmentSaved", variables: {} });
                 } catch (error) {

@@ -126,6 +126,34 @@ class PracticeStoreTests(unittest.TestCase):
         self.assertEqual(restored["voice_calibration"]["pitch_floor_hz"], calibration["pitch_floor_hz"])
         self.assertTrue(restored["voice_calibration"]["created_at"])
 
+    def test_analytics_identifies_the_weakest_tone_and_recommends_samples(self):
+        profile = self.store.create_or_get_student("Mei Lin", "taiwanese")
+        source = Path(self.temp_dir.name) / "recording.webm"
+        source.write_bytes(b"audio")
+
+        def save(sample_id, statuses):
+            self.store.save_attempt(
+                profile["id"], sample_id, "你好", source, "recording.webm",
+                {"summary": {}, "tone_verification": {"syllables": [
+                    {"expected_surface_tone": tone, "status": status, "tone_match": 1.0 if status == "likely_correct" else 0.2,
+                     "acoustic_quality": 0.8}
+                    for tone, status in statuses
+                ]}},
+            )
+
+        save("5-1-1", [(1, "likely_correct"), (2, "practice"), (3, "likely_correct"), (4, "likely_correct")])
+        save("5-1-2", [(1, "likely_correct"), (2, "practice"), (3, "likely_correct"), (4, "likely_correct")])
+        analytics = self.store.analytics(profile["id"])
+
+        self.assertEqual(analytics["overall_accuracy"], 75.0)
+        self.assertEqual(analytics["weakest_tone"]["tone"], 2)
+        self.assertEqual(analytics["weakest_tone"]["accuracy"], 0.0)
+        self.assertEqual(analytics["recommendation"], {
+            "tone": 2, "reason": "lowest_accuracy", "sample_ids": ["5-1-1", "5-1-2"],
+        })
+        self.assertEqual(analytics["tones"][1]["avg_tone_match"], 0.2)
+        self.assertEqual(analytics["tones"][1]["confidence"], 0.2)
+
     def test_feedback_is_saved_with_student_and_attempt(self):
         profile = self.store.create_or_get_student("Mei Lin", "taiwanese")
         source = Path(self.temp_dir.name) / "recording.webm"

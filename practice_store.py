@@ -359,6 +359,133 @@ class PracticeStore:
             entry["last"], entry["last_at"] = points, row["created_at"]
         return {"lessons": lessons}
 
+    def analytics(self, student_id):
+        """Summarize a learner's tone performance and suggest the next practice focus.
+
+        The result is derived from the immutable per-syllable assessment payloads, so
+        it remains useful across scoring-mode changes and does not require a schema
+        migration.
+        """
+        with self._connection() as connection:
+            rows = connection.execute(
+                """SELECT sample_id, result_json, created_at
+                   FROM practice_attempts
+                   WHERE student_id = ?
+                   ORDER BY created_at ASC, rowid ASC""",
+                (student_id,),
+            ).fetchall()
+
+        tones = {tone: {
+            "tone": tone, "attempts": 0, "syllables": 0, "assessed": 0,
+            "good": 0, "practice": 0, "uncertain": 0, "insufficient_evidence": 0,
+            "accuracy": None, "practice_rate": None, "avg_tone_match": None,
+            "avg_acoustic_quality": None, "_tone_matches": [], "_quality": [],
+            "_samples": {},
+        } for tone in range(1, 6)}
+        attempts = 0
+        assessed = 0
+        good = 0
+        practice = 0
+        recent_scores = []
+
+        for row in rows:
+            try:
+                result = json.loads(row["result_json"] or "{}")
+            except (TypeError, ValueError):
+                continue
+            if result.get("scoring_mode") == MODEL_VOICE_MODE:
+                continue
+            syllables = (result.get("tone_verification") or {}).get("syllables") or []
+            if not isinstance(syllables, list):
+                continue
+            attempts += 1
+            attempt_good = attempt_assessed = 0
+            for syllable in syllables:
+                try:
+                    tone = int(syllable.get("expected_surface_tone"))
+                except (AttributeError, TypeError, ValueError):
+                    continue
+                if tone not in tones:
+                    continue
+                status = syllable.get("status")
+                entry = tones[tone]
+                entry["syllables"] += 1
+                entry["attempts"] += 1
+                if status in {"likely_correct", "practice", "uncertain"}:
+                    entry["assessed"] += 1
+                    assessed += 1
+                    attempt_assessed += 1
+                if status == "likely_correct":
+                    entry["good"] += 1
+                    good += 1
+                    attempt_good += 1
+                elif status == "practice":
+                    entry["practice"] += 1
+                    practice += 1
+                elif status == "uncertain":
+                    entry["uncertain"] += 1
+                elif status == "insufficient_evidence":
+                    entry["insufficient_evidence"] += 1
+                try:
+                    if syllable.get("tone_match") is not None:
+                        entry["_tone_matches"].append(float(syllable["tone_match"]))
+                    if syllable.get("acoustic_quality") is not None:
+                        entry["_quality"].append(float(syllable["acoustic_quality"]))
+                except (TypeError, ValueError):
+                    pass
+                if status != "likely_correct":
+                    samples = entry["_samples"]
+                    samples[row["sample_id"]] = samples.get(row["sample_id"], 0) + 1
+            if attempt_assessed:
+                recent_scores.append(attempt_good / attempt_assessed)
+
+        tone_stats = []
+        for tone, entry in tones.items():
+            if entry["assessed"]:
+                entry["accuracy"] = round(100.0 * entry["good"] / entry["assessed"], 1)
+                entry["practice_rate"] = round(100.0 * entry["practice"] / entry["assessed"], 1)
+            if entry["_tone_matches"]:
+                entry["avg_tone_match"] = round(sum(entry["_tone_matches"]) / len(entry["_tone_matches"]), 3)
+            if entry["_quality"]:
+                entry["avg_acoustic_quality"] = round(sum(entry["_quality"]) / len(entry["_quality"]), 3)
+            entry["confidence"] = round(min(1.0, entry["assessed"] / 10.0), 2)
+            entry["recommended_samples"] = [
+                {"sample_id": sample_id, "weak_syllables": count}
+                for sample_id, count in sorted(entry["_samples"].items(), key=lambda pair: (-pair[1], pair[0]))[:3]
+            ]
+            for private_key in ("_tone_matches", "_quality", "_samples"):
+                del entry[private_key]
+            tone_stats.append(entry)
+
+        observed = [entry for entry in tone_stats if entry["assessed"]]
+        weakest = min(observed, key=lambda entry: (entry["accuracy"], -entry["assessed"])) if observed else None
+        recent_window = recent_scores[-5:]
+        earlier_window = recent_scores[:-5]
+        trend = None
+        if recent_window:
+            recent = sum(recent_window) / len(recent_window)
+            trend = {
+                "recent_accuracy": round(recent * 100, 1),
+                "change_vs_previous": round((recent - sum(earlier_window) / len(earlier_window)) * 100, 1)
+            } if earlier_window else {"recent_accuracy": round(recent * 100, 1), "change_vs_previous": None}
+        return {
+            "student_id": student_id,
+            "attempts": attempts,
+            "syllables": sum(entry["syllables"] for entry in tone_stats),
+            "assessed_syllables": assessed,
+            "good_syllables": good,
+            "practice_syllables": practice,
+            "overall_accuracy": round(100.0 * good / assessed, 1) if assessed else None,
+            "trend": trend,
+            "tones": tone_stats,
+            "weakest_tone": weakest,
+            "recommendation": {
+                "tone": weakest["tone"] if weakest else None,
+                "reason": "lowest_accuracy" if weakest else "not_enough_data",
+                "sample_ids": [item["sample_id"] for item in (weakest or {}).get("recommended_samples", [])],
+            },
+        }
+
     def get_student(self, student_id):
         with self._connection() as connection:
             row = connection.execute(
