@@ -2,6 +2,8 @@
 
 ## Public learning website (React)
 
+Frontend conventions and review criteria: [frontend/FRONTEND_RULES.md](frontend/FRONTEND_RULES.md).
+
 The new website has a short public introduction, Google sign-in, an account-owned
 learner profile, 12 textbook stories with listening/reading comprehension, and
 speaking practice for 100 sentences plus 53 Chapter 5 words and phrases. The
