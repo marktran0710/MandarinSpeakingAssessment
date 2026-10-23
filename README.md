@@ -14,6 +14,32 @@ setting `VITE_API_BASE_URL` before `npm run build` (for example,
 `http://127.0.0.1:8011`). Configure the backend's `MANDARIN_CORS_ORIGINS` to
 the frontend origin and keep credentials enabled for the public session.
 
+## Backend service boundary
+
+`D:\TaiwanMandarinAI` is the backend service for this project. This repository
+is the client/frontend integration layer and must call that service through its
+HTTP API; do not edit, commit, reset, or push files in the backend repository
+from this project.
+
+Build the frontend against the backend service:
+
+```powershell
+cd frontend
+$env:VITE_API_BASE_URL = "http://127.0.0.1:8011"
+npm run build
+```
+
+The backend service must allow the frontend origin with
+`MANDARIN_CORS_ORIGINS`. Keep the value explicit when credentials are used:
+
+```powershell
+$env:MANDARIN_CORS_ORIGINS = "http://localhost:5173"
+```
+
+The backend repository owns API implementation, authentication, learner data,
+audio processing, and deployment. Changes to those concerns should be made
+and released in `D:\TaiwanMandarinAI`, not copied into this repository.
+
 Build the interface before starting FastAPI:
 
 ```powershell

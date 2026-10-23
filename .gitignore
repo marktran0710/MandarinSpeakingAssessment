@@ -24,3 +24,17 @@ api_dataset_full_*/
 frontend/node_modules/
 frontend/dist/
 chapter5_word_practice/tone_audit_results/
+
+# Local configuration and runtime logs
+.env
+.env.*
+!.env.example
+*.log
+coverage.xml
+htmlcov/
+
+# Browser and recording scratch files
+*.webm
+*.m4a
+*.ogg
+*.flac
