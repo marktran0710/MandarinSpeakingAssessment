@@ -35,15 +35,17 @@ Người lớn tự học có thể đăng nhập, tạo hồ sơ, chọn sách 
 
 ## Hợp đồng backend và điều kiện phát hành
 
-- UI cần API phiên đăng nhập/hồ sơ, danh mục và bài học, câu hỏi và nộp bài, audio, chấm nói/hiệu chỉnh, dashboard và hoạt động, xuất/xóa dữ liệu. Các endpoint hiện được dùng trong `frontend/src/App.jsx` cần được đối chiếu với dịch vụ backend tại `D:\TaiwanMandarinAI` trước khi triển khai độc lập; kiểm tra đọc hiện tại chưa tìm thấy các route học công khai đó trong dịch vụ.
+- Repo này cung cấp API phiên đăng nhập/hồ sơ, danh mục và bài học, câu hỏi và nộp bài, audio, dashboard và hoạt động, xuất/xóa dữ liệu. Dịch vụ `D:\TaiwanMandarinAI` chỉ phụ trách chấm nói. Server website ánh xạ hồ sơ bằng ID nội bộ, gọi dịch vụ chấm nói qua loopback với `save_attempt=false`, rồi tự lưu kết quả và ghi âm; trình duyệt chỉ gọi API học đã xác thực.
 - Google OIDC, cookie `HttpOnly`/`Secure`, CSRF và kiểm tra quyền sở hữu phải chạy trên backend HTTPS. Local preview login chỉ dùng trên loopback.
 - Biên tập viên rà soát câu hỏi, lựa chọn và giải thích; xác nhận quyền xuất bản sách và audio. Máy chủ cần dữ liệu sách/audio, MFA, FFmpeg, kho SQLite/ghi âm bền vững và sao lưu hằng ngày.
 
 ## Thứ tự hoàn tất và nghiệm thu
 
-1. Chốt hợp đồng API với backend riêng; nối và kiểm tra hành trình Google → hồ sơ → thư viện.
+1. Kiểm tra hành trình Google → hồ sơ → thư viện trên API học của repo này; chạy hợp đồng chấm nói qua HTTP với dịch vụ riêng.
 2. Kiểm tra một bài nghe, đọc và nói trên dữ liệu thật; thử nộp lại và xem điểm gần nhất/điểm cao nhất trong hồ sơ.
 3. Rà soát bản dịch, nội dung và toàn bộ trạng thái lỗi; kiểm tra quyền riêng tư, truy cập chéo tài khoản và tải/xóa dữ liệu.
 4. Kiểm tra bàn phím, trình đọc màn hình, bốn kích thước màn hình và build production; phát hành sau khi Google callback và sao lưu hoạt động.
 
 **Tiêu chí đạt MVP:** người học mới hoàn tất ba kỹ năng trên một câu chuyện và một mục từ, quay lại thấy tiến độ đúng trong hồ sơ, không xem được dữ liệu của người khác, và xử lý được lỗi micro/audio/phiên đăng nhập mà không kẹt luồng học.
+
+**Rà soát nội dung trước phát hành:** `public_curriculum.py` hiện tạo 72 câu hỏi dạng chọn nghĩa từ bản dịch sẵn có. Đây là nội dung thử luồng, chưa phải 72 câu hỏi hiểu bài được biên soạn và duyệt theo kế hoạch. Đặc biệt bài Đọc ở ngôn ngữ `zh-TW` có lựa chọn trùng với câu chữ Hoa đang hiển thị. Cần biên soạn từng câu chuyện, kiểm tra đủ năm bản dịch và cho người phụ trách nội dung duyệt trước khi công bố.

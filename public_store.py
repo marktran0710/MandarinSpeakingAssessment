@@ -31,6 +31,10 @@ class PublicStore:
                     token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES public_accounts(id) ON DELETE CASCADE,
                     csrf_token TEXT NOT NULL, expires_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS public_speaking_profiles (
+                    student_id TEXT PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
+                    speaker_id TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS comprehension_attempts (
                     id TEXT PRIMARY KEY, student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
                     story_id TEXT NOT NULL, skill TEXT NOT NULL CHECK(skill IN ('listen','read')),
@@ -90,6 +94,20 @@ class PublicStore:
         if token:
             with self.db() as db:
                 db.execute("DELETE FROM public_sessions WHERE token_hash=?", (hashlib.sha256(token.encode()).hexdigest(),))
+
+    def speaking_profile(self, student_id):
+        with self.db() as db:
+            row = db.execute("SELECT speaker_id FROM public_speaking_profiles WHERE student_id=?", (student_id,)).fetchone()
+            return row['speaker_id'] if row else None
+
+    def bind_speaking_profile(self, student_id, speaker_id):
+        with self.db() as db:
+            db.execute("INSERT OR IGNORE INTO public_speaking_profiles VALUES (?,?,?)",
+                       (student_id, speaker_id, now()))
+            row = db.execute("SELECT speaker_id FROM public_speaking_profiles WHERE student_id=?", (student_id,)).fetchone()
+            if row is None or row['speaker_id'] != speaker_id:
+                raise ValueError("A different speaking profile is already linked to this learner.")
+            return row['speaker_id']
 
     def update_profile(self, student_id, values):
         allowed = ('display_name', 'locale', 'study_goal', 'weekly_days', 'leaderboard_opt_in', 'onboarding_done')

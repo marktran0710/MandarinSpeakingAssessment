@@ -11,38 +11,25 @@ pronunciation algorithm is unchanged. Existing name-only profiles remain in
 their original `practice_data/` directory; the development launcher selects
 `practice_data/public/` for new accounts.
 
-The React frontend can call a separately hosted TaiwanMandarinAI backend by
-setting `VITE_API_BASE_URL` before `npm run build` (for example,
-`http://127.0.0.1:8011`). Configure the backend's `MANDARIN_CORS_ORIGINS` to
-the frontend origin and keep credentials enabled for the public session.
+The React frontend calls the learning API in this repository. In production,
+FastAPI serves the built frontend on the same origin as the learning API.
+`VITE_API_BASE_URL` can point to this learning API during local development.
 
 ## Backend service boundary
 
-`D:\TaiwanMandarinAI` is the backend service for this project. This repository
-is the client/frontend integration layer and must call that service through its
-HTTP API; do not edit, commit, reset, or push files in the backend repository
-from this project.
+This repository owns the public learning website, Google sign-in, learner
+profiles, curriculum, listening and reading results, and their API. The
+separate `D:\TaiwanMandarinAI` repository provides speaking assessment.
+The website calls that service from its server only, using a private loopback
+HTTP URL. It creates a separate assessor profile named with an opaque website
+learner ID. The assessor keeps voice calibration; `save_attempt=false` makes it
+return speaking feedback without storing a second recording or attempt. The
+website stores speaking results and recordings with the signed-in account.
 
-Build the frontend against the backend service:
-
-```powershell
-cd frontend
-$env:VITE_API_BASE_URL = "http://127.0.0.1:8011"
-npm run build
-```
-
-The backend service must allow the frontend origin with
-`MANDARIN_CORS_ORIGINS`. Keep the value explicit when credentials are used:
-
-```powershell
-$env:MANDARIN_CORS_ORIGINS = "http://localhost:5173"
-```
-
-The backend repository owns API implementation, authentication, learner data,
-audio processing, and deployment. Changes to those concerns should be made
-and released in `D:\TaiwanMandarinAI`, not copied into this repository.
-
-Build the interface before starting FastAPI:
+Start the assessor first, in `D:\TaiwanMandarinAI`, bound to `127.0.0.1:8011`.
+Restart any assessor process already running so it serves
+`/api/speaking-capabilities` and honors `save_attempt=false`.
+Then build and start this website on `127.0.0.1:8012`:
 
 ```powershell
 cd frontend
@@ -53,19 +40,23 @@ cd ..
 .\run_dev.ps1
 ```
 
-`run_dev.ps1` binds only to `127.0.0.1:8011`. Without Google credentials it
+`run_dev.ps1` binds only to `127.0.0.1:8012`. Without Google credentials it
 enables a **loopback-only local preview login**. For public deployment, set
 `MANDARIN_PUBLIC_MODE=1`, `MANDARIN_PUBLIC_HTTPS=1`,
 `MANDARIN_DEV_AUTH=0`, `MANDARIN_SESSION_SECRET` (a persistent random secret),
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `MANDARIN_PUBLIC_ORIGIN` (the
-HTTPS origin). Register `https://<your-domain>/auth/google/callback` in Google
-Cloud. Use one Uvicorn worker behind an HTTPS reverse proxy; configure its
-forwarded headers so FastAPI sees the public scheme and host. Set the public
-`MANDARIN_PRACTICE_DATA_DIR` and `MANDARIN_USER_DATA_DIR` to persistent,
-separate directories, and back up both the SQLite database and recordings.
-The external textbook CSV, 100 MP3 files, MFA and FFmpeg must be available
-before public launch. Do not expose the local preview login on an Internet
-listener.
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MANDARIN_PUBLIC_ORIGIN` (the HTTPS
+origin), `MANDARIN_ASSESSOR_URL=http://127.0.0.1:8011`, and
+`MANDARIN_ASSESSOR_ADMIN_PASSWORD`. Set the same password as
+`MANDARIN_ADMIN_PASSWORD` in the assessor process. Register
+`https://<your-domain>/auth/google/callback` in Google Cloud. Expose only the
+website through the HTTPS reverse proxy; keep the assessor bound to loopback.
+Use one Uvicorn worker for each process and configure forwarded headers so the
+website sees the public scheme and host. Keep the website's
+`MANDARIN_PRACTICE_DATA_DIR` and `MANDARIN_USER_DATA_DIR` separate from the
+assessor's directories. Back up both SQLite databases and the website's
+recordings. The textbook CSV and 100 MP3 files must be available to both
+processes; the assessor also needs MFA and FFmpeg. Do not expose local preview
+login or the assessor API on an Internet listener.
 
 The comprehension items use three lines spread across each story, with answer
 choices taken from the existing translated sentence corpus. They are versioned

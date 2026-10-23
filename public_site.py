@@ -4,7 +4,10 @@ import json
 import os
 import re
 import secrets
+import shutil
+import tempfile
 import zipfile
+from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -36,10 +39,19 @@ class QuizInput(BaseModel):
     answers: dict[str, str]
 
 
-def install_public_site(app, *, samples, words, meanings, practice, coordinator, assess, calibrate, pinyin):
+def install_public_site(app, *, samples, words, meanings, practice, coordinator, assess, calibrate, pinyin,
+                        speaking_service=None):
     store = PublicStore(practice)
     secure = os.getenv('MANDARIN_PUBLIC_HTTPS', '0') == '1'
     dev_auth = os.getenv('MANDARIN_DEV_AUTH', '0') == '1' and not secure
+    if secure:
+        required = ('MANDARIN_SESSION_SECRET', 'MANDARIN_PUBLIC_ORIGIN', 'GOOGLE_CLIENT_ID',
+                    'GOOGLE_CLIENT_SECRET', 'MANDARIN_ASSESSOR_ADMIN_PASSWORD')
+        missing = [key for key in required if not os.getenv(key)]
+        if missing:
+            raise RuntimeError('Public HTTPS configuration is incomplete: ' + ', '.join(missing))
+        if not os.environ['MANDARIN_PUBLIC_ORIGIN'].startswith('https://'):
+            raise RuntimeError('MANDARIN_PUBLIC_ORIGIN must be an HTTPS origin.')
     secret = os.getenv('MANDARIN_SESSION_SECRET') or secrets.token_urlsafe(40)
     app.add_middleware(SessionMiddleware, secret_key=secret, https_only=secure, same_site='lax')
     oauth = OAuth()
@@ -72,6 +84,13 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
 
     def visible(account):
         return {key: account[key] for key in ('display_name','avatar_url','locale','study_goal','weekly_days','leaderboard_opt_in','onboarding_done')}
+
+    def speaker_for(account):
+        speaker_id = store.speaking_profile(account['student_id'])
+        if speaker_id is None:
+            speaker_id = speaking_service.create_speaker(account['student_id'])
+            store.bind_speaking_profile(account['student_id'], speaker_id)
+        return speaker_id
 
     @router.get('/api/public/config')
     def config():
@@ -167,11 +186,11 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
                 'scenes':scenes, 'questions':[{k:v for k,v in q.items() if k not in ('answer','explanation')} for q in qs]}
 
     @router.get('/api/me/story-reviews/{story_id}')
-    def review(story_id: str, account=Depends(current)):
+    def review(story_id: str, skill: str, account=Depends(current)):
         rows = grouped.get(story_id)
-        if not rows:
+        if not rows or skill not in ('listen', 'read'):
             raise HTTPException(404)
-        if not any(r['story_id']==story_id for r in store.quiz_rows(account['student_id'])):
+        if not any(r['story_id']==story_id and r['skill']==skill for r in store.quiz_rows(account['student_id'])):
             raise HTTPException(403, 'Submit an exercise first.')
         return [{'scene':r['scene'],'script':r['script'],'pinyin':shown_pinyin(r['script']),
                  'meaning':__import__('public_curriculum').translated(r, account['locale'], meanings),
@@ -214,6 +233,13 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
     @router.post('/api/me/voice-calibration')
     def voice_calibration(file: UploadFile = File(...), account=Depends(mutation)):
         with coordinator.assessment(account['student_id']):
+            if speaking_service is not None:
+                result = speaking_service.calibrate(speaker_for(account), file)
+                calibration = result.get('voice_calibration') if isinstance(result, dict) else None
+                if not isinstance(calibration, dict):
+                    raise HTTPException(502, 'Speaking assessment returned an invalid calibration.')
+                practice.save_voice_calibration(account['student_id'], calibration)
+                return result
             return calibrate(account['student_id'], file)
 
     @router.get('/api/me/calibration-sound/{tone}')
@@ -235,6 +261,23 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
         if not item:
             raise HTTPException(404, 'Practice item not found.')
         with coordinator.assessment(account['student_id']):
+            if speaking_service is not None:
+                result = speaking_service.assess(speaker_for(account), file, script=item['script'],
+                    sample_id=sample_id, practice_mode=practice_mode, scoring_mode=scoring_mode,
+                    save_attempt=False)
+                if not isinstance(result, dict) or not isinstance(result.get('summary'), dict) or 'saved_attempt' in result:
+                    raise HTTPException(502, 'Speaking assessment returned an invalid result.')
+                filename = Path(file.filename or 'recording.webm').name
+                with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as temporary:
+                    file.file.seek(0)
+                    shutil.copyfileobj(file.file, temporary)
+                    temp_path = Path(temporary.name)
+                try:
+                    result['saved_attempt'] = practice.save_attempt(
+                        account['student_id'], sample_id, item['script'], temp_path, filename, result)
+                finally:
+                    temp_path.unlink(missing_ok=True)
+                return result
             return assess(file, item['script'], sample_id, account['student_id'], practice_mode, '', scoring_mode)
 
     @router.get('/api/me/attempts/{attempt_id}/audio')
@@ -318,6 +361,9 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
             archive.writestr('profile.json',json.dumps(visible(account),ensure_ascii=False,indent=2))
             archive.writestr('comprehension.json',json.dumps(store.quiz_rows(account['student_id']),ensure_ascii=False,indent=2))
             archive.writestr('speaking.json',json.dumps([{k:v for k,v in r.items() if k!='audio_path'} for r in speaking],ensure_ascii=False,indent=2))
+            calibration = practice.get_voice_calibration(account['student_id'])
+            if calibration:
+                archive.writestr('voice_calibration.json',json.dumps(calibration,ensure_ascii=False,indent=2))
             for row in speaking:
                 path = practice.get_attempt_audio_path(row['id'])
                 if path and store.owns_audio(account['student_id'],row['id']) and Path(path).is_file():
@@ -327,8 +373,12 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
 
     @router.delete('/api/me/profile')
     def delete_profile(account=Depends(mutation)):
-        practice.delete_student_data(account['student_id'])
-        store.delete_account(account['id'])
+        with coordinator.student(account['student_id']) if coordinator else nullcontext():
+            speaker_id = store.speaking_profile(account['student_id']) if speaking_service else None
+            if speaker_id:
+                speaking_service.delete_speaker(speaker_id)
+            practice.delete_student_data(account['student_id'])
+            store.delete_account(account['id'])
         response = JSONResponse({'ok':True})
         response.delete_cookie(COOKIE,path='/')
         return response

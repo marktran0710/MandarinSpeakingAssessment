@@ -1,6 +1,6 @@
 # Quy tắc frontend
 
-Áp dụng cho mã React trong `frontend/`. Đây là chuẩn cho phần mã mới và các phần được sửa; tách dần các màn hình cũ trong `App.jsx` khi chạm vào chúng. Backend chính thuộc dịch vụ `D:\TaiwanMandarinAI`; frontend giao tiếp qua HTTP API và không đọc trực tiếp SQLite hay ghi âm.
+Áp dụng cho mã React trong `frontend/`. Đây là chuẩn cho phần mã mới và các phần được sửa; tách dần các màn hình cũ trong `App.jsx` khi chạm vào chúng. Repo này cung cấp API học, đăng nhập và hồ sơ. Repo `D:\TaiwanMandarinAI` chỉ cung cấp dịch vụ chấm nói; React giao tiếp qua API học đã xác thực và không đọc trực tiếp SQLite hay ghi âm.
 
 ## 1. Tổ chức mã
 
@@ -43,4 +43,4 @@
 1. Tách `App.jsx` thành các màn hình, hook và API client nhỏ; chuẩn hóa xử lý `401`/`429`.
 2. Chuyển chuỗi còn viết trực tiếp trong JSX (trang quyền riêng tư, hướng dẫn hiệu chỉnh) vào bảng dịch năm ngôn ngữ.
 3. Quản lý vòng đời blob URL và stream micro khi đổi trang; bổ sung kiểm tra browser cho ghi âm trên mobile.
-4. Đối chiếu toàn bộ API UI đang gọi với dịch vụ backend riêng trước khi triển khai production.
+4. Đối chiếu toàn bộ API UI với API học trong repo này; kiểm thử hợp đồng HTTP với dịch vụ chấm nói trước khi triển khai production.

@@ -91,7 +91,8 @@ async def explain_assessment_busy(request: Request, exc: AssessmentBusy):
 @app.on_event("startup")
 def warm_up_alignment():
     """With TONE_MFA_WARM=1 load the aligner now, so the first learner does not wait for `mfa align_one` to start."""
-    tone_pipeline.prewarm_mfa()
+    if not PUBLIC_MODE:
+        tone_pipeline.prewarm_mfa()
 
 ADMIN_PASSWORD = os.environ.get("MANDARIN_ADMIN_PASSWORD", "").strip()
 ADMIN_SESSION_COOKIE = "mandarin_admin_session"
@@ -5222,12 +5223,19 @@ def _assess_pronunciation(
 
 if PUBLIC_MODE:
     from public_site import install_public_site
+    from speaking_service import SpeakingService
+
+    assessor_url = os.environ.get("MANDARIN_ASSESSOR_URL", "")
+    if not assessor_url:
+        raise RuntimeError("MANDARIN_ASSESSOR_URL is required for the public learning website.")
+    speaking_service = SpeakingService(assessor_url, os.environ.get("MANDARIN_ASSESSOR_ADMIN_PASSWORD", ""))
+    app.on_event("shutdown")(speaking_service.close)
 
     install_public_site(
         app, samples=SAMPLE_CATALOG, words=CHAPTER5_WORD_ITEMS,
         meanings=BOOK_MEANINGS, practice=practice_store, coordinator=ASSESSMENTS,
         assess=_assess_pronunciation, calibrate=_calibrate_student_voice,
-        pinyin=_sample_pinyin,
+        pinyin=_sample_pinyin, speaking_service=speaking_service,
     )
 
     @app.middleware("http")
