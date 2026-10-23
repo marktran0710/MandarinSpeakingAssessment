@@ -21,4 +21,6 @@ api_dataset_full_*/
 /outputs/
 /output/
 .playwright-cli/
+frontend/node_modules/
+frontend/dist/
 chapter5_word_practice/tone_audit_results/

@@ -16,6 +16,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Res
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from functools import lru_cache
 from pydantic import BaseModel
@@ -38,6 +39,8 @@ user_archive = UserArchive.from_env()
 
 # Initialize the FastAPI app
 app = FastAPI(title="Taiwan Mandarin CAPT API")
+PUBLIC_MODE = os.environ.get("MANDARIN_PUBLIC_MODE", "0") == "1"
+FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
 
 
 class TextGzip:
@@ -1082,6 +1085,10 @@ def comparable_script(text):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
+    if PUBLIC_MODE:
+        if not (FRONTEND_DIST / "index.html").is_file():
+            raise HTTPException(503, "Build the frontend before starting public mode.")
+        return FileResponse(FRONTEND_DIST / "index.html")
     return """
     <!DOCTYPE html>
     <html>
@@ -1415,6 +1422,21 @@ async def read_index():
             .scoring-mode .upload-hint { flex-basis: 100%; margin: 0; }
             .item-progress.practiced { color: #276749; font-weight: 600; }
             #practiceMode { scroll-margin-top: 12px; }
+            .practice-mode { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+            .practice-mode legend { margin-bottom: 10px; }
+            .practice-mode label { display: flex; min-height: 64px; padding: 12px; box-sizing: border-box; align-items: center; gap: 10px; border: 1px solid #cbd5e0; border-radius: 10px; background: #fff; line-height: 1.35; font-weight: 600; }
+            .practice-mode label:has(input:checked) { border-color: #2b6cb0; background: #ebf8ff; color: #1a4f80; box-shadow: inset 0 0 0 1px #2b6cb0; }
+            .practice-mode label:focus-within { outline: 3px solid #90cdf4; outline-offset: 2px; }
+            .practice-mode label:has(input:disabled) { opacity: .55; cursor: default; }
+            .lesson-picker { margin: 0 0 18px; }
+            .lesson-picker[hidden] { display: none; }
+            .lesson-picker h3 { margin: 0 0 10px; font-size: 17px; }
+            .lesson-options { display: flex; flex-wrap: wrap; gap: 9px; }
+            .lesson-options button, .lesson-current { min-width: 108px; min-height: 48px; padding: 8px 14px; box-sizing: border-box; background: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; border-radius: 6px; text-align: left; font-weight: 700; }
+            .lesson-options button[aria-pressed="true"], .lesson-current { background: #2b6cb0; border-color: #2b6cb0; color: #fff; }
+            .lesson-options button:focus-visible { outline: 3px solid #90cdf4; outline-offset: 2px; }
+            .lesson-options button:disabled { opacity: .5; cursor: default; }
+            .lesson-options small { display: block; font-size: 12px; font-weight: 400; margin-top: 2px; }
             @media (min-width: 1280px) {
                 body { max-width: 1400px; }
                 .page-grid { display: grid; grid-template-columns: minmax(0, 1040px) 300px; gap: 20px; align-items: start; justify-content: center; }
@@ -1449,6 +1471,10 @@ async def read_index():
                 .cal-tile .han { font-size: 22px; }
                 .chapter5-word-controls { padding: 8px; gap: 6px; }
                 .chapter5-word-controls button { font-size: 0; padding: 8px 12px; }
+                .practice-mode { grid-template-columns: 1fr; gap: 8px; }
+                .practice-mode label { min-height: 48px; }
+                .lesson-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .lesson-options button, .lesson-current { min-width: 0; }
                 #previousChapter5WordBtn::before, #nextChapter5WordBtn::after { margin: 0; font-size: 26px; }
             }
 
@@ -1458,7 +1484,7 @@ async def read_index():
         <div class="page-grid"><div class="page-main">
         <div class="card" id="studentCard">
             <div class="student-heading">
-                <h2 data-i18n="speakerProfile">Speaker profile</h2>
+                <h2 data-i18n="learnerProfile">Learner profile</h2>
                 <label class="language-picker" for="languageSelect"><span data-i18n="language">Language</span>
                     <select id="languageSelect" onchange="changeLanguage(this.value)" aria-label="Language">
                         <option value="en">English</option>
@@ -1559,11 +1585,16 @@ async def read_index():
             <h2 data-i18n="appTitle">Taiwan Mandarin Pronunciation Practice</h2>
             <p data-i18n="practiceInstructions">Choose a human voice sample, listen to it, then record yourself or upload an audio file reading the matching script:</p>
             <fieldset id="practiceMode" class="practice-mode">
-                <legend data-i18n="practiceSource">Practice text</legend>
-                <label><input type="radio" name="practiceMode" value="book" checked onchange="changePracticeMode()"><span data-i18n="bookTextMode">Book sample</span></label>
-                <label><input type="radio" name="practiceMode" value="chapter5_word" onchange="changePracticeMode()"><span data-i18n="chapter5WordMode">Topics</span></label>
+                <legend data-i18n="chooseBookType">Choose a practice book</legend>
+                <label><input type="radio" name="practiceMode" value="book" checked onchange="changePracticeMode()"><span data-i18n="bookTextMode">Textbook sentences</span></label>
+                <label><input type="radio" name="practiceMode" value="chapter5_word" onchange="changePracticeMode()"><span data-i18n="chapter5WordMode">Words and phrases</span></label>
                 <label><input type="radio" name="practiceMode" value="custom" onchange="changePracticeMode()"><span data-i18n="customTextMode">My own text</span></label>
             </fieldset>
+
+            <section id="lessonPicker" class="lesson-picker" aria-labelledby="lessonPickerTitle">
+                <h3 id="lessonPickerTitle" data-i18n="chooseLesson">Choose a lesson</h3>
+                <div id="lessonOptions" class="lesson-options" aria-label="Lessons" data-i18n-aria-label="chooseLesson"></div>
+            </section>
 
             <div class="scoring-mode">
                 <label for="scoringModeSelect"><b data-i18n="scoringModeLabel">Scoring</b></label>
@@ -1594,7 +1625,7 @@ async def read_index():
             </div>
 
             <div id="bookSamplePicker" class="tight">
-                <label for="sampleSelect"><b data-i18n="sampleRecording">Sample recording (Lessons 5-8):</b></label>
+                <label for="sampleSelect"><b data-i18n="chooseSentence">Choose a sentence to practice:</b></label>
                 <select id="sampleSelect" onchange="sampleTouched = true; selectSample()" disabled>
                     <option data-i18n="loadingSamples">Loading sample recordings...</option>
                 </select>
@@ -1781,6 +1812,7 @@ async def read_index():
             let busyTimer = null;      // declared with the other state: the first status render happens before the helpers below
             let isSavingStudent = false;
             let sampleLessons = [];
+            let selectedBookLesson = null;
             let selectedPhrase = 0;                         // the word card whose pitch graph is shown under the cards
             let renderedResult = null;
             let progressData = { lessons: {} };   // what the learner has practised (from /api/progress): the latest result of every sentence and word
@@ -2035,6 +2067,12 @@ async def read_index():
                     leaderboardMeAccuracyNeed: "再練 {n} 句就能上準確率榜。",
                     assistantTitle: "對話教練", assistantHint: "練習目前主題，卡住時可以請求提示。", assistantRestaurant: "餐廳點餐", assistantFreeTopic: "自由對話",
                     assistantTopic: "對話主題", assistantMenu: "菜單", assistantPlaceholder: "用英文說點什麼吧…", assistantSend: "送出",
+                    analyticsTitle: "我的聲調分析",
+                    analyticsSummary: "{attempts} 次練習 · {syllables} 個音節 · 整體正確率 {accuracy}%",
+                    analyticsNoData: "完成幾個已評分音節後，即可查看個人聲調分析。",
+                    analyticsWeakest: "建議加強：第 {tone} 聲（正確率 {accuracy}%）。",
+                    analyticsTone: "第 {tone} 聲",
+                    analyticsToneStats: "正確率 {accuracy}% · 已評分 {assessed} 個",
                     resultPrevious: "上一個",
                     resultNext: "下一個",
                     itemProgress: "最近成績：{last}%\u30fb{when}",
@@ -2210,6 +2248,12 @@ async def read_index():
                     leaderboardMeAccuracyNeed: "Luyện thêm {n} câu để vào bảng độ chính xác.",
                     assistantTitle: "Trợ lý hội thoại", assistantHint: "Luyện chủ đề hiện tại; khi bí, hãy xin gợi ý.", assistantRestaurant: "Gọi món tại nhà hàng", assistantFreeTopic: "Hội thoại tự do",
                     assistantTopic: "Chủ đề hội thoại", assistantMenu: "Thực đơn", assistantPlaceholder: "Hãy nói gì đó bằng tiếng Anh…", assistantSend: "Gửi",
+                    analyticsTitle: "Hồ sơ thanh điệu",
+                    analyticsSummary: "{attempts} lượt luyện · {syllables} âm tiết · độ chính xác {accuracy}%",
+                    analyticsNoData: "Luyện thêm vài âm tiết để xem phân tích thanh điệu của bạn.",
+                    analyticsWeakest: "Nên tập trung: thanh {tone} (độ chính xác {accuracy}%).",
+                    analyticsTone: "Thanh {tone}",
+                    analyticsToneStats: "Chính xác {accuracy}% · đã chấm {assessed} âm tiết",
                     resultPrevious: "Trước",
                     resultNext: "Tiếp theo",
                     itemProgress: "Kết quả gần nhất: {last}% \u00b7 {when}",
@@ -2404,6 +2448,12 @@ async def read_index():
                     leaderboardMeAccuracyNeed: "Latih {n} kalimat lagi untuk masuk papan akurasi.",
                     assistantTitle: "Pelatih percakapan", assistantHint: "Latih topik saat ini. Minta petunjuk jika buntu.", assistantRestaurant: "Memesan di restoran", assistantFreeTopic: "Percakapan bebas",
                     assistantTopic: "Topik percakapan", assistantMenu: "Menu", assistantPlaceholder: "Katakan sesuatu dalam bahasa Inggris…", assistantSend: "Kirim",
+                    analyticsTitle: "Profil nada Anda",
+                    analyticsSummary: "{attempts} latihan · {syllables} suku kata · akurasi {accuracy}%",
+                    analyticsNoData: "Selesaikan beberapa suku kata untuk melihat profil nada Anda.",
+                    analyticsWeakest: "Fokus yang disarankan: nada {tone} (akurasi {accuracy}%).",
+                    analyticsTone: "Nada {tone}",
+                    analyticsToneStats: "Akurasi {accuracy}% · {assessed} dinilai",
                     resultPrevious: "Sebelumnya",
                     resultNext: "Berikutnya",
                     itemProgress: "Hasil terakhir: {last}% \u00b7 {when}",
@@ -2687,6 +2737,12 @@ async def read_index():
                     leaderboardMeAccuracyNeed: "सटीकता बोर्ड में आने के लिए {n} और वाक्य अभ्यास करें।",
                     assistantTitle: "बातचीत कोच", assistantHint: "वर्तमान विषय का अभ्यास करें। अटकने पर संकेत माँगें।", assistantRestaurant: "रेस्तरां में ऑर्डर", assistantFreeTopic: "मुक्त बातचीत",
                     assistantTopic: "बातचीत का विषय", assistantMenu: "मेनू", assistantPlaceholder: "अंग्रेज़ी में कुछ कहें…", assistantSend: "भेजें",
+                    analyticsTitle: "आपकी स्वर प्रोफ़ाइल",
+                    analyticsSummary: "{attempts} प्रयास · {syllables} अक्षर · कुल सटीकता {accuracy}%",
+                    analyticsNoData: "अपनी स्वर प्रोफ़ाइल देखने के लिए कुछ अक्षरों का अभ्यास पूरा करें।",
+                    analyticsWeakest: "सुझाया गया अभ्यास: स्वर {tone} ({accuracy}% सटीकता)।",
+                    analyticsTone: "स्वर {tone}",
+                    analyticsToneStats: "{accuracy}% सटीक · {assessed} जाँचे गए",
                     resultPrevious: "पिछला",
                     resultNext: "अगला",
                     itemProgress: "अंतिम परिणाम: {last}% \u00b7 {when}",
@@ -2909,8 +2965,19 @@ async def read_index():
 
             let currentLanguage = "en";
 
+            const BOOK_FLOW_TEXT = {
+                en: { learnerProfile: "Learner profile", speakerProfile: "Choose learner profile", chooseBookType: "Choose a practice book", bookTextMode: "Textbook sentences", ["chapter5WordMode"]: "Words and phrases", chooseLesson: "Choose a lesson", availableLesson: "Available lesson", chooseSentence: "Choose a sentence to practice:", lessonNumber: "Lesson {lesson}", sentenceCount: "{count} sentences", wordCount: "{count} words and phrases" },
+                "zh-TW": { learnerProfile: "學習者檔案", speakerProfile: "選擇學習者檔案", chooseBookType: "選擇練習教材", bookTextMode: "課本句子", ["chapter5WordMode"]: "單字與詞組", chooseLesson: "選擇課次", availableLesson: "可用課次", chooseSentence: "選擇練習句子：", lessonNumber: "第 {lesson} 課", sentenceCount: "{count} 句", wordCount: "{count} 個單字與詞組" },
+                vi: { learnerProfile: "Hồ sơ người học", speakerProfile: "Chọn hồ sơ người học", chooseBookType: "Chọn loại sách luyện tập", bookTextMode: "Câu trong sách", ["chapter5WordMode"]: "Từ và cụm từ", chooseLesson: "Chọn bài học", availableLesson: "Bài học hiện có", chooseSentence: "Chọn câu để luyện nói:", lessonNumber: "Bài {lesson}", sentenceCount: "{count} câu", wordCount: "{count} từ và cụm từ" },
+                id: { learnerProfile: "Profil pelajar", speakerProfile: "Pilih profil pelajar", chooseBookType: "Pilih buku latihan", bookTextMode: "Kalimat buku", ["chapter5WordMode"]: "Kata dan frasa", chooseLesson: "Pilih pelajaran", availableLesson: "Pelajaran tersedia", chooseSentence: "Pilih kalimat untuk latihan:", lessonNumber: "Pelajaran {lesson}", sentenceCount: "{count} kalimat", wordCount: "{count} kata dan frasa" },
+                hi: { learnerProfile: "शिक्षार्थी प्रोफ़ाइल", speakerProfile: "शिक्षार्थी प्रोफ़ाइल चुनें", chooseBookType: "अभ्यास की पुस्तक चुनें", bookTextMode: "पुस्तक के वाक्य", ["chapter5WordMode"]: "शब्द और वाक्यांश", chooseLesson: "पाठ चुनें", availableLesson: "उपलब्ध पाठ", chooseSentence: "अभ्यास के लिए वाक्य चुनें:", lessonNumber: "पाठ {lesson}", sentenceCount: "{count} वाक्य", wordCount: "{count} शब्द और वाक्यांश" }
+            };
+
+
             function t(key, variables = {}) {
-                const template = (LANGUAGE_TEXT[currentLanguage] || LANGUAGE_TEXT.en)[key] || LANGUAGE_TEXT.en[key] || key;
+                const template = (BOOK_FLOW_TEXT[currentLanguage] || BOOK_FLOW_TEXT.en)[key]
+                    || BOOK_FLOW_TEXT.en[key]
+                    || (LANGUAGE_TEXT[currentLanguage] || LANGUAGE_TEXT.en)[key] || LANGUAGE_TEXT.en[key] || key;
                 return template.replace(/\\{(\\w+)\\}/g, (_, name) => String(variables[name] ?? ""));
             }
 
@@ -3167,12 +3234,57 @@ async def read_index():
                 const select = document.getElementById("sampleSelect");
                 const selectedId = select.value;
                 select.replaceChildren();
-                sampleLessons.forEach(sample => {
+                sampleLessons.filter(sample => selectedBookLesson === null || Number(sample.lesson) === selectedBookLesson).forEach(sample => {
                     const done = progressData.lessons[sample.id];
                     const label = t("lessonOption", sample);
                     select.add(new Option(done ? `✓ ${done.last}% · ${label}` : label, sample.id));       // a practised sentence: a tick and its latest points
                 });
-                if (sampleLessons.some(sample => sample.id === selectedId)) select.value = selectedId;
+                if (Array.from(select.options).some(option => option.value === selectedId)) select.value = selectedId;
+            }
+
+            function renderLessonPicker() {
+                const mode = selectedPracticeMode();
+                const picker = document.getElementById("lessonPicker");
+                picker.hidden = mode === "custom" || (mode === "book" && !sampleLessons.length)
+                    || (mode === "chapter5_word" && !chapter5WordItems.length);
+                document.getElementById("lessonPickerTitle").textContent = t(mode === "book" ? "chooseLesson" : "availableLesson");
+                const options = document.getElementById("lessonOptions");
+                options.setAttribute("aria-label", t(mode === "book" ? "chooseLesson" : "availableLesson"));
+                options.replaceChildren();
+                if (picker.hidden) return;
+                const lessons = mode === "book"
+                    ? [...new Set(sampleLessons.map(sample => Number(sample.lesson)))].sort((a, b) => a - b)
+                    : chapter5WordItems.length ? [5] : [];
+                for (const lesson of lessons) {
+                    const count = mode === "book"
+                        ? sampleLessons.filter(sample => Number(sample.lesson) === lesson).length
+                        : chapter5WordItems.length;
+                    const option = document.createElement(mode === "book" ? "button" : "div");
+                    if (mode === "book") {
+                        option.type = "button";
+                        option.dataset.lesson = String(lesson);
+                        option.setAttribute("aria-pressed", String(selectedBookLesson === lesson));
+                        option.disabled = isProcessing || isRecording || isSavingStudent;
+                        option.addEventListener("click", () => selectBookLesson(lesson));
+                    } else {
+                        option.className = "lesson-current";
+                    }
+                    option.append(document.createTextNode(t("lessonNumber", { lesson })));
+                    const detail = document.createElement("small");
+                    detail.textContent = t(mode === "book" ? "sentenceCount" : "wordCount", { count });
+                    option.append(detail);
+                    options.append(option);
+                }
+            }
+
+            function selectBookLesson(lesson) {
+                if (isProcessing || isRecording || isSavingStudent || selectedPracticeMode() !== "book") return;
+                if (!sampleLessons.some(sample => Number(sample.lesson) === Number(lesson))) return;
+                selectedBookLesson = Number(lesson);
+                sampleTouched = true;
+                refreshSampleOptions();
+                renderLessonPicker();
+                selectSample();
             }
 
             function selectedPracticeMode() {
@@ -3369,6 +3481,7 @@ async def read_index():
                 scriptInput.readOnly = !isCustom;
                 sampleAudio.hidden = isCustom || !sampleAudio.hasAttribute("src");
                 if (isCustom) sampleAudio.pause();
+                renderLessonPicker();
             }
 
             function changePracticeMode() {
@@ -3600,7 +3713,7 @@ async def read_index():
                     return;
                 }
                 try {
-                    const response = await fetch(`/api/analytics?student_id=${encodeURIComponent(activeStudent.id)}`);
+                    const response = await fetch('/api/analytics?' + new URLSearchParams({ student_id: activeStudent.id }));
                     if (response.ok) {
                         analyticsData = await response.json();
                         renderAnalytics(analyticsData);
@@ -3926,7 +4039,9 @@ async def read_index():
             }
 
             function setActiveStudent(profile) {
+                const previousStudentId = activeStudent?.id;
                 activeStudent = profile;
+                if (profile?.id !== previousStudentId) sampleTouched = false;
                 document.getElementById("activeStudentPanel").hidden = !profile;
                 if (profile) {
                     updateActiveStudentLabel();
@@ -3940,6 +4055,7 @@ async def read_index():
                 loadLeaderboard();                                       // "You" is a different person now
                 loadProgress();
                 loadAnalytics();
+                if (profile && previousStudentId !== profile.id && sampleLessons.length && selectedPracticeMode() !== "book") applyStartSample();
                 if (profile && !sampleTouched && sampleLessons.length && selectedPracticeMode() === "book") applyStartSample();
             }
 
@@ -4247,6 +4363,7 @@ async def read_index():
                 const hasScript = hasMandarinCharacters(script) && hasSelection;
                 const fileInput = document.getElementById("audioFileInput");
                 document.getElementById("practiceMode").disabled = busy;
+                document.querySelectorAll("#lessonOptions button").forEach(button => { button.disabled = busy; });
                 document.getElementById("saveProfileBtn").disabled = busy;
                 document.getElementById("changeProfileBtn").disabled = busy;
                 document.getElementById("sampleSelect").disabled = busy || !canPractice || isCustom || isChapter5 || sampleLessons.length === 0;
@@ -4426,7 +4543,10 @@ async def read_index():
             function applyStartSample() {
                 const start = startSampleFor(sampleLessons, activeStudent && activeStudent.id);
                 if (!start) return;
+                selectedBookLesson = Number(start.lesson);
+                refreshSampleOptions();
                 document.getElementById("sampleSelect").value = start.id;
+                renderLessonPicker();
                 selectSample();
             }
 
@@ -4448,6 +4568,13 @@ async def read_index():
                     refreshSampleOptions();
                     const start = startSampleFor(sampleLessons, activeStudent && activeStudent.id);
                     if (start) select.value = start.id;
+
+                    if (start) {
+                        selectedBookLesson = Number(start.lesson);
+                        refreshSampleOptions();
+                        select.value = start.id;
+                    }
+                    renderLessonPicker();
 
                     selectSample();
                 } catch (error) {
@@ -5091,3 +5218,33 @@ def _assess_pronunciation(
             os.remove(temp_path)
         except OSError:
             pass
+
+
+if PUBLIC_MODE:
+    from public_site import install_public_site
+
+    install_public_site(
+        app, samples=SAMPLE_CATALOG, words=CHAPTER5_WORD_ITEMS,
+        meanings=BOOK_MEANINGS, practice=practice_store, coordinator=ASSESSMENTS,
+        assess=_assess_pronunciation, calibrate=_calibrate_student_voice,
+        pinyin=_sample_pinyin,
+    )
+
+    @app.middleware("http")
+    async def public_route_boundary(request: Request, call_next):
+        path = request.url.path
+        if (path.startswith("/api/") and not path.startswith(("/api/public/", "/api/me/"))) or path.startswith(("/admin", "/docs", "/redoc", "/openapi.json")):
+            return JSONResponse({"detail": "Not found"}, status_code=404)
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "same-origin"
+        return response
+
+    if (FRONTEND_DIST / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="public-assets")
+
+    @app.get("/{spa_path:path}")
+    async def public_spa(spa_path: str):
+        if spa_path.startswith(("api/", "auth/", "admin/")) or "." in Path(spa_path).name:
+            raise HTTPException(404)
+        return FileResponse(FRONTEND_DIST / "index.html")

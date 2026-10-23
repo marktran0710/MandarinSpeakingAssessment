@@ -1,17 +1,63 @@
 # Taiwan Mandarin AI
 
+## Public learning website (React)
+
+The new website has a short public introduction, Google sign-in, an account-owned
+learner profile, 12 textbook stories with listening/reading comprehension, and
+speaking practice for 100 sentences plus 53 Chapter 5 words and phrases. The
+pronunciation algorithm is unchanged. Existing name-only profiles remain in
+their original `practice_data/` directory; the development launcher selects
+`practice_data/public/` for new accounts.
+
+The React frontend can call a separately hosted TaiwanMandarinAI backend by
+setting `VITE_API_BASE_URL` before `npm run build` (for example,
+`http://127.0.0.1:8011`). Configure the backend's `MANDARIN_CORS_ORIGINS` to
+the frontend origin and keep credentials enabled for the public session.
+
+Build the interface before starting FastAPI:
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\run_dev.ps1
+```
+
+`run_dev.ps1` binds only to `127.0.0.1:8011`. Without Google credentials it
+enables a **loopback-only local preview login**. For public deployment, set
+`MANDARIN_PUBLIC_MODE=1`, `MANDARIN_PUBLIC_HTTPS=1`,
+`MANDARIN_DEV_AUTH=0`, `MANDARIN_SESSION_SECRET` (a persistent random secret),
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `MANDARIN_PUBLIC_ORIGIN` (the
+HTTPS origin). Register `https://<your-domain>/auth/google/callback` in Google
+Cloud. Use one Uvicorn worker behind an HTTPS reverse proxy; configure its
+forwarded headers so FastAPI sees the public scheme and host. Set the public
+`MANDARIN_PRACTICE_DATA_DIR` and `MANDARIN_USER_DATA_DIR` to persistent,
+separate directories, and back up both the SQLite database and recordings.
+The external textbook CSV, 100 MP3 files, MFA and FFmpeg must be available
+before public launch. Do not expose the local preview login on an Internet
+listener.
+
+The comprehension items use three lines spread across each story, with answer
+choices taken from the existing translated sentence corpus. They are versioned
+and available in the five interface languages. An editor should review the
+question wording and distractors before a public curriculum release.
+
 A web application for practicing Taiwanese Mandarin tones, built with FastAPI and an integrated browser interface. Learners choose a text, record their voice, and receive syllable and phrase feedback, pitch charts, and practice history.
 
 The system checks recordings against a **known transcript**: audio preparation → voice calibration → syllable alignment with Montreal Forced Aligner (MFA) → F0 extraction with Praat → tone and tone-sandhi verification. The current assessment flow does not use automatic speech recognition (ASR).
 
 ## Features
 
-- Chapter 5 word and phrase practice, textbook sentence practice, and custom text practice.
+- Choose a learner profile by name, then choose textbook sentences (Lessons 5–8), Chapter 5 words and phrases, or custom text. Sentence lessons can be selected before choosing a recording to practice.
 - Personalized pitch-range calibration using five reference tones.
 - `Good`, `Okay`, or `Needs practice` feedback. Insufficient acoustic evidence results in `Okay`.
 - Three scoring choices: **Fusion** is the default on every page visit and for API requests that omit `scoring_mode`; a choice of Rules or Follow the model voice applies only until the page is reloaded. Fusion combines the unchanged Rules and Model Voice verdicts: a syllable is accepted when either scorer says it is likely correct, marked for practice only when both say so, and left uncertain when evidence is insufficient. **Follow the model voice** compares pitch contours with teachers' recordings and can fall back to the same syllable in the textbook audio when the contour score is inconclusive; **Rules** uses tone-shape rules. Pure Model Voice attempts are not counted on the leaderboards, Fusion attempts are counted, and own text always uses Rules.
 - English, Traditional Chinese, Vietnamese, Indonesian, and Hindi interfaces.
 - Learner profiles, recording history, feedback ratings, and an administration page.
+
+Learner profiles resume by name and participant group. They are local profiles, not password-protected accounts.
 - Personalized tone analytics at `/api/analytics?student_id=...`: per-tone accuracy and evidence counts, acoustic averages, recent trend, weakest tone, and recommended sample IDs.
 - A local conversation coach at `POST /api/assistant/message` supports restaurant ordering and free conversation. It starts at L0 and adapts through L1-L4 prompts (question, keyword, sentence starter, fill-in, and example) without requiring an external AI key.
 

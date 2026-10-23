@@ -137,10 +137,11 @@ class StatusLabelTests(unittest.TestCase):
 
 
 class TopicsModeNameTests(unittest.TestCase):
-    def test_the_one_item_at_a_time_mode_is_called_topics_in_every_language(self):
+    def test_book_picker_names_the_word_collection_in_every_language(self):
         source = (ROOT / "main.py").read_text(encoding="utf-8")
-        self.assertEqual(re.findall(r'chapter5WordMode: "([^"]*)"', source), ["Topics", "主題", "Chủ đề", "Topik", "विषय"])
-        self.assertIn('<span data-i18n="chapter5WordMode">Topics</span>', source)
+        self.assertEqual(re.findall(r'\["chapter5WordMode"\]: "([^"]*)"', source),
+                         ["Words and phrases", "單字與詞組", "Từ và cụm từ", "Kata dan frasa", "शब्द और वाक्यांश"])
+        self.assertIn('<span data-i18n="chapter5WordMode">Words and phrases</span>', source)
         self.assertNotIn("one item at a time", source)
 
 
