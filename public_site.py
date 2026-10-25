@@ -263,10 +263,12 @@ def install_public_site(app, *, samples, words, meanings, practice, coordinator,
         with coordinator.assessment(account['student_id']):
             if speaking_service is not None:
                 result = speaking_service.assess(speaker_for(account), file, script=item['script'],
-                    sample_id=sample_id, practice_mode=practice_mode, scoring_mode=scoring_mode,
-                    save_attempt=False)
-                if not isinstance(result, dict) or not isinstance(result.get('summary'), dict) or 'saved_attempt' in result:
+                    sample_id=sample_id, practice_mode=practice_mode, scoring_mode=scoring_mode)
+                if not isinstance(result, dict) or not isinstance(result.get('summary'), dict):
                     raise HTTPException(502, 'Speaking assessment returned an invalid result.')
+                # The existing assessor always saves its own attempt. Keep the
+                # website's copy linked only to the signed-in website account.
+                result.pop('saved_attempt', None)
                 filename = Path(file.filename or 'recording.webm').name
                 with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as temporary:
                     file.file.seek(0)

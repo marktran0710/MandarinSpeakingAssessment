@@ -35,7 +35,7 @@ Người lớn tự học có thể đăng nhập, tạo hồ sơ, chọn sách 
 
 ## Hợp đồng backend và điều kiện phát hành
 
-- Repo này cung cấp API phiên đăng nhập/hồ sơ, danh mục và bài học, câu hỏi và nộp bài, audio, dashboard và hoạt động, xuất/xóa dữ liệu. Dịch vụ `D:\TaiwanMandarinAI` chỉ phụ trách chấm nói. Server website ánh xạ hồ sơ bằng ID nội bộ, gọi dịch vụ chấm nói qua loopback với `save_attempt=false`, rồi tự lưu kết quả và ghi âm; trình duyệt chỉ gọi API học đã xác thực.
+- Repo này cung cấp API phiên đăng nhập/hồ sơ, danh mục và bài học, câu hỏi và nộp bài, audio, dashboard và hoạt động, xuất/xóa dữ liệu. Dịch vụ `D:\TaiwanMandarinAI` phụ trách chấm nói và lưu bản ghi riêng theo API hiện có. Server website ánh xạ hồ sơ bằng ID nội bộ qua một hồ sơ assessor riêng, gọi dịch vụ qua loopback, rồi lưu thêm kết quả và ghi âm trong website để dashboard, xuất dữ liệu và xóa tài khoản theo đúng hồ sơ đã đăng nhập; trình duyệt chỉ gọi API học đã xác thực.
 - Google OIDC, cookie `HttpOnly`/`Secure`, CSRF và kiểm tra quyền sở hữu phải chạy trên backend HTTPS. Local preview login chỉ dùng trên loopback.
 - Biên tập viên rà soát câu hỏi, lựa chọn và giải thích; xác nhận quyền xuất bản sách và audio. Máy chủ cần dữ liệu sách/audio, MFA, FFmpeg, kho SQLite/ghi âm bền vững và sao lưu hằng ngày.
 

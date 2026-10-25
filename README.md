@@ -22,13 +22,12 @@ profiles, curriculum, listening and reading results, and their API. The
 separate `D:\TaiwanMandarinAI` repository provides speaking assessment.
 The website calls that service from its server only, using a private loopback
 HTTP URL. It creates a separate assessor profile named with an opaque website
-learner ID. The assessor keeps voice calibration; `save_attempt=false` makes it
-return speaking feedback without storing a second recording or attempt. The
-website stores speaking results and recordings with the signed-in account.
+learner ID. The existing assessor API stores its own calibration, speaking
+attempts, and recordings. The website also stores a copy of each speaking result
+and recording under the signed-in website account so that its dashboard, export,
+and account deletion stay tied to that account.
 
 Start the assessor first, in `D:\TaiwanMandarinAI`, bound to `127.0.0.1:8011`.
-Restart any assessor process already running so it serves
-`/api/speaking-capabilities` and honors `save_attempt=false`.
 Then build and start this website on `127.0.0.1:8012`:
 
 ```powershell

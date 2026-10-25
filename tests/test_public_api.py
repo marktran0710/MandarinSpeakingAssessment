@@ -39,11 +39,12 @@ class PublicLearningApiTests(unittest.TestCase):
                     return 'c' * 32
 
                 def assess(self, speaker_id, file, **values):
-                    calls.append(('assess', speaker_id, values['save_attempt']))
+                    calls.append(('assess', speaker_id, values['sample_id']))
                     testcase.assertEqual(b'voice-bytes', file.file.read())
                     file.file.seek(0)
                     return {'summary': {'syllables': {'likely_correct': 1, 'practice': 0,
-                                                      'insufficient_evidence': 0}, 'scoring_mode': 'fusion'}}
+                                                      'insufficient_evidence': 0}, 'scoring_mode': 'fusion'},
+                            'saved_attempt': {'id': 'd' * 32}}
 
                 def calibrate(self, speaker_id, file):
                     calls.append(('calibrate', speaker_id))
@@ -71,7 +72,7 @@ class PublicLearningApiTests(unittest.TestCase):
                                        headers={'X-CSRF-Token': csrf})
                 self.assertEqual(200, response.status_code, response.text)
                 attempt_id = response.json()['saved_attempt']['id']
-                self.assertEqual([('create', alice['student_id']), ('assess', 'c' * 32, False)], calls)
+                self.assertEqual([('create', alice['student_id']), ('assess', 'c' * 32, sample['id'])], calls)
                 calibration = client.post('/api/me/voice-calibration',
                                           files={'file': ('calibration.webm', b'voice-bytes', 'audio/webm')},
                                           headers={'X-CSRF-Token': csrf})

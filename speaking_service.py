@@ -66,21 +66,11 @@ class SpeakingService:
         return self._upload("POST", f"/api/students/{speaker_id}/voice-calibration", file)
 
     def assess(self, speaker_id: str, file: UploadFile, *, script: str, sample_id: str,
-               practice_mode: str, scoring_mode: str, save_attempt: bool):
+               practice_mode: str, scoring_mode: str):
         self._valid_id(speaker_id)
-        if not save_attempt:
-            try:
-                capabilities = self._request("GET", "/api/speaking-capabilities")
-            except HTTPException as exc:
-                if exc.status_code == 404:
-                    raise HTTPException(503, "Speaking assessor needs the stateless assessment update.") from exc
-                raise
-            if not isinstance(capabilities, dict) or capabilities.get("stateless_assessment") is not True:
-                raise HTTPException(503, "Speaking assessor cannot score without saving a second attempt.")
         return self._upload("POST", "/api/assess-pronunciation", file, data={
             "script": script, "sample_id": sample_id, "student_id": speaker_id,
             "practice_mode": practice_mode, "scoring_mode": scoring_mode,
-            "save_attempt": "true" if save_attempt else "false",
         })
 
     def delete_speaker(self, speaker_id: str):
